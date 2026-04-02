@@ -1,0 +1,9 @@
+{
+  "name": "carrentify-root",
+  "version": "1.0.0",
+  "scripts": {
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && npm run start:dev",
+    "dev": "npm run dev:frontend & npm run dev:backend"
+  }
+}

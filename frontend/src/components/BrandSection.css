@@ -1,0 +1,69 @@
+.brand-section {
+  padding: 80px 40px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.brand-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.brand-subtitle {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #9ca3af;
+  letter-spacing: 0.2em;
+  margin-bottom: 50px;
+  text-transform: uppercase;
+}
+
+.brand-carousel {
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+  padding: 40px 0;
+  mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
+}
+
+.brand-track {
+  display: flex;
+  gap: 80px;
+  width: max-content;
+  animation: scroll 40s linear infinite;
+}
+
+@keyframes scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(calc(-50% - 40px)); }
+}
+
+.brand-item {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #17094a;
+  letter-spacing: 2px;
+  white-space: nowrap;
+  opacity: 0.6;
+  transition: opacity 0.3s ease;
+  cursor: pointer;
+}
+
+.brand-item:hover {
+  color: #17094a;
+  opacity: 1;
+  transform: translateY(-2px);
+}
+
+@media (max-width: 768px) {
+  .brand-list {
+    justify-content: center;
+    gap: 30px;
+  }
+  
+  .brand-item {
+    font-size: 1.1rem;
+  }
+}

@@ -1,0 +1,147 @@
+.recent-section {
+  padding: 100px 40px;
+  background-color: #fafafb;
+}
+
+.recent-container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.recent-header {
+  margin-bottom: 50px;
+}
+
+.recent-title {
+  font-size: 2.8rem;
+  font-weight: 800;
+  color: #17094a;
+  margin-bottom: 12px;
+  letter-spacing: -0.04em;
+}
+
+.recent-subtitle {
+  font-size: 1.1rem;
+  color: #6b7280;
+}
+
+.recent-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+}
+
+.recent-card {
+  background: white;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  border: 1px solid #f3f4f6;
+  padding: 12px;
+}
+
+.recent-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 40px -12px rgba(0,0,0,0.1);
+}
+
+.recent-img-box {
+  height: 180px;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.recent-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.recent-card:hover .recent-img {
+  transform: scale(1.1);
+}
+
+.recent-card:hover .recent-badge {
+  background: rgba(23, 9, 74, 0.08); /* Primary Navy light */
+  color: #17094a;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.recent-info {
+  padding: 0 8px 8px;
+}
+
+.recent-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 15px;
+}
+
+.recent-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.recent-price {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #17094a;
+}
+
+.recent-price small {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #9ca3af;
+}
+
+.recent-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #6b7280;
+  background: #f3f4f6;
+  padding: 4px 10px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+/* Response */
+@media (max-width: 1200px) {
+  .recent-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 992px) {
+  .recent-title {
+    font-size: 2.8rem;
+  }
+  
+  .recent-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .recent-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .recent-title {
+    font-size: 2.2rem;
+  }
+  
+  .recent-section {
+    padding: 60px 20px;
+  }
+}
