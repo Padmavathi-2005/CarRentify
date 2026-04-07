@@ -1,0 +1,79 @@
+/* --- Admin Bookings High-Density Management Styles --- */
+
+.admin-bookings-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem; /* space-y-10 */
+}
+
+.admin-booking-header {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .admin-booking-header {
+    flex-direction: row;
+    align-items: center;
+  }
+}
+
+.admin-bookings-card {
+  border-radius: 2.5rem !important;
+  border: none !important;
+  background-color: white !important;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.02) !important;
+  overflow: hidden;
+}
+
+.admin-bookings-table th {
+  padding: 2rem !important; /* p-8 */
+  font-size: 0.75rem !important; /* text-xs */
+  font-weight: 800 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #94a3b8 !important; /* slate-400 */
+  border-bottom: 1px solid #f8fafc;
+}
+
+.admin-bookings-table td {
+  padding: 2rem !important; /* p-8 */
+  font-size: 0.875rem !important; /* text-sm */
+  transition: background-color 0.2s ease;
+}
+
+.admin-reservation-row:hover {
+  background-color: rgba(248, 250, 252, 0.5) !important;
+}
+
+.admin-status-badge {
+  padding: 0.375rem 1rem !important;
+  border-radius: 9999px !important;
+  border: none !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+  font-size: 0.625rem !important; /* 10px */
+  font-weight: 800 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.admin-table-action-btn {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.75rem !important;
+  border: 1px solid transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #cbd5e1;
+  transition: all 0.2s ease;
+}
+
+.admin-table-action-btn:hover {
+  background-color: white !important;
+  border-color: #f1f5f9 !important;
+  color: hsl(var(--primary)) !important;
+}

@@ -1,0 +1,124 @@
+/* --- Admin Fleet High-Density Portfolio Styles --- */
+
+.admin-fleet-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem; /* space-y-10 */
+}
+
+.admin-fleet-header {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .admin-fleet-header {
+    flex-direction: row;
+    align-items: center;
+  }
+}
+
+.admin-fleet-filter-bar {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  background-color: white;
+  padding: 1.5rem !important;
+  border-radius: 2rem !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .admin-fleet-filter-bar {
+    flex-direction: row;
+    gap: 1rem;
+  }
+}
+
+.admin-fleet-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+}
+
+@media (min-width: 768px) {
+  .admin-fleet-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .admin-fleet-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.admin-fleet-card {
+  border-radius: 2.5rem !important;
+  border: none !important;
+  background-color: white !important;
+  box-shadow: 0 10px 15px -3px rgba(15, 23, 42, 0.05) !important;
+  transition: all 0.5s ease;
+  overflow: hidden;
+}
+
+.admin-fleet-card:hover {
+  box-shadow: 0 25px 50px -12px rgba(63, 20, 123, 0.05) !important;
+  transform: translateY(-2px);
+}
+
+.admin-fleet-image-node {
+  position: relative;
+  aspect-ratio: 16/9;
+  background-color: #f8fafc;
+  overflow: hidden;
+}
+
+.admin-fleet-image-node img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.7s ease;
+}
+
+.admin-fleet-card:hover .admin-fleet-image-node img {
+  transform: scale(1.1);
+}
+
+.admin-fleet-status {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  padding: 0.375rem 1rem !important;
+  border-radius: 9999px !important;
+  border: none !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
+  font-size: 0.625rem !important;
+  font-weight: 800 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.admin-fleet-add-placeholder {
+  border: 4px dashed #e2e8f0 !important;
+  border-radius: 2.5rem !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 400px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 2.5rem;
+  text-align: center;
+}
+
+.admin-fleet-add-placeholder:hover {
+  border-color: rgba(63, 20, 123, 0.2) !important;
+  background-color: rgba(63, 20, 123, 0.05) !important;
+}

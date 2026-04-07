@@ -1,48 +1,56 @@
 'use client';
 
 import React from 'react';
-import './Footer.css';
+import { useSettings } from "@/components/ThemeProvider";
 
 const Footer = () => {
-  return (
-    <footer className="main-footer">
-      <div className="footer-container">
-        <div className="footer-brand">
-          <div className="footer-logo-container">
-            <img src="/logo.png" alt="CarRentify" className="footer-site-logo" />
-          </div>
-          <p className="footer-tagline">
-             Redefining the rental experience through innovative design and premium mobility.
-          </p>
-          <div className="social-links">
-             <span>🌐</span>
-             <span>🐦</span>
-             <span>📸</span>
-          </div>
-        </div>
+  const { settings } = useSettings();
+  const currentYear = new Date().getFullYear();
 
-        <div className="footer-links">
-           <div className="link-group">
-              <h4>COMPANY</h4>
-              <a href="#">Safety & Trust</a>
-              <a href="#">Community Guidelines</a>
-              <a href="#">Host Protection</a>
-           </div>
-           <div className="link-group">
-              <h4>RESOURCES</h4>
-              <a href="#">Insurance Options</a>
-              <a href="#">Support Center</a>
-              <a href="#">Terms of Service</a>
-           </div>
-           <div className="link-group">
-              <h4>CONTACT</h4>
-              <p>123 Luxury Road, Curator Square, GA 30210</p>
-              <a href="mailto:hello@carrentify.com" className="email-link">hello@carrentify.com</a>
-           </div>
+  return (
+    <footer className="bg-white pt-20 pb-10 border-t border-border font-sans">
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 mb-16">
+          <div className="lg:col-span-2">
+            <a href="#" className="flex items-center mb-6">
+              <img 
+                src={settings.logoDark || "/logo.png"} 
+                alt={settings.siteName || "CarRentify"} 
+                className="h-10 w-auto object-contain" 
+              />
+            </a>
+            <p className="text-muted-foreground mb-6 max-w-sm">The world's premier luxury car rental service. Experience unmatched elegance and performance on every journey.</p>
+          </div>
+          <div>
+            <h4 className="font-bold mb-4 text-foreground">Company</h4>
+            <ul className="space-y-3 text-sm text-muted-foreground">
+              <li><a href="#" className="hover:text-primary transition-colors">About Us</a></li>
+              <li><a href="#" className="hover:text-primary transition-colors">Careers</a></li>
+              <li><a href="#" className="hover:text-primary transition-colors">Press</a></li>
+              <li><a href="#" className="hover:text-primary transition-colors">Blog</a></li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="font-bold mb-4 text-foreground">Support</h4>
+            <ul className="space-y-3 text-sm text-muted-foreground">
+              <li><a href="#" className="hover:text-primary transition-colors">Help Center</a></li>
+              <li><a href="#" className="hover:text-primary transition-colors">Contact Us</a></li>
+              <li><a href="#" className="hover:text-primary transition-colors">FAQ</a></li>
+              <li><a href="#" className="hover:text-primary transition-colors">Terms of Service</a></li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="font-bold mb-4 text-foreground">Legal</h4>
+            <ul className="space-y-3 text-sm text-muted-foreground">
+              <li><a href="#" className="hover:text-primary transition-colors">Privacy Policy</a></li>
+              <li><a href="#" className="hover:text-primary transition-colors">Cookie Policy</a></li>
+              <li><a href="#" className="hover:text-primary transition-colors">Insurance</a></li>
+            </ul>
+          </div>
         </div>
-      </div>
-      <div className="footer-bottom">
-         <p>© 2026 CarRentify Car Rentals. All rights reserved.</p>
+        <div className="border-t border-border/50 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+          <p className="text-sm text-muted-foreground">{currentYear} {settings.siteName || "CarRentify"}. All rights reserved.</p>
+        </div>
       </div>
     </footer>
   );

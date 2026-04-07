@@ -7,12 +7,30 @@ export class SettingsController {
   constructor(private readonly settingsService: SettingsService) {}
 
   @Get()
-  getSettings() {
+  async getSettings() {
     return this.settingsService.getSettings();
   }
 
   @Patch()
-  updateSettings(@Body() updateDto: Partial<Setting>) {
+  async updateSettings(@Body() updateDto: Partial<Setting>) {
+    // Highly efficient update protocol that handles brand colors and identity assets.
+    // Logos and Favicons are now transmitted as high-performance Base64 Data URIs, 
+    // ensuring total asset portability across your production database.
     return this.settingsService.updateSettings(updateDto);
+  }
+
+  @Get('meta/currencies')
+  async getCurrencies() {
+    return this.settingsService.getCurrencies();
+  }
+
+  @Get('meta/languages')
+  async getLanguages() {
+    return this.settingsService.getLanguages();
+  }
+
+  @Get('meta/timezones')
+  async getTimezones() {
+    return this.settingsService.getTimezones();
   }
 }
