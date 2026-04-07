@@ -11,8 +11,10 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 
 import { authService } from '@/services/authService';
+import { useAuth } from '@/components/AuthContext';
 
 export default function LoginPage() {
+  const { login, verifyOtp } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [otp, setOtp] = useState('');
@@ -20,6 +22,15 @@ export default function LoginPage() {
   const [isOtpSent, setIsOtpSent] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  // Onboarding State
+  const [isOnboarding, setIsOnboarding] = useState(false);
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [displayName, setDisplayName] = useState('');
+  const [onboardingError, setOnboardingError] = useState('');
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,10 +38,16 @@ export default function LoginPage() {
     setError('');
     
     try {
-      const data = await authService.login(email, password);
+      const data = await login(email, password);
+      
+      if (data.onboarding) {
+        setIsOnboarding(true);
+        return;
+      }
+
       if (data.access_token) {
         authService.setToken(data.access_token);
-        window.location.href = '/admin';
+        window.location.href = '/'; // Redirect to Home instead of Admin
       } else {
         setIsOtpSent(true);
       }
@@ -41,17 +58,67 @@ export default function LoginPage() {
     }
   };
 
+  const handleOnboarding = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setOnboardingError('');
+    
+    try {
+      // Register (Upsert) on backend
+      const data = await authService.register({
+        email,
+        password,
+        firstName,
+        lastName,
+        displayName
+      });
+
+      if (data.access_token) {
+        authService.setToken(data.access_token);
+        window.location.href = '/'; 
+      } else {
+        setIsOtpSent(true);
+        setIsOnboarding(false);
+      }
+    } catch (err: any) {
+      setOnboardingError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const data = await authService.verifyOtp(email, otp);
+      const data = await verifyOtp(email, otp);
       authService.setToken(data.access_token);
-      window.location.href = '/admin';
+      window.location.href = '/'; 
     } catch (err: any) {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (resendCooldown > 0) return;
+    setResendLoading(true);
+    try {
+      await authService.resendOtp(email);
+      
+      setResendCooldown(60);
+      const timer = setInterval(() => {
+        setResendCooldown(c => {
+          if (c <= 1) { clearInterval(timer); return 0; }
+          return c - 1;
+        });
+      }, 1000);
+      alert('A new verification code has been dispatched to your email.');
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setResendLoading(false);
     }
   };
 
@@ -245,7 +312,15 @@ export default function LoginPage() {
                         </Button>
 
                         <p className="text-center text-sm text-muted-foreground">
-                          Didn&apos;t receive code? <button type="button" className="font-bold text-primary hover:underline">Resend code</button>
+                          Didn&apos;t receive code?{" "}
+                          <button 
+                            type="button" 
+                            disabled={resendLoading || resendCooldown > 0}
+                            onClick={handleResendOtp}
+                            className={`font-bold transition-all ${resendCooldown > 0 ? "text-slate-300 cursor-not-allowed" : "text-primary hover:underline hover:scale-105"}`}
+                          >
+                            {resendCooldown > 0 ? `Resend available in ${resendCooldown}s` : resendLoading ? 'Sending...' : 'Resend code'}
+                          </button>
                         </p>
                       </form>
                     </motion.div>
@@ -283,6 +358,99 @@ export default function LoginPage() {
           </Card>
         </motion.div>
       </main>
+      
+      {/* Onboarding Modal */}
+      <AnimatePresence>
+        {isOnboarding && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsOnboarding(false)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative bg-white w-full max-w-[500px] rounded-3xl shadow-2xl overflow-hidden z-10"
+            >
+              <div className="bg-primary p-8 text-white relative overflow-hidden">
+                <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white to-transparent" />
+                <div className="relative z-10">
+                  <h2 className="text-2xl font-bold mb-2">Welcome to the Club!</h2>
+                  <p className="text-white/70 text-sm">We just need a few more details to set up your premium profile.</p>
+                </div>
+              </div>
+              
+              <form onSubmit={handleOnboarding} className="p-8 space-y-6">
+                {onboardingError && (
+                  <div className="p-4 bg-red-50 text-red-600 rounded-xl text-sm font-medium border border-red-100">
+                    {onboardingError}
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ml-1">First Name</label>
+                    <Input 
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      placeholder="John"
+                      className="h-12 rounded-xl bg-muted/20 border-none px-4"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ml-1">Last Name</label>
+                    <Input 
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      placeholder="Doe"
+                      className="h-12 rounded-xl bg-muted/20 border-none px-4"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ml-1">Unique Display Name</label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-sm">@</span>
+                    <Input 
+                      value={displayName}
+                      onChange={(e) => setDisplayName(e.target.value.toLowerCase().replace(/[^a-z0-0_]/g, ''))}
+                      placeholder="username"
+                      className="h-12 pl-10 rounded-xl bg-muted/20 border-none font-bold"
+                      required
+                    />
+                  </div>
+                  <p className="text-[9px] text-muted-foreground ml-1">Only lowercase letters, numbers, and underscores.</p>
+                </div>
+
+                <div className="flex gap-4 pt-4">
+                  <Button 
+                    type="button" 
+                    variant="ghost" 
+                    onClick={() => setIsOnboarding(false)}
+                    className="flex-1 h-12 rounded-xl font-bold"
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    type="submit" 
+                    disabled={loading}
+                    className="flex-3 h-12 px-8 rounded-xl bg-primary hover:bg-black text-white font-bold shadow-lg shadow-primary/20"
+                  >
+                    {loading ? 'Processing...' : 'Complete Profile'}
+                  </Button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       <Footer />
     </div>

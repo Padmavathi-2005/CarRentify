@@ -7,6 +7,7 @@ import { CarsModule } from './cars/cars.module';
 import { AdminModule } from './admin/admin.module';
 import { SettingsModule } from './settings/settings.module';
 import { AuthModule } from './auth/auth.module';
+import { BrandsModule } from './brands/brands.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { AuthModule } from './auth/auth.module';
     AdminModule,
     SettingsModule,
     AuthModule,
+    BrandsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

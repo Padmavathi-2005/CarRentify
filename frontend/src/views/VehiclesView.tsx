@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Search, Filter, Star, Heart, SlidersHorizontal, ChevronDown, Check, Car, Zap, Mountain, Truck, Gauge } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import CarCard from "@/components/CarCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -138,68 +139,7 @@ export default function VehiclesPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           <AnimatePresence mode="popLayout">
             {filteredCars.map((car, i) => (
-              <motion.div
-                key={car.id}
-                layout
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
-                transition={{ delay: i * 0.05 }}
-              >
-                <Card
-                  className="group overflow-hidden rounded-3xl border-border/50 bg-white hover:shadow-2xl hover:shadow-primary/5 transition-all duration-500 cursor-pointer h-full flex flex-col"
-                  data-testid={`card-car-${car.id}`}
-                >
-                  <div className="relative aspect-[4/3] overflow-hidden bg-muted/20">
-                    <img
-                      src={getSrc(car.image)}
-                      alt={car.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                    />
-                    <div className="absolute top-5 left-5 flex flex-col gap-2">
-                      {car.badge && (
-                        <Badge className="bg-primary/90 hover:bg-primary text-white border-none px-4 py-1.5 shadow-lg rounded-xl text-[10px] font-bold tracking-widest uppercase">
-                          {car.badge}
-                        </Badge>
-                      )}
-                    </div>
-                    <button className="absolute top-5 right-5 w-10 h-10 bg-white/80 backdrop-blur-md rounded-2xl flex items-center justify-center text-muted-foreground hover:text-red-500 transition-all hover:scale-110 shadow-lg z-10">
-                      <Heart className="w-5 h-5" />
-                    </button>
-                  </div>
-                  <CardContent className="p-8 flex-1 flex flex-col">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="text-xs font-bold text-primary uppercase tracking-[0.1em]">{car.type}</div>
-                      <div className="flex items-center gap-1.5 text-sm font-bold text-foreground">
-                        <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                        {car.rating}
-                      </div>
-                    </div>
-                    <h3 className="font-bold text-xl text-foreground mb-6 line-clamp-2 leading-tight h-14">{car.name}</h3>
-                    
-                    <div className="grid grid-cols-2 gap-4 mb-8">
-                       <div className="flex items-center gap-3 text-muted-foreground border border-border/40 p-3 rounded-2xl bg-muted/10">
-                          <Zap className="w-4 h-4 text-primary" />
-                          <span className="text-xs font-bold whitespace-nowrap text-foreground">{car.fuel}</span>
-                       </div>
-                       <div className="flex items-center gap-3 text-muted-foreground border border-border/40 p-3 rounded-2xl bg-muted/10">
-                          <Gauge className="w-4 h-4 text-primary" />
-                          <span className="text-xs font-bold whitespace-nowrap text-foreground">{car.speed}</span>
-                       </div>
-                    </div>
-
-                    <div className="mt-auto pt-6 border-t border-border/50 flex items-center justify-between">
-                      <div>
-                        <span className="text-3xl font-extrabold text-primary">${car.price}</span>
-                        <span className="text-sm font-bold text-muted-foreground ml-1">/day</span>
-                      </div>
-                      <Button className="rounded-2xl bg-primary text-white hover:bg-black transition-all h-12 px-6 text-sm font-bold shadow-lg shadow-primary/20 hover:shadow-none hover:translate-y-px">
-                        Details
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
+               <CarCard key={car.id} car={car} index={i} />
             ))}
           </AnimatePresence>
         </div>

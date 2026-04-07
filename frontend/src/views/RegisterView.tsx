@@ -29,8 +29,24 @@ export default function RegisterPage() {
     setError('');
 
     try {
-      await authService.register(email, password, firstName, lastName, displayName);
-      setStep(1);
+      const data = await authService.register({
+        email,
+        password,
+        firstName,
+        lastName,
+        displayName
+      });
+      
+      if (data.access_token) {
+        authService.setToken(data.access_token);
+        // Wait 2 seconds to show success message then redirect
+        setStep(1);
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 2500);
+      } else {
+        setStep(1);
+      }
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -159,7 +175,7 @@ export default function RegisterPage() {
                               placeholder="jane_smith" 
                               className="pl-12 h-12 rounded-xl border-border bg-muted/20"
                               value={displayName}
-                              onChange={(e) => setDisplayName(e.target.value)}
+                              onChange={(e) => setDisplayName(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
                               required 
                             />
                           </div>
@@ -219,9 +235,9 @@ export default function RegisterPage() {
                       </div>
                       <h1 className="text-3xl font-extrabold text-foreground mb-4">You're All Set!</h1>
                       <p className="text-muted-foreground text-lg mb-10 max-w-sm mx-auto">Welcome to CarRentify, <span className="text-primary font-bold">{displayName}</span>. Your journey to luxury starts now.</p>
-                      <Link href="/login" className="w-full max-w-xs mx-auto">
+                      <Link href="/" className="w-full max-w-xs mx-auto">
                         <Button className="w-full h-14 rounded-xl bg-primary hover:bg-black text-white font-bold text-lg shadow-xl shadow-primary/20">
-                          Sign In to Dashboard
+                          Explore Our Fleet
                         </Button>
                       </Link>
                     </motion.div>

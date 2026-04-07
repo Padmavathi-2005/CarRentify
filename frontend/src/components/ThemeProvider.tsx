@@ -12,6 +12,28 @@ type Settings = {
   logoDark: string;
   logoLight: string;
   isAdminPanelEnabled: boolean;
+  emailVerificationEnabled: boolean;
+  heroTitle: string;
+  heroSubtitle: string;
+  heroImageUrl: string;
+  smtpHost: string;
+  smtpPort: string;
+  smtpUser: string;
+  smtpPassword: string;
+  smtpFrom: string;
+  defaultLanguage: string;
+  defaultCurrency: string;
+  defaultTimezone: string;
+  email: string;
+  phone: string;
+  copyright: string;
+  facebook: string;
+  instagram: string;
+  linkedin: string;
+  twitter: string;
+  walletBalance: number;
+  minWithdrawalAmount: number;
+  commissionRate: number;
 };
 
 type SettingsContextType = {
@@ -78,6 +100,28 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
     logoDark: SITE_SETTINGS.branding.logoDark,
     logoLight: SITE_SETTINGS.branding.logoLight,
     isAdminPanelEnabled: SITE_SETTINGS.general.isAdminPanelEnabled,
+    emailVerificationEnabled: (SITE_SETTINGS.general as any).emailVerificationEnabled ?? true,
+    heroTitle: (SITE_SETTINGS as any).general?.heroTitle ?? 'Drive the Future of Elegance.',
+    heroSubtitle: (SITE_SETTINGS as any).general?.heroSubtitle ?? 'Velocity Blue curates an elite fleet of vehicles for those who demand performance and prestige in every journey.',
+    heroImageUrl: (SITE_SETTINGS as any).general?.heroImageUrl ?? '/hero-car-new.png',
+    smtpHost: (SITE_SETTINGS as any).smtp?.host ?? 'smtp.gmail.com',
+    smtpPort: (SITE_SETTINGS as any).smtp?.port ?? '587',
+    smtpUser: (SITE_SETTINGS as any).smtp?.user ?? 'varsha.vasu282003@gmail.com',
+    smtpPassword: (SITE_SETTINGS as any).smtp?.password ?? '',
+    smtpFrom: (SITE_SETTINGS as any).smtp?.from ?? 'varsha.vasu282003@gmail.com',
+    defaultLanguage: (SITE_SETTINGS as any).general?.defaultLanguage ?? 'en',
+    defaultCurrency: (SITE_SETTINGS as any).general?.defaultCurrency ?? 'USD',
+    defaultTimezone: (SITE_SETTINGS as any).general?.defaultTimezone ?? 'America/New_York',
+    email: (SITE_SETTINGS as any).contact?.email ?? 'varsha.vasu282003@gmail.com',
+    phone: (SITE_SETTINGS as any).contact?.phone ?? '+1 555-0000',
+    copyright: (SITE_SETTINGS as any).contact?.copyright ?? '© 2026 CarRentify. All rights reserved.',
+    facebook: (SITE_SETTINGS as any).social?.facebook ?? 'https://facebook.com/carrentify',
+    instagram: (SITE_SETTINGS as any).social?.instagram ?? 'https://instagram.com/carrentify',
+    linkedin: (SITE_SETTINGS as any).social?.linkedin ?? 'https://linkedin.com/company/carrentify',
+    twitter: (SITE_SETTINGS as any).social?.twitter ?? 'https://twitter.com/carrentify',
+    walletBalance: (SITE_SETTINGS as any).financials?.walletBalance ?? 0,
+    minWithdrawalAmount: (SITE_SETTINGS as any).financials?.minWithdrawalAmount ?? 50,
+    commissionRate: (SITE_SETTINGS as any).financials?.commissionRate ?? 15,
   });
   const [loading, setLoading] = useState(true);
 
@@ -143,10 +187,10 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
         body: JSON.stringify(newSettings),
       });
 
-      return true;
+      return response.ok;
     } catch (error) {
-      console.warn('DB Sync not available. Updating local context only.');
-      return true;
+      console.error('DB Sync failed:', error);
+      return false;
     }
   };
 

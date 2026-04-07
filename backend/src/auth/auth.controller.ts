@@ -20,52 +20,81 @@ export class AuthController {
     const name = displayName || `${firstName} ${lastName}`.trim();
 
     // 1. Password Rule: min 6 chars
-    if (password.length < 6) {
+    if (password && password.length < 6) {
       throw new BadRequestException('Password must be at least 6 characters long');
     }
 
-    // 2. Email Validation (Regex)
+    // 2. Email Validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       throw new BadRequestException('Invalid email format');
     }
 
-    // 3. Unique Email Check
-    const exists = await this.userModel.findOne({ email });
-    if (exists) {
-      throw new BadRequestException('Email already in use');
+    // 3. Unique Display Name Check (if provided)
+    if (displayName) {
+      const nameExists = await this.userModel.findOne({ name: displayName, email: { $ne: email } });
+      if (nameExists) {
+        throw new BadRequestException('Display Name is already in use by another user');
+      }
     }
 
-    // 4. Secure Hashing (Bcrypt)
-    const hashedPassword = await bcrypt.hash(password, 12);
-    
-    const user = await this.userModel.create({
-      email,
-      name,
-      phone,
-      password: hashedPassword,
-    });
+    // 4. Find existing or create new
+    let user = await this.userModel.findOne({ email });
+    const hashedPassword = password ? await bcrypt.hash(password, 12) : undefined;
+
+    if (user) {
+      // Update existing user (Sync/Re-registration)
+      const updateData: any = { name, phone };
+      if (hashedPassword) updateData.password = hashedPassword;
+      
+      user = await this.userModel.findOneAndUpdate(
+        { email },
+        { $set: updateData },
+        { new: true }
+      );
+    } else {
+      // Create new user
+      user = await this.userModel.create({
+        email,
+        name,
+        phone,
+        password: hashedPassword,
+      });
+    }
+
+    if (!user) {
+      throw new BadRequestException('Failed to process user account');
+    }
 
     const settings = await this.settingsService.getSettings();
-    if (settings && settings.smtpHost) {
+    if (settings && settings.emailVerificationEnabled) {
       return this.authService.generateOTP(user.email);
     }
 
-    // Auto-login bypassing OTP
     return this.authService.login(user);
   }
 
   @Post('login')
   async login(@Body() body: any) {
     const { email, password } = body;
+
+    // Check if user exists
+    const exists = await this.userModel.findOne({ email });
+    if (!exists) {
+      // Detect as new user for onboarding
+      return { onboarding: true, email }; 
+    }
+
     const user = await this.authService.validateUser(email, password);
+    if (!user) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
     
     const settings = await this.settingsService.getSettings();
-    if (settings && settings.smtpHost) {
+    if (settings && settings.emailVerificationEnabled) {
       return this.authService.generateOTP(user.email);
     }
     
-    // Auto-login bypassing OTP
     return this.authService.login(user);
   }
 
@@ -73,5 +102,15 @@ export class AuthController {
   async verify(@Body() body: any) {
     const { email, code } = body;
     return this.authService.verifyOTP(email, code);
+  }
+
+  @Post('resend-otp')
+  async resend(@Body() body: any) {
+    const { email } = body;
+    const user = await this.userModel.findOne({ email });
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+    return this.authService.generateOTP(email);
   }
 }

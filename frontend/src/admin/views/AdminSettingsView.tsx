@@ -6,7 +6,7 @@ import {
   Palette, Share2, Bell, ShieldCheck,
   Save, RefreshCw, Layout,
   Database, Heart, Users,
-  Link as LinkIcon, Image as ImageIcon, Smile, Upload, X, Check, Droplet, Mail
+  Link as LinkIcon, Image as ImageIcon, Smile, Upload, X, Check, Droplet, Mail, Wallet, DollarSign, Percent
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
@@ -111,9 +111,20 @@ const ColorPickerBox = ({ label, value, onChange }: { label: string, value: stri
 
 export default function AdminSettingsView() {
   const { settings, updateSettings, loading: settingsLoading } = useSettings();
+  const [activeTab, setActiveTab] = useState("general");
   const [formData, setFormData] = useState(settings);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState<string | null>(null);
+
+  useEffect(() => {
+    const savedTab = localStorage.getItem("adminActiveTab");
+    if (savedTab) setActiveTab(savedTab);
+  }, []);
+
+  const handleTabChange = (val: string) => {
+    setActiveTab(val);
+    localStorage.setItem("adminActiveTab", val);
+  };
 
   const [currencies, setCurrencies] = useState<any[]>([]);
   const [languages, setLanguages] = useState<any[]>([]);
@@ -131,7 +142,8 @@ export default function AdminSettingsView() {
     }).catch(err => console.log('Failed to load meta:', err));
   }, []);
 
-  const logoInputRef = useRef<HTMLInputElement>(null);
+  const logoDarkInputRef = useRef<HTMLInputElement>(null);
+  const logoLightInputRef = useRef<HTMLInputElement>(null);
   const faviconInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -142,11 +154,21 @@ export default function AdminSettingsView() {
 
   const handleSave = async () => {
     setSaving(true);
-    await updateSettings(formData);
-    setSaving(false);
+    try {
+      const success = await updateSettings(formData);
+      if (success) {
+        alert("Configuration Synchronized Successfully");
+      } else {
+        alert("Failed to Sync: Database unreachable");
+      }
+    } catch (err) {
+      alert("Critical Error: Connection Refused");
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleFieldChange = (field: string, value: string | boolean) => {
+  const handleFieldChange = (field: string, value: string | boolean | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -181,15 +203,16 @@ export default function AdminSettingsView() {
   return (
     <motion.div {...fadeInUp} className="w-full h-full flex flex-col p-2">
       <div className="bg-white rounded-lg shadow-sm overflow-hidden flex-1 border border-slate-200 flex flex-col">
-        <Tabs defaultValue="general" className="flex flex-col md:flex-row h-full">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="flex flex-col md:flex-row h-full">
           {/* Engineered Modular CSS Sidebar */}
           <TabsList className="admin-sidebar-list">
             <div className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-2 px-2">Settings</div>
             {[
               { id: "general", label: "Site Settings", icon: Layout },
               { id: "social", label: "Social", icon: Share2 },
-              { id: "notifications", label: "Nodes", icon: Bell },
-              { id: "smtp", label: "Email SMTP", icon: Mail },
+              { id: "smtp", label: "Email Settings", icon: Mail },
+              { id: "financials", label: "Financials", icon: Wallet },
+              { id: "listings", label: "Listings", icon: ImageIcon },
             ].map((tab) => {
               const Icon = tab.icon;
               return (
@@ -206,10 +229,7 @@ export default function AdminSettingsView() {
 
           <div className="flex-1 flex flex-col min-w-0">
             {/* Global Control Bar */}
-            <div className="h-14 border-b border-slate-50 px-6 flex items-center justify-between bg-slate-50/20 backdrop-blur-sm sticky top-0 z-30">
-              <div>
-                <h2 className="text-sm font-bold text-slate-500 uppercase tracking-widest leading-none">Autonomous Configuration</h2>
-              </div>
+            <div className="h-14 border-b border-slate-50 px-6 flex items-center justify-end bg-slate-50/20 backdrop-blur-sm sticky top-0 z-30">
               <Button
                 onClick={handleSave}
                 disabled={saving}
@@ -251,12 +271,12 @@ export default function AdminSettingsView() {
                           <>
                             <img src={formData.logoDark} alt="Brand" className="w-full h-full object-contain p-4" />
                             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/asset:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                              <button onClick={() => logoInputRef.current?.click()} className="p-2 bg-white rounded-lg text-primary shadow-lg"><Upload size={14} /></button>
+                              <button onClick={() => logoDarkInputRef.current?.click()} className="p-2 bg-white rounded-lg text-primary shadow-lg"><Upload size={14} /></button>
                               <button onClick={() => handleFieldChange('logoDark', '')} className="p-2 bg-white rounded-lg text-red-500 shadow-lg"><X size={14} /></button>
                             </div>
                           </>
                         ) : (
-                          <button onClick={() => logoInputRef.current?.click()} className="flex flex-col items-center gap-2 text-slate-400 hover:text-primary transition-all">
+                          <button onClick={() => logoDarkInputRef.current?.click()} className="flex flex-col items-center gap-2 text-slate-400 hover:text-primary transition-all">
                             <ImageIcon size={20} />
                             <span className="text-[9px] font-bold uppercase">Upload</span>
                           </button>
@@ -275,7 +295,43 @@ export default function AdminSettingsView() {
                           className="h-10 text-[9px] bg-slate-50 rounded-lg px-4"
                         />
                       </div>
-                      <input type="file" ref={logoInputRef} className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, 'logoDark')} />
+                      <input type="file" ref={logoDarkInputRef} className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, 'logoDark')} />
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 px-1">Logo (Light)</label>
+                    <div className="flex items-center gap-6">
+                      <div className="w-28 h-28 bg-slate-700 rounded-xl border-2 border-dashed border-slate-500 flex flex-col items-center justify-center overflow-hidden relative group/asset transition-all hover:border-white/30">
+                        {formData.logoLight ? (
+                          <>
+                            <img src={formData.logoLight} alt="Brand" className="w-full h-full object-contain p-4" />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/asset:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                              <button onClick={() => logoLightInputRef.current?.click()} className="p-2 bg-white rounded-lg text-primary shadow-lg"><Upload size={14} /></button>
+                              <button onClick={() => handleFieldChange('logoLight', '')} className="p-2 bg-white rounded-lg text-red-500 shadow-lg"><X size={14} /></button>
+                            </div>
+                          </>
+                        ) : (
+                          <button onClick={() => logoLightInputRef.current?.click()} className="flex flex-col items-center gap-2 text-white/40 hover:text-white transition-all">
+                            <ImageIcon size={20} />
+                            <span className="text-[9px] font-bold uppercase">Upload</span>
+                          </button>
+                        )}
+                        {uploading === 'logoLight' && (
+                          <div className="absolute inset-0 bg-slate-800/90 flex items-center justify-center">
+                            <RefreshCw className="animate-spin text-white" size={20} />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <Input
+                          value={formData.logoLight || ""}
+                          placeholder="Path..."
+                          onChange={(e) => handleFieldChange('logoLight', e.target.value)}
+                          className="h-10 text-[9px] bg-slate-50 rounded-lg px-4"
+                        />
+                      </div>
+                      <input type="file" ref={logoLightInputRef} className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, 'logoLight')} />
                     </div>
                   </div>
 
@@ -374,6 +430,33 @@ export default function AdminSettingsView() {
                     onChange={(val) => handleFieldChange('secondaryColor', val)}
                   />
                 </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-slate-50">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 px-1">Support Email</label>
+                    <Input
+                      value={formData.email || ""}
+                      onChange={(e) => handleFieldChange('email', e.target.value)}
+                      className="h-10 rounded-lg bg-slate-50 border border-slate-200 font-bold text-slate-900 px-4 text-sm"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 px-1">Support Phone</label>
+                    <Input
+                      value={formData.phone || ""}
+                      onChange={(e) => handleFieldChange('phone', e.target.value)}
+                      className="h-10 rounded-lg bg-slate-50 border border-slate-200 font-bold text-slate-900 px-4 text-sm"
+                    />
+                  </div>
+                  <div className="md:col-span-2 space-y-2">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 px-1">Copyright Signature</label>
+                    <Input
+                      value={formData.copyright || ""}
+                      onChange={(e) => handleFieldChange('copyright', e.target.value)}
+                      className="h-10 rounded-lg bg-slate-50 border border-slate-200 font-bold text-slate-900 px-4 text-sm"
+                    />
+                  </div>
+                </div>
               </TabsContent>
 
               <TabsContent value="social" className="mt-0 p-6 space-y-6 outline-none">
@@ -397,40 +480,23 @@ export default function AdminSettingsView() {
                 </div>
               </TabsContent>
 
-              <TabsContent value="notifications" className="mt-0 p-6 space-y-6 outline-none">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 px-1">Support Channel (Email)</label>
-                    <Input
-                      value={(formData as any).email || ""}
-                      onChange={(e) => handleFieldChange('email', e.target.value)}
-                      className="h-12 rounded-lg bg-slate-50 border border-slate-200 font-bold text-slate-900 px-6 text-sm"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 px-1">Direct Protocol (Phone)</label>
-                    <Input
-                      value={(formData as any).phone || ""}
-                      onChange={(e) => handleFieldChange('phone', e.target.value)}
-                      className="h-12 rounded-lg bg-slate-50 border border-slate-200 font-bold text-slate-900 px-6 text-sm"
-                    />
-                  </div>
-                  <div className="md:col-span-2 space-y-2">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 px-1">Copyright Signature</label>
-                    <Input
-                      value={(formData as any).copyright || ""}
-                      onChange={(e) => handleFieldChange('copyright', e.target.value)}
-                      className="h-12 rounded-lg bg-slate-50 border border-slate-200 font-bold text-slate-900 px-6 text-sm"
-                    />
-                  </div>
-                </div>
-              </TabsContent>
               <TabsContent value="smtp" className="mt-0 p-6 space-y-6 outline-none">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="md:col-span-2 flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100">
+                    <div>
+                      <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-800">Email Verification</h4>
+                      <p className="text-[9px] text-slate-400 font-medium font-bold uppercase tracking-[0.1em]">Enforce OTP Protocols</p>
+                    </div>
+                    <Switch 
+                      checked={formData.emailVerificationEnabled} 
+                      onCheckedChange={(val) => handleFieldChange('emailVerificationEnabled', val)}
+                    />
+                  </div>
+                  
                   <div className="space-y-2">
                     <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 px-1">SMTP Host</label>
                     <Input
-                      value={(formData as any).smtpHost || ""}
+                      value={formData.smtpHost || ""}
                       placeholder="smtp.example.com"
                       onChange={(e) => handleFieldChange('smtpHost', e.target.value)}
                       className="h-12 rounded-lg bg-slate-50 border border-slate-200 font-bold text-slate-900 px-6 text-sm"
@@ -439,7 +505,7 @@ export default function AdminSettingsView() {
                   <div className="space-y-2">
                     <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 px-1">SMTP Port</label>
                     <Input
-                      value={(formData as any).smtpPort || ""}
+                      value={formData.smtpPort || ""}
                       placeholder="587"
                       onChange={(e) => handleFieldChange('smtpPort', e.target.value)}
                       className="h-12 rounded-lg bg-slate-50 border border-slate-200 font-bold text-slate-900 px-6 text-sm"
@@ -448,7 +514,7 @@ export default function AdminSettingsView() {
                   <div className="space-y-2">
                     <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 px-1">SMTP Username</label>
                     <Input
-                      value={(formData as any).smtpUser || ""}
+                      value={formData.smtpUser || ""}
                       placeholder="user@example.com"
                       onChange={(e) => handleFieldChange('smtpUser', e.target.value)}
                       className="h-12 rounded-lg bg-slate-50 border border-slate-200 font-bold text-slate-900 px-6 text-sm"
@@ -458,7 +524,7 @@ export default function AdminSettingsView() {
                     <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 px-1">SMTP Password</label>
                     <Input
                       type="password"
-                      value={(formData as any).smtpPassword || ""}
+                      value={formData.smtpPassword || ""}
                       placeholder="••••••••"
                       onChange={(e) => handleFieldChange('smtpPassword', e.target.value)}
                       className="h-12 rounded-lg bg-slate-50 border border-slate-200 font-bold text-slate-900 px-6 text-sm"
@@ -467,11 +533,86 @@ export default function AdminSettingsView() {
                   <div className="md:col-span-2 space-y-2">
                     <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 px-1">From Email Address</label>
                     <Input
-                      value={(formData as any).smtpFrom || ""}
+                      value={formData.smtpFrom || ""}
                       placeholder="noreply@carrentify.com"
                       onChange={(e) => handleFieldChange('smtpFrom', e.target.value)}
                       className="h-12 rounded-lg bg-slate-50 border border-slate-200 font-bold text-slate-900 px-6 text-sm"
                     />
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="financials" className="mt-0 p-6 space-y-8 outline-none">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                  <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                    <div className="flex items-center gap-3 mb-4 text-primary">
+                      <Wallet size={18} />
+                      <h3 className="text-sm font-bold uppercase tracking-tight">Platform Balance</h3>
+                    </div>
+                    <div className="relative">
+                       <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                       <Input
+                         type="number"
+                         value={formData.walletBalance}
+                         onChange={(e) => handleFieldChange('walletBalance', parseFloat(e.target.value))}
+                         className="h-12 pl-12 rounded-xl border-slate-200 font-bold text-xl"
+                       />
+                    </div>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase mt-2 px-1 tracking-widest">Global Escrow Wallet</p>
+                  </div>
+
+                  <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                    <div className="flex items-center gap-3 mb-4 text-slate-600">
+                      <Database size={18} />
+                      <h3 className="text-sm font-bold uppercase tracking-tight">Payout Min.</h3>
+                    </div>
+                    <div className="relative">
+                       <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                       <Input
+                         type="number"
+                         value={formData.minWithdrawalAmount}
+                         onChange={(e) => handleFieldChange('minWithdrawalAmount', parseFloat(e.target.value))}
+                         className="h-12 pl-12 rounded-xl border-slate-200 font-bold text-xl"
+                       />
+                    </div>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase mt-2 px-1 tracking-widest">Minimum Withdrawal Threshold</p>
+                  </div>
+
+                  <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                    <div className="flex items-center gap-3 mb-4 text-slate-600">
+                      <Percent size={18} />
+                      <h3 className="text-sm font-bold uppercase tracking-tight">System Fee</h3>
+                    </div>
+                    <div className="relative">
+                       <Input
+                         type="number"
+                         value={formData.commissionRate}
+                         onChange={(e) => handleFieldChange('commissionRate', parseFloat(e.target.value))}
+                         className="h-12 pr-12 rounded-xl border-slate-200 font-bold text-xl text-center"
+                       />
+                       <span className="absolute right-4 top-1/2 -translate-y-1/2 font-bold text-slate-400">%</span>
+                    </div>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase mt-2 px-1 tracking-widest">Platform Commission per Booking</p>
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="listings" className="mt-0 p-6 space-y-8 outline-none">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                    <div className="flex items-center gap-3 mb-4 text-primary">
+                      <ImageIcon size={18} />
+                      <h3 className="text-sm font-bold uppercase tracking-tight">Image Upload Limit</h3>
+                    </div>
+                    <div className="relative">
+                       <Input
+                         type="number"
+                         value={(formData as any).maxImagesPerListing || 5}
+                         onChange={(e) => handleFieldChange('maxImagesPerListing', parseInt(e.target.value) || 1)}
+                         className="h-12 rounded-xl border-slate-200 font-bold text-xl text-center"
+                       />
+                    </div>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase mt-2 px-1 tracking-widest text-center">Max Images per Vehicle Listing</p>
                   </div>
                 </div>
               </TabsContent>

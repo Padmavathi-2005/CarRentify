@@ -14,8 +14,11 @@ export class Setting {
   @Prop({ default: 'CarRentify' })
   siteName: string;
 
-  @Prop({ default: '' })
-  logoUrl: string;
+  @Prop({ default: '/logo.png' })
+  logoDark: string;
+
+  @Prop({ default: '/logo.png' })
+  logoLight: string;
 
   @Prop({ default: true })
   isAdminPanelEnabled: boolean;
@@ -79,6 +82,21 @@ export class Setting {
 
   @Prop({ default: '' })
   twitter: string;
+
+  @Prop({ default: true })
+  emailVerificationEnabled: boolean;
+
+  @Prop({ default: 0 })
+  walletBalance: number;
+
+  @Prop({ default: 50 })
+  minWithdrawalAmount: number;
+
+  @Prop({ default: 15 })
+  commissionRate: number;
+
+  @Prop({ default: 5 })
+  maxImagesPerListing: number;
 }
 
 export const SettingSchema = SchemaFactory.createForClass(Setting);

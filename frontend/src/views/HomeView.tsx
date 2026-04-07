@@ -1,21 +1,21 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { MapPin, Calendar, Heart, Star, ChevronRight, User, ShoppingBag, Menu, Car, Truck, Zap, Mountain, Clock, Quote } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Star, Quote, MapPin, Calendar, ChevronRight, User, ShoppingBag, Menu, Car, Truck, Zap, Mountain, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import CarCard from "@/components/CarCard";
 
+import Link from "next/link";
 import { 
   CARS, 
   DESTINATIONS, 
   TESTIMONIALS, 
-  VEHICLE_TYPES, 
 } from "@/data/mockData";
 
 const accessories = [
@@ -42,6 +42,31 @@ const getSrc = (img: any) => img?.src || img;
 
 export default function Home() {
   const [differentReturn, setDifferentReturn] = useState(false);
+  const [brands, setBrands] = useState<any[]>([]);
+
+  const FALLBACK_BRANDS = [
+    { name: 'Rolls-Royce', logo: 'https://cdn.iconscout.com/icon/free/png-256/free-rolls-royce-8-202758.png' },
+    { name: 'Ferrari', logo: 'https://cdn.iconscout.com/icon/free/png-256/free-ferrari-4-202756.png' },
+    { name: 'Lamborghini', logo: 'https://cdn.iconscout.com/icon/free/png-256/free-lamborghini-3-202754.png' },
+    { name: 'Porsche', logo: 'https://cdn.iconscout.com/icon/free/png-256/free-porsche-12-202755.png' },
+    { name: 'Mercedes-Benz', logo: 'https://cdn.iconscout.com/icon/free/png-256/free-mercedes-benz-4-202753.png' }
+  ];
+
+  useEffect(() => {
+    fetch('http://localhost:3001/brands')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          setBrands(data);
+        } else {
+          setBrands(FALLBACK_BRANDS);
+        }
+      })
+      .catch(err => {
+        console.error("Error fetching brands:", err);
+        setBrands(FALLBACK_BRANDS);
+      });
+  }, []);
 
   return (
     <div className="min-h-screen bg-background font-sans selection:bg-primary selection:text-white">
@@ -51,7 +76,7 @@ export default function Home() {
       <section className="relative pt-20 min-h-screen flex items-center overflow-hidden">
         <div className="absolute inset-0 z-0">
           <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-black/10 z-10" />
-          <img src="/hero-bg.png" alt="Luxury car on highway" className="w-full h-full object-cover object-center" />
+          <img src="https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=2070&auto=format&fit=crop" alt="Luxury car on highway" className="w-full h-full object-cover object-center" />
         </div>
 
         <div className="relative z-20 max-w-7xl mx-auto px-6 w-full py-20 flex flex-col lg:flex-row items-center gap-12">
@@ -189,8 +214,8 @@ export default function Home() {
           className="text-center mb-16"
         >
           <motion.p variants={fadeInUp} className="text-primary font-semibold tracking-wider uppercase text-sm mb-3">Plan your trip</motion.p>
-          <motion.h2 variants={fadeInUp} className="text-4xl font-bold mb-4 text-foreground">Explore Our Vehicles</motion.h2>
-          <motion.p variants={fadeInUp} className="text-muted-foreground max-w-2xl mx-auto">Select your perfect ride from our diverse fleet of premium vehicles.</motion.p>
+          <motion.h2 variants={fadeInUp} className="text-4xl font-bold mb-4 text-foreground">Explore Our Brands</motion.h2>
+          <motion.p variants={fadeInUp} className="text-muted-foreground max-w-2xl mx-auto">Select your perfect ride from our diverse fleet of premium automotive partners.</motion.p>
         </motion.div>
 
         <div className="relative overflow-hidden py-4 w-full">
@@ -202,9 +227,9 @@ export default function Home() {
               }
               .marquee-inner {
                 display: flex;
-                gap: 2.5rem;
+                gap: 5rem;
                 width: max-content;
-                animation: marquee 30s linear infinite;
+                animation: marquee 40s linear infinite;
               }
               .marquee-container:hover .marquee-inner {
                 animation-play-state: paused;
@@ -212,19 +237,26 @@ export default function Home() {
             `}
           </style>
           <div className="marquee-container w-full">
-            <div className="marquee-inner">
-              {[...VEHICLE_TYPES, ...VEHICLE_TYPES, ...VEHICLE_TYPES, ...VEHICLE_TYPES].map((cat, i) => (
+            <div className="marquee-inner pb-6">
+              {brands.length > 0 ? [...brands, ...brands, ...brands].map((brand, i) => (
                 <div
-                  key={`${cat.name}-${i}`}
-                  className="flex flex-col items-center gap-4 cursor-pointer group min-w-[140px] transition-transform hover:scale-105"
-                  data-testid={`category-${cat.name.toLowerCase().replace(/\s+/g, "-")}`}
+                  key={`${brand._id}-${i}`}
+                  className="flex flex-col items-center gap-6 cursor-pointer group min-w-[140px] transition-all hover:-translate-y-2"
                 >
-                  <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all duration-300 shadow-sm group-hover:shadow-md">
-                    <cat.icon className="w-10 h-10 text-primary group-hover:text-white transition-colors" />
+                  <div className="w-16 h-16 transition-all duration-500 transform group-hover:scale-110">
+                    <img 
+                      src={brand.logo} 
+                      alt={brand.name} 
+                      className="w-full h-full object-contain"
+                    />
                   </div>
-                  <span className="font-medium text-foreground/80 group-hover:text-primary transition-colors text-sm">{cat.name}</span>
+                  <span className="font-bold tracking-[0.2em] uppercase text-[10px] text-slate-600 group-hover:text-primary transition-colors">{brand.name}</span>
                 </div>
-              ))}
+              )) : (
+                <div className="py-10 text-center w-full text-muted-foreground opacity-50 font-medium tracking-widest uppercase text-xs">
+                  Loading Elite Brands...
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -233,80 +265,21 @@ export default function Home() {
       {/* Car Listings */}
       <section className="py-24 bg-muted/30 border-y border-border/50">
         <div className="max-w-7xl mx-auto px-6">
-          <Tabs defaultValue="rent" className="w-full">
-            <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
-              <div>
-                <h2 className="text-4xl font-bold mb-4 text-foreground">Featured Fleet</h2>
-                <TabsList className="bg-muted p-1 rounded-full h-12">
-                  <TabsTrigger value="rent" className="rounded-full px-6 text-sm data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm">Available for Rent</TabsTrigger>
-                  <TabsTrigger value="purchase" className="rounded-full px-6 text-sm data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm">Available for Purchase</TabsTrigger>
-                </TabsList>
-              </div>
-              <Button variant="ghost" className="text-primary hover:text-black hover:bg-transparent pr-0">
-                View all vehicles <ChevronRight className="w-4 h-4 ml-1" />
-              </Button>
+          <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
+            <div>
+              <h2 className="text-4xl font-bold mb-4 text-foreground">Featured Fleet</h2>
+              <p className="text-muted-foreground">Premium vehicles available for your next luxury experience.</p>
             </div>
+            <Button variant="ghost" className="text-primary hover:text-black hover:bg-transparent pr-0">
+              View all vehicles <ChevronRight className="w-4 h-4 ml-1" />
+            </Button>
+          </div>
 
-            <TabsContent value="rent" className="mt-0">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {CARS.slice(0, 8).map((car, i) => (
-                  <motion.div
-                    key={car.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: i * 0.1 }}
-                  >
-                    <Card
-                      className="group overflow-hidden rounded-2xl border-border/50 bg-white hover:shadow-xl hover:shadow-primary/5 transition-all duration-500 cursor-pointer h-full flex flex-col"
-                      data-testid={`card-car-${car.id}`}
-                    >
-                      <div className="relative aspect-[4/3] overflow-hidden bg-muted/20">
-                        <img
-                          src={getSrc(car.image)}
-                          alt={car.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                        />
-                        <div className="absolute top-4 left-4 flex flex-col gap-2">
-                          {car.badge && (
-                            <Badge className="bg-primary/90 hover:bg-primary text-white border-none px-3 py-1 shadow-sm">
-                              {car.badge}
-                            </Badge>
-                          )}
-                        </div>
-                        <button className="absolute top-4 right-4 w-8 h-8 bg-white/80 backdrop-blur rounded-full flex items-center justify-center text-muted-foreground hover:text-red-500 transition-colors shadow-sm z-10" data-testid={`button-wishlist-${car.id}`}>
-                          <Heart className="w-4 h-4" />
-                        </button>
-                      </div>
-                      <CardContent className="p-6 flex-1 flex flex-col">
-                        <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">{car.type}</div>
-                        <h3 className="font-bold text-lg text-foreground mb-2 line-clamp-1">{car.name}</h3>
-                        <div className="flex items-center gap-1 mb-4 text-sm text-muted-foreground">
-                          <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                          <span className="font-medium text-foreground">{car.rating}</span>
-                          <span>({car.reviews} reviews)</span>
-                        </div>
-                        <div className="mt-auto pt-4 border-t border-border/50 flex items-center justify-between">
-                          <div>
-                            <span className="text-2xl font-bold text-primary">${car.price}</span>
-                            <span className="text-sm text-muted-foreground">/day</span>
-                          </div>
-                          <Button className="rounded-full bg-primary text-white hover:bg-primary-hover transition-colors h-10 px-5 text-sm font-semibold" data-testid={`button-book-${car.id}`}>
-                            Book
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                ))}
-              </div>
-            </TabsContent>
-            <TabsContent value="purchase">
-              <div className="py-20 text-center text-muted-foreground">
-                <p>Purchase inventory is currently being updated. Please check back later.</p>
-              </div>
-            </TabsContent>
-          </Tabs>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {CARS.slice(0, 8).map((car, i) => (
+                <CarCard key={car.id} car={car} index={i} />
+              ))}
+            </div>
         </div>
       </section>
 
@@ -430,9 +403,11 @@ export default function Home() {
               <p className="text-gray-700 text-sm mb-6 max-w-[220px]">
                 Unlock tools to track, manage, or find a new home for your vehicle with effortless ease and complete security.
               </p>
-              <Button className="bg-primary hover:bg-primary-hover text-white rounded-full px-6 h-11 font-semibold flex items-center gap-2" data-testid="button-vehicle-tools">
-                Get Vehicle Management Tools <ChevronRight className="w-4 h-4" />
-              </Button>
+              <Link href="/dashboard">
+                <Button className="bg-primary hover:bg-primary-hover text-white rounded-full px-6 h-11 font-semibold flex items-center gap-2" data-testid="button-vehicle-tools">
+                  List Your Car <ChevronRight className="w-4 h-4" />
+                </Button>
+              </Link>
             </div>
             <div className="w-[180px] shrink-0">
               <img src="/car-2.png" alt="Manage your car" className="w-full object-contain drop-shadow-xl" />
