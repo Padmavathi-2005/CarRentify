@@ -6,7 +6,13 @@ export type UserDocument = User & Document;
 @Schema({ timestamps: true })
 export class User {
   @Prop({ required: true })
-  name: string;
+  firstName: string;
+
+  @Prop({ required: true })
+  lastName: string;
+
+  @Prop()
+  displayName: string;
 
   @Prop({ required: true, unique: true })
   email: string;
@@ -19,6 +25,30 @@ export class User {
 
   @Prop()
   phone: string;
+
+  @Prop()
+  doorNo: string;
+
+  @Prop()
+  street: string;
+
+  @Prop()
+  city: string;
+
+  @Prop()
+  state: string;
+
+  @Prop()
+  postalCode: string;
+
+  @Prop()
+  address: string;
+
+  @Prop({ type: Number })
+  lat: number;
+
+  @Prop({ type: Number })
+  lon: number;
 
   @Prop()
   profileImage: string;
@@ -39,6 +69,9 @@ export class User {
 
   @Prop({ default: false })
   isEmailVerified: boolean;
+
+  @Prop({ type: [String], default: [] })
+  wishlist: string[];
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

@@ -2,19 +2,52 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { SITE_SETTINGS } from '@/data/mockData';
+import { API_BASE_URL } from '@/config/api';
 
 type Settings = {
   primaryColor: string;
   secondaryColor: string;
   siteName: string;
+  siteDescription: string;
   siteUrl: string;
   favicon: string;
   logoDark: string;
   logoLight: string;
   isAdminPanelEnabled: boolean;
   emailVerificationEnabled: boolean;
-  heroTitle: string;
-  heroSubtitle: string;
+  heroTranslations: Record<string, { 
+    title: string; 
+    subtitle: string; 
+    brandsTitle?: string; 
+    brandsSubtitle?: string; 
+    brandsDescription?: string;
+    featuredTitle?: string;
+    featuredSubtitle?: string;
+    testimonialsTitle?: string;
+    testimonialsSubtitle?: string;
+    testimonialsDescription?: string;
+    destinationsTitle?: string;
+    destinationsSubtitle?: string;
+    ctaTitleRenter?: string;
+    ctaSubtitleRenter?: string;
+    ctaButtonRenter?: string;
+    ctaTitleHost?: string;
+    ctaSubtitleHost?: string;
+    ctaButtonHost?: string;
+    locationsTitle?: string;
+    locationsSubtitle?: string;
+    locationsButton?: string;
+    enhanceTitle?: string;
+    enhanceSubtitle?: string;
+    appTitle?: string;
+    appSubtitle?: string;
+    appStoreLabel?: string;
+    googlePlayLabel?: string;
+    newsletterTitle?: string;
+    newsletterSubtitle?: string;
+    heroStats?: { value: string, label: string }[];
+    navLabels?: Record<string, string>;
+  }>;
   heroImageUrl: string;
   smtpHost: string;
   smtpPort: string;
@@ -27,13 +60,29 @@ type Settings = {
   email: string;
   phone: string;
   copyright: string;
-  facebook: string;
-  instagram: string;
-  linkedin: string;
-  twitter: string;
+  socialLinks: { id: string; icon: string; url: string }[];
   walletBalance: number;
   minWithdrawalAmount: number;
   commissionRate: number;
+  maxImagesPerListing: number;
+  headerNavLinks: { label: string; url: string; target?: string }[];
+  footerLinks: { label: string; url: string; target?: string }[];
+  showHeroSection: boolean;
+  showFeaturedCars: boolean;
+  showTestimonials: boolean;
+  showBrandsSection: boolean;
+  showDestinationsSection: boolean;
+  showCTASection: boolean;
+  showLocationsSection: boolean;
+  showEnhanceSection: boolean;
+  showAppSection: boolean;
+  showNewsletter: boolean;
+  ctaImageRenter: string;
+  ctaImageHost: string;
+  enhanceImage: string;
+  appImage: string;
+  appStoreLink: string;
+  googlePlayLink: string;
 };
 
 type SettingsContextType = {
@@ -95,14 +144,14 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
     primaryColor: SITE_SETTINGS.branding.primaryColor,
     secondaryColor: SITE_SETTINGS.branding.secondaryColor,
     siteName: SITE_SETTINGS.general.siteName,
+    siteDescription: (SITE_SETTINGS.general as any).siteDescription ?? 'Experience the pinnacle of luxury car rentals. Unmatched performance, elegance, and dedicated service on every journey.',
     siteUrl: SITE_SETTINGS.general.siteUrl,
     favicon: SITE_SETTINGS.general.favicon,
     logoDark: SITE_SETTINGS.branding.logoDark,
     logoLight: SITE_SETTINGS.branding.logoLight,
     isAdminPanelEnabled: SITE_SETTINGS.general.isAdminPanelEnabled,
     emailVerificationEnabled: (SITE_SETTINGS.general as any).emailVerificationEnabled ?? true,
-    heroTitle: (SITE_SETTINGS as any).general?.heroTitle ?? 'Drive the Future of Elegance.',
-    heroSubtitle: (SITE_SETTINGS as any).general?.heroSubtitle ?? 'Velocity Blue curates an elite fleet of vehicles for those who demand performance and prestige in every journey.',
+    heroTranslations: (SITE_SETTINGS as any).general?.heroTranslations ?? { en: { title: 'Drive the Future of Elegance.', subtitle: 'Velocity Blue curates an elite fleet of vehicles for those who demand performance and prestige in every journey.' } },
     heroImageUrl: (SITE_SETTINGS as any).general?.heroImageUrl ?? '/hero-car-new.png',
     smtpHost: (SITE_SETTINGS as any).smtp?.host ?? 'smtp.gmail.com',
     smtpPort: (SITE_SETTINGS as any).smtp?.port ?? '587',
@@ -115,13 +164,29 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
     email: (SITE_SETTINGS as any).contact?.email ?? 'varsha.vasu282003@gmail.com',
     phone: (SITE_SETTINGS as any).contact?.phone ?? '+1 555-0000',
     copyright: (SITE_SETTINGS as any).contact?.copyright ?? '© 2026 CarRentify. All rights reserved.',
-    facebook: (SITE_SETTINGS as any).social?.facebook ?? 'https://facebook.com/carrentify',
-    instagram: (SITE_SETTINGS as any).social?.instagram ?? 'https://instagram.com/carrentify',
-    linkedin: (SITE_SETTINGS as any).social?.linkedin ?? 'https://linkedin.com/company/carrentify',
-    twitter: (SITE_SETTINGS as any).social?.twitter ?? 'https://twitter.com/carrentify',
+    socialLinks: (SITE_SETTINGS as any).social?.socialLinks ?? [],
     walletBalance: (SITE_SETTINGS as any).financials?.walletBalance ?? 0,
     minWithdrawalAmount: (SITE_SETTINGS as any).financials?.minWithdrawalAmount ?? 50,
     commissionRate: (SITE_SETTINGS as any).financials?.commissionRate ?? 15,
+    maxImagesPerListing: (SITE_SETTINGS as any).listings?.maxImagesPerListing ?? 5,
+    headerNavLinks: (SITE_SETTINGS as any).frontend?.headerNavLinks ?? [],
+    footerLinks: (SITE_SETTINGS as any).frontend?.footerLinks ?? [],
+    showHeroSection: (SITE_SETTINGS as any).frontend?.showHeroSection ?? true,
+    showFeaturedCars: (SITE_SETTINGS as any).frontend?.showFeaturedCars ?? true,
+    showTestimonials: (SITE_SETTINGS as any).frontend?.showTestimonials ?? true,
+    showBrandsSection: (SITE_SETTINGS as any).frontend?.showBrandsSection ?? true,
+    showDestinationsSection: (SITE_SETTINGS as any).frontend?.showDestinationsSection ?? true,
+    showCTASection: (SITE_SETTINGS as any).frontend?.showCTASection ?? true,
+    showLocationsSection: (SITE_SETTINGS as any).frontend?.showLocationsSection ?? true,
+    ctaImageRenter: (SITE_SETTINGS as any).frontend?.ctaImageRenter ?? '/car-5.png',
+    ctaImageHost: (SITE_SETTINGS as any).frontend?.ctaImageHost ?? '/car-2.png',
+    showEnhanceSection: (SITE_SETTINGS as any).frontend?.showEnhanceSection ?? true,
+    showAppSection: (SITE_SETTINGS as any).frontend?.showAppSection ?? true,
+    showNewsletter: (SITE_SETTINGS as any).frontend?.showNewsletter ?? true,
+    enhanceImage: (SITE_SETTINGS as any).frontend?.enhanceImage ?? '/enhance.png',
+    appImage: (SITE_SETTINGS as any).frontend?.appImage ?? '/app-mockup.png',
+    appStoreLink: (SITE_SETTINGS as any).frontend?.appStoreLink ?? 'https://apple.com/app-store',
+    googlePlayLink: (SITE_SETTINGS as any).frontend?.googlePlayLink ?? 'https://play.google.com/store',
   });
   const [loading, setLoading] = useState(true);
 
@@ -151,7 +216,7 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
     const fetchSettings = async () => {
       try {
         // Try real DB first
-        const response = await fetch('http://localhost:3001/settings');
+        const response = await fetch(`${API_BASE_URL}/settings`);
         if (response.ok) {
           const data = await response.json();
           const merged = { ...settings, ...data };
@@ -181,7 +246,7 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
       applySettings(updated);
 
       // Simulate API call to DB
-      const response = await fetch('http://localhost:3001/settings', {
+      const response = await fetch(`${API_BASE_URL}/settings`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newSettings),

@@ -1,19 +1,25 @@
-'use client';
+"use client";
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { authService } from '@/services/authService';
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { authService } from "@/services/authService";
 
 interface User {
   id: string;
   email: string;
+  name?: string;
   displayName?: string;
   firstName?: string;
   lastName?: string;
   profileImage?: string | null;
+  wishlist?: string[];
 }
+
+export type UserType = "host" | "renter";
 
 interface AuthContextType {
   user: User | null;
+  userType: UserType;
+  setUserType: (type: UserType) => void;
   loading: boolean;
   login: (email: string, password: string) => Promise<any>;
   verifyOtp: (email: string, code: string) => Promise<any>;
@@ -24,26 +30,37 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth must be used within AuthProvider');
+  if (!context) throw new Error("useAuth must be used within AuthProvider");
   return context;
 };
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [userType, setUserType] = useState<UserType>("renter");
   const [loading, setLoading] = useState(true);
 
+  // Sync with LocalStorage on mount
   useEffect(() => {
+    const savedType = localStorage.getItem("carrentify_user_type") as UserType;
+    if (savedType === "host" || savedType === "renter") {
+      setUserType(savedType);
+    }
+    
     const initAuth = async () => {
       const token = authService.getToken();
       if (token) {
         const userData = authService.getCurrentUser();
-        // Here you would typically also verify the token with the backend
         setUser(userData);
       }
       setLoading(false);
     };
     initAuth();
   }, []);
+
+  const handleSetUserType = (type: UserType) => {
+    setUserType(type);
+    localStorage.setItem("carrentify_user_type", type);
+  };
 
   const login = async (email: string, password: string) => {
     const data = await authService.login(email, password);
@@ -66,7 +83,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, verifyOtp, logout }}>
+    <AuthContext.Provider 
+      value={{ 
+        user, 
+        userType, 
+        setUserType: handleSetUserType, 
+        loading, 
+        login, 
+        verifyOtp, 
+        logout 
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

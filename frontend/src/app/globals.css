@@ -86,6 +86,7 @@ body {
   scroll-behavior: smooth;
 }
 
+
 .premium-glass {
   background: var(--glass);
   backdrop-filter: blur(12px);

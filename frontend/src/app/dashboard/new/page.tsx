@@ -5,6 +5,7 @@ import { PlusCircle, Upload, X, Check, Save, Sparkles, ChevronLeft, LayoutGrid, 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useSettings } from "@/components/ThemeProvider";
+import { API_BASE_URL } from "@/config/api";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -29,7 +30,7 @@ export default function AddCarView() {
   const maxImages = settings?.maxImagesPerListing || 5;
 
   useEffect(() => {
-    fetch('http://localhost:3001/brands')
+    fetch(`${API_BASE_URL}/brands`)
       .then(res => res.json())
       .then(data => setBrands(Array.isArray(data) ? data : []))
       .catch(err => console.log('Failed to fetch brands:', err));
@@ -170,7 +171,7 @@ export default function AddCarView() {
                       <button 
                         type="button"
                         onClick={() => removeImage(idx)}
-                        className="absolute top-2 right-2 w-7 h-7 bg-white/90 backdrop-blur rounded-full flex items-center justify-center text-red-500 shadow-lg scale-0 group-hover:scale-100 transition-transform"
+                        className="absolute top-2 right-2 w-7 h-7 bg-white/90 rounded-full flex items-center justify-center text-red-500 shadow-lg scale-0 group-hover:scale-100 transition-transform"
                       >
                          <X size={14} />
                       </button>

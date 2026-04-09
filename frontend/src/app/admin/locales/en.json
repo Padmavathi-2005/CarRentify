@@ -1,0 +1,162 @@
+{
+  "sidebar": {
+    "dashboard": "Dashboard",
+    "users": "Users",
+    "fleet": "Fleet",
+    "brands": "Brands",
+    "staticPages": "Static Pages",
+    "currencies": "Currencies",
+    "languages": "Languages",
+    "settings": "Settings",
+    "signOut": "Sign Out"
+  },
+  "header": {
+    "infrastructureControl": "Infrastructure Control",
+    "masterPrincipal": "Master System Principal",
+    "translateProfile": "Translate Profile",
+    "active": "Active",
+    "masterAuthority": "Master Authority"
+  },
+  "dashboard": {
+    "totalRevenue": "Total Revenue",
+    "activeUsers": "Active Users",
+    "fleetStatus": "Fleet Status",
+    "recentActivity": "Recent Activity"
+  },
+  "users": {
+    "title": "User Governance",
+    "desc": "Manage platform participants, roles, and access controls.",
+    "addUser": "Add User",
+    "editUser": "Edit Identity",
+    "table": {
+      "user": "User",
+      "email": "Email",
+      "role": "Role",
+      "status": "Status",
+      "joined": "Joined",
+      "contact": "Contact",
+      "location": "Address",
+      "actions": "Actions"
+    }
+  },
+  "staticPages": {
+    "title": "Static Pages",
+    "desc": "Manage platform informational content.",
+    "addPage": "Add New Page",
+    "save": "Save Page",
+    "placeholder": "e.g. Terms of Service",
+    "table": {
+      "titleSlug": "Page Title & Slug",
+      "visibility": "Visibility",
+      "createdAt": "Created At",
+      "status": "Status",
+      "actions": "Actions"
+    }
+  },
+  "currencies": {
+    "title": "Currencies",
+    "desc": "Manage global monetary units.",
+    "add": "Add Currency",
+    "save": "Save Currency",
+    "table": {
+      "unit": "Monetary Unit",
+      "code": "ISO Code",
+      "symbol": "Symbol"
+    }
+  },
+  "languages": {
+    "title": "Languages",
+    "desc": "Manage platform localization hubs.",
+    "add": "Add Language",
+    "save": "Save Language",
+    "modalTitle": "Add New Language",
+    "fields": {
+      "name": "Display Name (English)",
+      "native": "Native Name (Localized)",
+      "code": "ISO Code"
+    },
+    "table": {
+      "hub": "Language Hub",
+      "code": "ISO Code",
+      "status": "Platform Status"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "tabs": {
+      "general": "Site Settings",
+      "social": "Social",
+      "smtp": "Email Settings",
+      "financials": "Financials",
+      "listings": "Listings",
+      "frontend": "Frontend Settings",
+      "footer": "Footer Config"
+    },
+    "general": {
+      "name": "Site Name",
+      "url": "Site URL",
+      "logoDark": "Logo (Dark)",
+      "logoLight": "Logo (Light)",
+      "favicon": "Favicon",
+      "defaultLanguage": "Default Language",
+      "defaultCurrency": "Default Currency",
+      "timezone": "Platform Timezone",
+      "primaryColor": "Primary Color",
+      "secondaryColor": "Secondary Hue",
+      "supportEmail": "Support Email",
+      "supportPhone": "Support Phone",
+      "copyright": "Copyright Signature"
+    },
+    "social": {
+      "facebook": "Meta Protocol",
+      "instagram": "Visual Stream",
+      "linkedin": "Pro Network",
+      "twitter": "Signal Stream"
+    },
+    "smtp": {
+      "verification": "Email Verification",
+      "otpDesc": "Enforce OTP Protocols",
+      "host": "SMTP Host",
+      "port": "SMTP Port",
+      "user": "SMTP Username",
+      "pass": "SMTP Password",
+      "from": "From Email Address"
+    },
+    "financials": {
+      "balance": "Platform Balance",
+      "payoutMin": "Payout Min.",
+      "payoutDesc": "Minimum Withdrawal Threshold",
+      "systemFee": "System Fee",
+      "feeDesc": "Platform Commission per Booking"
+    },
+    "listings": {
+      "uploadLimit": "Image Upload Limit",
+      "limitDesc": "Max Images per Vehicle Listing"
+    },
+    "actions": {
+      "save": "Save",
+      "saving": "Syncing...",
+      "success": "Configuration Synchronized Successfully",
+      "dbError": "Failed to Sync: Database unreachable",
+      "error": "Critical Error: Connection Refused"
+    },
+    "frontend": {
+      "title": "Frontend Settings",
+      "heroTitle": "Hero Section Title",
+      "heroSubtitle": "Hero Section Subtitle",
+      "heroImage": "Background Asset",
+      "navLinks": "Header Navigations",
+      "labels": {
+        "showHero": "Hero Display",
+        "showCars": "Featured Fleet",
+        "showTestimonials": "Social Proof"
+      }
+    },
+    "footerTabs": {
+      "newsletter": "Newsletter Banner",
+      "social": "Social Links",
+      "links": "Quick Links",
+      "text": "Copyright & Text"
+    }
+  }
+}

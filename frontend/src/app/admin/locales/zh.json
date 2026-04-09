@@ -1,0 +1,116 @@
+{
+  "sidebar": {
+    "dashboard": "控制面板",
+    "staticPages": "静态页面",
+    "currencies": "货币管理",
+    "languages": "语言设置",
+    "settings": "系统设置",
+    "signOut": "登出账号"
+  },
+  "header": {
+    "infrastructureControl": "基础设施控制",
+    "masterPrincipal": "系统主负责人",
+    "translateProfile": "翻译配置",
+    "active": "激活状态",
+    "masterAuthority": "主管理权限"
+  },
+  "dashboard": {
+    "totalRevenue": "总收入",
+    "activeUsers": "活跃用户",
+    "fleetStatus": "车队状态",
+    "recentActivity": "近期动态"
+  },
+  "staticPages": {
+    "title": "静态页面",
+    "addPage": "新建页面",
+    "table": {
+      "titleSlug": "页面标题与别名",
+      "visibility": "可见性",
+      "createdAt": "创建于",
+      "actions": "操作"
+    }
+  },
+  "currencies": {
+    "title": "货币管理",
+    "add": "添加货币",
+    "table": {
+      "unit": "货币单位",
+      "code": "ISO 代码",
+      "symbol": "符号"
+    }
+  },
+  "languages": {
+    "title": "语言设置",
+    "add": "添加语言",
+    "table": {
+      "name": "语言名称",
+      "code": "ISO 代码",
+      "status": "平台状态"
+    }
+  },
+  "settings": {
+    "title": "系统设置",
+    "tabs": {
+      "general": "站点设置",
+      "social": "社交媒体",
+      "smtp": "邮件配置",
+      "financials": "账务管理",
+      "listings": "房源/车辆列表",
+      "footer": "页脚设置"
+    },
+    "general": {
+      "name": "站点名称",
+      "url": "站点 URL",
+      "logoDark": "标志 (深色)",
+      "logoLight": "标志 (浅色)",
+      "favicon": "网站图标",
+      "defaultLanguage": "默认语言",
+      "defaultCurrency": "默认货币",
+      "timezone": "平台时区",
+      "primaryColor": "主题主色",
+      "secondaryColor": "次要色调",
+      "supportEmail": "客服邮箱",
+      "supportPhone": "客服电话",
+      "copyright": "版权签名"
+    },
+    "social": {
+      "facebook": "Meta 协议",
+      "instagram": "视觉流",
+      "linkedin": "专业网络",
+      "twitter": "信号流"
+    },
+    "smtp": {
+      "verification": "邮件验证",
+      "otpDesc": "强制执行 OTP 协议",
+      "host": "SMTP 托管服务器",
+      "port": "SMTP 端口",
+      "user": "SMTP 用户名",
+      "pass": "SMTP 密码",
+      "from": "发件人邮箱地址"
+    },
+    "financials": {
+      "balance": "平台余额",
+      "payoutMin": "最低取款额",
+      "payoutDesc": "最低提现阈值",
+      "systemFee": "系统费用",
+      "feeDesc": "每笔预订的平台佣金"
+    },
+    "listings": {
+      "uploadLimit": "图片上传限制",
+      "limitDesc": "每辆车列表的最大图片数"
+    },
+    "actions": {
+      "save": "保存",
+      "saving": "同步中...",
+      "success": "配置已成功同步",
+      "dbError": "同步失败：数据库无法连接",
+      "error": "严重错误：连接被拒绝"
+    },
+    "footerTabs": {
+      "newsletter": "通讯横幅",
+      "social": "社交链接",
+      "links": "快速链接",
+      "text": "版权与文本"
+    }
+  }
+}

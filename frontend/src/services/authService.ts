@@ -1,4 +1,6 @@
-const API_BASE_URL = 'http://localhost:3001/auth';
+import { API_BASE_URL as BASE } from '@/config/api';
+
+const API_BASE_URL = `${BASE}/auth`;
 
 export const authService = {
   async login(email: string, password: string) {

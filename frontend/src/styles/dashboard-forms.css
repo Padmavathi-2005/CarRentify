@@ -1,0 +1,52 @@
+/* Generic dashboard form styles */
+
+.dashboard-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%233f147b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1.25rem center;
+  background-size: 1.1rem;
+  padding: 0 1.5rem !important;
+  padding-right: 3.5rem !important;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  border: 2px solid #f1f5f9;
+  border-radius: 1rem;
+  background-color: #f8fafc;
+  color: #0f172a;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  font-size: 0.9rem;
+  cursor: pointer;
+  height: 3.5rem;
+  width: 100%;
+  outline: none;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.dashboard-select:hover {
+  border-color: #3f147b;
+  background-color: #fff;
+  transform: translateY(-1px);
+  box-shadow: 0 10px 15px -3px rgba(63, 20, 123, 0.1);
+}
+
+.dashboard-select:focus {
+  border-color: #3f147b;
+  background-color: #fff;
+  box-shadow: 0 0 0 4px rgba(63, 20, 123, 0.15);
+}
+
+.dashboard-select option {
+  padding: 1.5rem;
+  font-weight: 600;
+  background-color: #fff;
+  color: #0f172a;
+}
+
+/* New High Contrast Placeholder Rule */
+input::placeholder, 
+textarea::placeholder {
+  color: #64748b !important;
+  font-weight: 600 !important;
+  opacity: 0.7 !important;
+}

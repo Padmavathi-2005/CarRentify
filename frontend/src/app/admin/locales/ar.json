@@ -1,0 +1,116 @@
+{
+  "sidebar": {
+    "dashboard": "لوحة القيادة",
+    "staticPages": "الصفحات الثابتة",
+    "currencies": "العملات",
+    "languages": "اللغات",
+    "settings": "الإعدادات",
+    "signOut": "تسجيل الخروج"
+  },
+  "header": {
+    "infrastructureControl": "التحكم في البنية التحتية",
+    "masterPrincipal": "رئيس النظام الرئيسي",
+    "translateProfile": "ترجمة الملف الشخصي",
+    "active": "نشط",
+    "masterAuthority": "السلطة الرئيسية"
+  },
+  "dashboard": {
+    "totalRevenue": "إجمالي الإيرادات",
+    "activeUsers": "المستخدمين النشطين",
+    "fleetStatus": "حالة الأسطول",
+    "recentActivity": "النشاط الأخير"
+  },
+  "staticPages": {
+    "title": "الصفحات الثابتة",
+    "addPage": "إضافة صفحة جديدة",
+    "table": {
+      "titleSlug": "عنوان الصفحة والاسم اللطيف",
+      "visibility": "الرؤية",
+      "createdAt": "أنشئت في",
+      "actions": "الإجراءات"
+    }
+  },
+  "currencies": {
+    "title": "العملات",
+    "add": "إضافة عملة",
+    "table": {
+      "unit": "الوحدة النقدية",
+      "code": "رمز ISO",
+      "symbol": "الرمز"
+    }
+  },
+  "languages": {
+    "title": "اللغات",
+    "add": "إضافة لغة",
+    "table": {
+      "name": "اسم اللغة",
+      "code": "رمز ISO",
+      "status": "حالة المنصة"
+    }
+  },
+  "settings": {
+    "title": "الإعدادات",
+    "tabs": {
+      "general": "إعدادات الموقع",
+      "social": "التواصل الاجتماعي",
+      "smtp": "إعدادات البريد الإلكتروني",
+      "financials": "المالية",
+      "listings": "القوائم",
+      "footer": "إعدادات التذييل"
+    },
+    "general": {
+      "name": "اسم الموقع",
+      "url": "رابط الموقع",
+      "logoDark": "الشعار (داكن)",
+      "logoLight": "الشعار (فاتح)",
+      "favicon": "رمز الموقع",
+      "defaultLanguage": "اللغة الافتراضية",
+      "defaultCurrency": "العملة الافتراضية",
+      "timezone": "المنطقة الزمنية للمنصة",
+      "primaryColor": "اللون الأساسي",
+      "secondaryColor": "اللون الثانوي",
+      "supportEmail": "بريد الدعم",
+      "supportPhone": "هاتف الدعم",
+      "copyright": "حقوق الطبع والنشر"
+    },
+    "social": {
+      "facebook": "بروتوكول ميتا",
+      "instagram": "البث المرئي",
+      "linkedin": "الشبكة المهنية",
+      "twitter": "بث الإشارة"
+    },
+    "smtp": {
+      "verification": "التحقق من البريد الإلكتروني",
+      "otpDesc": "فرض بروتوكولات كلمة المرور لمرة واحدة",
+      "host": "مضيف SMTP",
+      "port": "منفذ SMTP",
+      "user": "اسم مستخدم SMTP",
+      "pass": "كلمة مرور SMTP",
+      "from": "عنوان البريد المرسل"
+    },
+    "financials": {
+      "balance": "رصيد المنصة",
+      "payoutMin": "الحد الأدنى للدفع",
+      "payoutDesc": "الحد الأدنى لسحب الأموال",
+      "systemFee": "رسوم النظام",
+      "feeDesc": "عمولة المنصة لكل حجز"
+    },
+    "listings": {
+      "uploadLimit": "حد تحميل الصور",
+      "limitDesc": "الحد الأقصى للصور لكل قائمة مركبة"
+    },
+    "actions": {
+      "save": "حفظ",
+      "saving": "مزامنة...",
+      "success": "تم مزامنة التكوين بنجاح",
+      "dbError": "فشل المزامنة: لا يمكن الوصول إلى قاعدة البيانات",
+      "error": "خطأ فادح: تم رفض الاتصال"
+    },
+    "footerTabs": {
+      "newsletter": "بانر النشرة الإخبارية",
+      "social": "الروابط الاجتماعية",
+      "links": "روابط سريعة",
+      "text": "حقوق النشر"
+    }
+  }
+}

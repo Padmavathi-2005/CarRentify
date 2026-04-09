@@ -1,0 +1,109 @@
+{
+  "sidebar": {
+    "dashboard": "डैशबोर्ड",
+    "staticPages": "स्थिर पृष्ठ",
+    "currencies": "मुद्राएं",
+    "languages": "भाषाएं",
+    "settings": "सेटिंग्स",
+    "signOut": "साइन आउट"
+  },
+  "header": {
+    "infrastructureControl": "इन्फ्रास्ट्रक्चर नियंत्रण",
+    "masterPrincipal": "मास्टर सिस्टम प्रिंसिपल",
+    "translateProfile": "प्रोफ़ाइल अनुवाद",
+    "active": "सक्रिय",
+    "masterAuthority": "मास्टर अथॉरिटी"
+  },
+  "dashboard": {
+    "totalRevenue": "कुल राजस्व",
+    "activeUsers": "सक्रिय उपयोगकर्ता",
+    "fleetStatus": "फ्लीट स्थिति",
+    "recentActivity": "हाल की गतिविधि"
+  },
+  "staticPages": {
+    "title": "स्थिर पृष्ठ",
+    "addPage": "नया पृष्ठ जोड़ें",
+    "table": {
+      "titleSlug": "पृष्ठ शीर्षक और स्लग",
+      "visibility": "दृश्यता",
+      "createdAt": "इस पर बनाया गया",
+      "actions": "कार्रवाई"
+    }
+  },
+  "currencies": {
+    "title": "मुद्राएं",
+    "add": "मुद्रा जोड़ें",
+    "table": {
+      "unit": "मौद्रिक इकाई",
+      "code": "ISO कोड",
+      "symbol": "प्रतीक"
+    }
+  },
+  "languages": {
+    "title": "भाषाएं",
+    "add": "भाषा जोड़ें",
+    "table": {
+      "name": "भाषा का नाम",
+      "code": "ISO कोड",
+      "status": "प्लेटफॉर्म स्थिति"
+    }
+  },
+  "settings": {
+    "title": "सेटिंग्स",
+    "tabs": {
+      "general": "साइट सेटिंग्स",
+      "social": "सोशल मीडिया",
+      "smtp": "ईमेल सेटिंग्स",
+      "financials": "वित्तीय",
+      "listings": "लिस्टिंग"
+    },
+    "general": {
+      "name": "साइट का नाम",
+      "url": "साइट का URL",
+      "logoDark": "लोगो (डार्क)",
+      "logoLight": "लोगो (लाइट)",
+      "favicon": "फेविकॉन",
+      "defaultLanguage": "डिफ़ॉल्ट भाषा",
+      "defaultCurrency": "डिफ़ॉल्ट मुद्रा",
+      "timezone": "प्लेटफॉर्म टाइमज़ोन",
+      "primaryColor": "मुख्य रंग",
+      "secondaryColor": "माध्यमिक रंग",
+      "supportEmail": "सहायता ईमेल",
+      "supportPhone": "सहायता फोन",
+      "copyright": "कॉपीराइट हस्ताक्षर"
+    },
+    "social": {
+      "facebook": "मेटा प्रोटोकॉल",
+      "instagram": "विजुअल स्ट्रीम",
+      "linkedin": "प्रो नेटवर्क",
+      "twitter": "सिग्नल स्ट्रीम"
+    },
+    "smtp": {
+      "verification": "ईमेल सत्यापन",
+      "otpDesc": "OTP प्रोटोकॉल लागू करें",
+      "host": "SMTP होस्ट",
+      "port": "SMTP पोर्ट",
+      "user": "SMTP उपयोगकर्ता नाम",
+      "pass": "SMTP पासवर्ड",
+      "from": "प्रेषक ईमेल पता"
+    },
+    "financials": {
+      "balance": "प्लेटफॉर्म बैलेंस",
+      "payoutMin": "न्यूनतम भुगतान",
+      "payoutDesc": "न्यूनतम निकासी सीमा",
+      "systemFee": "सिस्टम शुल्क",
+      "feeDesc": "प्रति बुकिंग प्लेटफॉर्म कमीशन"
+    },
+    "listings": {
+      "uploadLimit": "इमेज अपलोड सीमा",
+      "limitDesc": "प्रति वाहन लिस्टिंग अधिकतम इमेज"
+    },
+    "actions": {
+      "save": "सहेजें",
+      "saving": "सिंक हो रहा है...",
+      "success": "कॉन्फ़िगरेशन सफलतापूर्वक सिंक किया गया",
+      "dbError": "सिंक करने में विफल: डेटाबेस अप्राप्य",
+      "error": "गंभीर त्रुटि: कनेक्शन अस्वीकार कर दिया गया"
+    }
+  }
+}

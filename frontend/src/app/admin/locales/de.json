@@ -1,0 +1,109 @@
+{
+  "sidebar": {
+    "dashboard": "Dashboard",
+    "staticPages": "Statische Seiten",
+    "currencies": "Währungen",
+    "languages": "Sprachen",
+    "settings": "Einstellungen",
+    "signOut": "Abmelden"
+  },
+  "header": {
+    "infrastructureControl": "Infrastrukturkontrolle",
+    "masterPrincipal": "Master-System-Prinzipal",
+    "translateProfile": "Profil übersetzen",
+    "active": "Aktiv",
+    "masterAuthority": "Master-Autorität"
+  },
+  "dashboard": {
+    "totalRevenue": "Gesamtumsatz",
+    "activeUsers": "Aktive Nutzer",
+    "fleetStatus": "Fuhrparkstatus",
+    "recentActivity": "Letzte Aktivitäten"
+  },
+  "staticPages": {
+    "title": "Statische Seiten",
+    "addPage": "Neue Seite hinzufügen",
+    "table": {
+      "titleSlug": "Seitentitel & Slug",
+      "visibility": "Sichtbarkeit",
+      "createdAt": "Erstellt am",
+      "actions": "Aktionen"
+    }
+  },
+  "currencies": {
+    "title": "Währungen",
+    "add": "Währung hinzufügen",
+    "table": {
+      "unit": "Währungseinheit",
+      "code": "ISO-Code",
+      "symbol": "Symbol"
+    }
+  },
+  "languages": {
+    "title": "Sprachen",
+    "add": "Sprache hinzufügen",
+    "table": {
+      "name": "Sprachname",
+      "code": "ISO-Code",
+      "status": "Plattformstatus"
+    }
+  },
+  "settings": {
+    "title": "Einstellungen",
+    "tabs": {
+      "general": "Website-Einstellungen",
+      "social": "Soziale Medien",
+      "smtp": "E-Mail-Einstellungen",
+      "financials": "Finanzen",
+      "listings": "Angebote"
+    },
+    "general": {
+      "name": "Website-Name",
+      "url": "Website-URL",
+      "logoDark": "Logo (Dunkel)",
+      "logoLight": "Logo (Hell)",
+      "favicon": "Favicon",
+      "defaultLanguage": "Standardsprache",
+      "defaultCurrency": "Standardwährung",
+      "timezone": "Plattform-Zeitzone",
+      "primaryColor": "Primärfarbe",
+      "secondaryColor": "Sekundärfarbton",
+      "supportEmail": "Support-E-Mail",
+      "supportPhone": "Support-Telefon",
+      "copyright": "Copyright-Signatur"
+    },
+    "social": {
+      "facebook": "Meta-Protokoll",
+      "instagram": "Visual Stream",
+      "linkedin": "Pro Network",
+      "twitter": "Signal Stream"
+    },
+    "smtp": {
+      "verification": "E-Mail-Verifizierung",
+      "otpDesc": "OTP-Protokolle erzwingen",
+      "host": "SMTP-Host",
+      "port": "SMTP-Port",
+      "user": "SMTP-Benutzername",
+      "pass": "SMTP-Passwort",
+      "from": "Absender-E-Mail-Adresse"
+    },
+    "financials": {
+      "balance": "Plattform-Guthaben",
+      "payoutMin": "Min. Auszahlung",
+      "payoutDesc": "Mindestauszahlungsschwelle",
+      "systemFee": "Systemgebühr",
+      "feeDesc": "Plattformprovision pro Buchung"
+    },
+    "listings": {
+      "uploadLimit": "Bild-Upload-Limit",
+      "limitDesc": "Max. Bilder pro Fahrzeugangebot"
+    },
+    "actions": {
+      "save": "Speichern",
+      "saving": "Synchronisierung...",
+      "success": "Konfiguration erfolgreich synchronisiert",
+      "dbError": "Fehler bei der Synchronisierung: Datenbank nicht erreichbar",
+      "error": "Kritischer Fehler: Verbindung abgelehnt"
+    }
+  }
+}

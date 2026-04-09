@@ -8,6 +8,12 @@ import { AdminModule } from './admin/admin.module';
 import { SettingsModule } from './settings/settings.module';
 import { AuthModule } from './auth/auth.module';
 import { BrandsModule } from './brands/brands.module';
+import { PagesModule } from './pages/pages.module';
+import { CurrenciesModule } from './currencies/currencies.module';
+import { LanguagesModule } from './languages/languages.module';
+import { UsersModule } from './users/users.module';
+import { ReviewsModule } from './reviews/reviews.module';
+import { NewsletterModule } from './newsletter/newsletter.module';
 
 @Module({
   imports: [
@@ -15,13 +21,17 @@ import { BrandsModule } from './brands/brands.module';
     MongooseModule.forRoot(
       process.env.MONGODB_URI ?? 'mongodb://localhost:27017/CarRentify',
     ),
-    // Serving standard assets. Branding identity is now integrated into the DB as Base64 strings,
-    // ensuring zero-dependency deployments and total asset portability.
     CarsModule,
     AdminModule,
     SettingsModule,
     AuthModule,
     BrandsModule,
+    PagesModule,
+    CurrenciesModule,
+    LanguagesModule,
+    UsersModule,
+    ReviewsModule,
+    NewsletterModule,
   ],
   controllers: [AppController],
   providers: [AppService],

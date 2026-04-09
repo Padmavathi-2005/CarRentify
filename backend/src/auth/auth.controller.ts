@@ -32,7 +32,7 @@ export class AuthController {
 
     // 3. Unique Display Name Check (if provided)
     if (displayName) {
-      const nameExists = await this.userModel.findOne({ name: displayName, email: { $ne: email } });
+      const nameExists = await this.userModel.findOne({ displayName: displayName, email: { $ne: email } });
       if (nameExists) {
         throw new BadRequestException('Display Name is already in use by another user');
       }
@@ -44,7 +44,10 @@ export class AuthController {
 
     if (user) {
       // Update existing user (Sync/Re-registration)
-      const updateData: any = { name, phone };
+      const updateData: any = { phone };
+      if (firstName) updateData.firstName = firstName;
+      if (lastName) updateData.lastName = lastName;
+      if (displayName) updateData.displayName = displayName;
       if (hashedPassword) updateData.password = hashedPassword;
       
       user = await this.userModel.findOneAndUpdate(
@@ -56,7 +59,9 @@ export class AuthController {
       // Create new user
       user = await this.userModel.create({
         email,
-        name,
+        firstName: firstName || displayName || 'Guest',
+        lastName: lastName || '',
+        displayName: displayName || `${firstName} ${lastName}`.trim() || 'Guest',
         phone,
         password: hashedPassword,
       });

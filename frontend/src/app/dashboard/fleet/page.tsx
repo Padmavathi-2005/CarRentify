@@ -32,7 +32,7 @@ export default function VendorFleetPage() {
   }, []);
 
   return (
-    <div className="space-y-10 animate-fade-in">
+    <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Your Fleet</h1>
@@ -47,7 +47,7 @@ export default function VendorFleetPage() {
       </div>
 
       {/* Filters Area */}
-      <div className="flex flex-col lg:flex-row gap-4 items-center bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100">
+      <div className="flex flex-col lg:flex-row gap-4 items-center bg-white p-4 rounded-3xl shadow-sm border border-slate-100">
          <div className="relative flex-1 w-full">
             <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
             <Input 
@@ -65,7 +65,7 @@ export default function VendorFleetPage() {
       </div>
 
       {/* Fleet Table */}
-      <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden">
+      <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
         {loading ? (
           <div className="p-20 text-center">
              <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin mx-auto mb-4" />
@@ -75,8 +75,7 @@ export default function VendorFleetPage() {
           <table className="w-full text-left">
             <thead>
               <tr className="border-b border-slate-50 bg-slate-50/50">
-                <th className="px-8 py-6 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Vehicle Name</th>
-                <th className="px-8 py-6 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Brand</th>
+                <th className="px-8 py-6 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Vehicle Details</th>
                 <th className="px-8 py-6 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Status</th>
                 <th className="px-8 py-6 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Price</th>
                 <th className="px-8 py-6 text-[10px] font-bold text-slate-400 uppercase tracking-widest">License Plate</th>
@@ -87,14 +86,16 @@ export default function VendorFleetPage() {
               {fleet.map((car) => (
                 <tr key={car.id} className="border-b border-slate-50 hover:bg-slate-50/30 transition-colors group">
                   <td className="px-8 py-6">
-                    <div className="flex items-center gap-4">
-                       <div className="w-14 h-14 rounded-2xl overflow-hidden bg-slate-100 border border-slate-50 shadow-sm">
-                          <img src={car.image} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                    <div className="flex items-center gap-5">
+                       <div className="w-16 h-16 shrink-0 rounded-2xl overflow-hidden bg-slate-100 border-2 border-white shadow-md">
+                          <img src={car.image} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                        </div>
-                       <span className="text-sm font-black text-slate-900">{car.name}</span>
+                       <div className="flex flex-col gap-0.5">
+                          <span className="text-sm font-black text-slate-900 leading-tight">{car.name}</span>
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{car.brand}</span>
+                       </div>
                     </div>
                   </td>
-                  <td className="px-8 py-6 text-sm font-bold text-slate-500">{car.brand}</td>
                   <td className="px-8 py-6">
                      <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest ${
                        car.status === "Available" ? "bg-emerald-50 text-emerald-600" : "bg-blue-50 text-blue-600"
@@ -105,14 +106,14 @@ export default function VendorFleetPage() {
                   <td className="px-8 py-6 text-sm font-black text-primary">{car.price}<span className="text-[10px] text-slate-400 ml-1">/day</span></td>
                   <td className="px-8 py-6 text-xs font-bold text-slate-400 tracking-widest font-mono">{car.plate}</td>
                   <td className="px-8 py-6 text-right">
-                     <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button size="icon" variant="ghost" className="w-10 h-10 rounded-xl text-slate-400 hover:text-primary hover:bg-primary/5" title="Edit Listing">
+                     <div className="flex items-center justify-end gap-3 transition-opacity">
+                        <Button size="icon" variant="ghost" className="w-10 h-10 border border-slate-100 rounded-2xl text-slate-400 hover:text-primary hover:bg-primary/5 hover:border-primary/20 shadow-sm" title="Edit Listing">
                            <Edit3 size={18} />
                         </Button>
-                        <Button size="icon" variant="ghost" className="w-10 h-10 rounded-xl text-slate-400 hover:text-red-500 hover:bg-red-50" title="Delete Listing">
+                        <Button size="icon" variant="ghost" className="w-10 h-10 border border-slate-100 rounded-2xl text-slate-400 hover:text-rose-500 hover:bg-rose-50 hover:border-rose-100 shadow-sm" title="Delete Listing">
                            <Trash2 size={18} />
                         </Button>
-                        <Button size="icon" variant="ghost" className="w-10 h-10 rounded-xl text-slate-400 hover:text-blue-500 hover:bg-blue-50" title="View Public Page">
+                        <Button size="icon" variant="ghost" className="w-10 h-10 border border-slate-100 rounded-2xl text-slate-400 hover:text-blue-500 hover:bg-blue-50 hover:border-blue-100 shadow-sm" title="View Public Page">
                            <ExternalLink size={18} />
                         </Button>
                      </div>
