@@ -26,7 +26,8 @@ import {
   Moon,
   Banknote,
   Star,
-  BarChart3
+  BarChart3,
+  LineChart
 } from "lucide-react";
 
 import en from "./locales/en.json";
@@ -63,6 +64,7 @@ const navGroups = [
     key: "group_overview",
     items: [
       { icon: LayoutDashboard, label: "Dashboard", key: "dashboard", href: "/admin" },
+      { icon: LineChart, label: "Analysis", key: "analysis", href: "/admin/analysis" },
       { icon: Bell, label: "Notifications", key: "notifications", href: "/admin/notifications" },
       { icon: BarChart3, label: "Reports", key: "reports", href: "/admin/reports" },
     ]

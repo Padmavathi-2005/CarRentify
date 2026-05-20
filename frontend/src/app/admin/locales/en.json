@@ -1,6 +1,7 @@
 {
     "sidebar":  {
                     "dashboard":  "Dashboard",
+                    "analysis": "Analysis",
                     "reports": "Reports",
                     "users":  "Users",
                     "verification":  "Verification",
