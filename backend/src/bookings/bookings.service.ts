@@ -18,6 +18,8 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { Setting, SettingDocument } from '../settings/schemas/setting.schema';
 import { Verification, VerificationDocument } from '../verification/schemas/verification.schema';
 import * as nodemailer from 'nodemailer';
+import { WalletService } from '../wallet/wallet.service';
+import { TransactionSource } from '../wallet/schemas/transaction.schema';
 
 @Injectable()
 export class BookingsService {
@@ -29,6 +31,7 @@ export class BookingsService {
     @InjectModel(Setting.name) private settingModel: Model<SettingDocument>,
     @InjectModel('Report') private reportModel: Model<any>,
     @InjectModel(Verification.name) private verificationModel: Model<VerificationDocument>,
+    private readonly walletService: WalletService,
   ) {}
 
   private async sendCommunication(user: any, title: string, message: string, type: string, data?: any) {
@@ -87,6 +90,15 @@ export class BookingsService {
       await this.userModel.findByIdAndUpdate(admin._id, {
         $inc: { walletBalance: commissionAmount }
       });
+      
+      // Update Admin's digital wallet and create transaction history
+      await this.walletService.addFunds(
+        admin._id.toString(),
+        commissionAmount,
+        `Commission collected from Booking #${booking.bookingHash || booking._id.toString().slice(-8).toUpperCase()}`,
+        TransactionSource.BOOKING,
+        booking._id.toString()
+      );
       
       booking.isCommissionProcessed = true;
       await booking.save();

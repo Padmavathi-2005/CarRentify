@@ -88,6 +88,7 @@ const navGroups = [
     title: "Financials",
     key: "group_sales",
     items: [
+      { icon: Wallet, label: "Admin Wallet", key: "wallet", href: "/admin/wallet" },
       { icon: Banknote, label: "Withdrawals", key: "withdrawals", href: "/admin/withdrawals" },
       { icon: Ticket, label: "Coupons", key: "coupons", href: "/admin/coupons" },
     ]

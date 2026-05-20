@@ -12,6 +12,7 @@
                     "languages":  "Languages",
                     "coupons":  "Coupons",
                     "withdrawals": "Withdrawals",
+                    "wallet": "Admin Wallet",
                     "settings":  "Settings",
                     "signOut":  "Sign Out",
                     "group_overview": "Overview",

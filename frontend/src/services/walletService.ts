@@ -180,5 +180,35 @@ export const walletService = {
     });
     if (!response.ok) return { balance: 0, totalEarnings: 0, pendingPayouts: 0 };
     return response.json();
+  },
+
+  async getAdminBalance() {
+    const token = localStorage.getItem("admin_token") || localStorage.getItem("token");
+    try {
+      const response = await fetch(`${API_BASE_URL}/wallet/balance`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!response.ok) return { balance: 0, currency: "USD" };
+      return response.json();
+    } catch (err) {
+      return { balance: 0, currency: "USD" };
+    }
+  },
+
+  async getAdminTransactions() {
+    const token = localStorage.getItem("admin_token") || localStorage.getItem("token");
+    try {
+      const response = await fetch(`${API_BASE_URL}/wallet/transactions`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!response.ok) return [];
+      return response.json();
+    } catch (err) {
+      return [];
+    }
   }
 };

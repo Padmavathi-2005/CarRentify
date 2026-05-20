@@ -12,6 +12,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { Setting, SettingSchema } from '../settings/schemas/setting.schema';
 import { ReportSchema } from './schemas/report.schema';
 import { Verification, VerificationSchema } from '../verification/schemas/verification.schema';
+import { WalletModule } from '../wallet/wallet.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { Verification, VerificationSchema } from '../verification/schemas/verifi
       { name: Verification.name, schema: VerificationSchema },
     ]),
     NotificationsModule,
+    WalletModule,
   ],
   controllers: [BookingsController, ReportsController],
   providers: [BookingsService],
