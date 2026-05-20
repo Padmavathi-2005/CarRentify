@@ -5,7 +5,11 @@ import { NewsletterService } from './newsletter.service';
 import { Newsletter, NewsletterSchema } from './schemas/newsletter.schema';
 
 @Module({
-  imports: [MongooseModule.forFeature([{ name: Newsletter.name, schema: NewsletterSchema }])],
+  imports: [
+    MongooseModule.forFeature([
+      { name: Newsletter.name, schema: NewsletterSchema },
+    ]),
+  ],
   controllers: [NewsletterController],
   providers: [NewsletterService],
 })

@@ -7,6 +7,9 @@ export type SettingDocument = Setting & Document;
 export class Setting {
   @Prop({ required: true })
   _id: string; // Used as category: 'general', 'frontend', 'smtp', etc.
+
+  @Prop({ default: 'light' })
+  theme?: string;
 }
 
 export const SettingSchema = SchemaFactory.createForClass(Setting);

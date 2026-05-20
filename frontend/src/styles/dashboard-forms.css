@@ -9,7 +9,7 @@
   padding: 0 1.5rem !important;
   padding-right: 3.5rem !important;
   transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  border: 2px solid #f1f5f9;
+  border: 2px solid #cbd5e1;
   border-radius: 1rem;
   background-color: #f8fafc;
   color: #0f172a;
@@ -46,7 +46,7 @@
 /* New High Contrast Placeholder Rule */
 input::placeholder, 
 textarea::placeholder {
-  color: #64748b !important;
+  color: #475569 !important;
   font-weight: 600 !important;
-  opacity: 0.7 !important;
+  opacity: 0.9 !important;
 }

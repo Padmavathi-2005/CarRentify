@@ -33,4 +33,40 @@ export class ReviewsService {
       .sort({ createdAt: -1 })
       .exec();
   }
+
+  async getUserStats(userId: string, isHost: boolean = false): Promise<{ averageScore: string, totalReviews: number }> {
+    if (isHost) {
+      // Find all cars belonging to this host
+      const CarModel = this.reviewModel.db.model('Car');
+      const hostCars = await CarModel.find({ vendor: new Types.ObjectId(userId) }).select('_id').exec();
+      const carIds = hostCars.map(c => c._id);
+      
+      const reviews = await this.reviewModel.find({ car: { $in: carIds } });
+      if (!reviews.length) return { averageScore: "0.0", totalReviews: 0 };
+      
+      const avg = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
+      return { averageScore: avg.toFixed(1), totalReviews: reviews.length };
+    } else {
+      // For renter, maybe just reviews they wrote, or if they have reviews as a renter. 
+      // For now, let's return their written feedback score as a placeholder.
+      const reviews = await this.reviewModel.find({ user: new Types.ObjectId(userId) });
+      if (!reviews.length) return { averageScore: "0.0", totalReviews: 0 };
+      
+      const avg = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
+      return { averageScore: avg.toFixed(1), totalReviews: reviews.length };
+    }
+  }
+
+  async findByHost(userId: string): Promise<Review[]> {
+    const CarModel = this.reviewModel.db.model('Car');
+    const hostCars = await CarModel.find({ vendor: new Types.ObjectId(userId) }).select('_id').exec();
+    const carIds = hostCars.map(c => c._id);
+    
+    return await this.reviewModel
+      .find({ car: { $in: carIds } })
+      .populate('user', 'name profileImage') // Get reviewer details
+      .populate('car', 'name images') // Get car details
+      .sort({ createdAt: -1 })
+      .exec();
+  }
 }

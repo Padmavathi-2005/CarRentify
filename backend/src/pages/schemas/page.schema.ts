@@ -15,7 +15,10 @@ export class Page {
   content: string;
 
   @Prop({ type: Object, default: {} })
-  translations: Record<string, { title: string; content: string; metaDescription?: string }>;
+  translations: Record<
+    string,
+    { title: string; content: string; metaDescription?: string }
+  >;
 
   @Prop({ default: 'Draft' })
   status: string;

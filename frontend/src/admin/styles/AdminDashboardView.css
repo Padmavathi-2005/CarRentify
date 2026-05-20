@@ -42,17 +42,17 @@
 }
 
 .admin-dashboard-card {
-  border-radius: 2.5rem !important;
-  border: none !important;
+  border-radius: var(--rounded-app, 1rem) !important;
+  border: 1px solid #f1f5f9 !important;
   background-color: white !important;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.02) !important;
-  transition: all 0.5s ease;
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1) !important;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
 }
 
 .admin-dashboard-card:hover {
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1) !important;
-  transform: translateY(-2px);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.08) !important;
+  transform: translateY(-4px);
 }
 
 .admin-stat-value {
@@ -67,12 +67,13 @@
   font-weight: 700 !important;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: #94a3b8 !important; /* slate-400 */
+  color: var(--dash-text-muted) !important;
+  border-bottom: 1px solid var(--dash-table-border);
 }
 
 .admin-activity-table td {
   padding: 1.5rem !important;
-  border-top: 1px solid #f8fafc;
+  border-top: 1px solid var(--dash-table-border);
 }
 
 .admin-badge-stat {
@@ -105,3 +106,46 @@
 .admin-task-node:hover .admin-task-dot {
   transform: scale(1.5);
 }
+
+/* --- Dashboard Robust Theme Variables --- */
+:root {
+  --dash-card-bg: #ffffff;
+  --dash-card-border: #f1f5f9; /* slate-100 */
+  --dash-text-main: #0f172a; /* slate-900 */
+  --dash-text-muted: #94a3b8; /* slate-400 */
+  --dash-table-header: #f8fafc; /* slate-50 */
+  --dash-table-border: #f8fafc; /* slate-50 */
+}
+
+:root.dark, html.dark, .dark {
+  --dash-card-bg: #1e293b; /* slate-800 */
+  --dash-card-border: rgba(255, 255, 255, 0.15);
+  --dash-text-main: #ffffff;
+  --dash-text-muted: #94a3b8; /* slate-400 */
+  --dash-table-header: rgba(255, 255, 255, 0.03);
+  --dash-table-border: rgba(255, 255, 255, 0.08);
+}
+
+/* --- Dashboard Utility Classes --- */
+.admin-dash-card {
+  background-color: var(--dash-card-bg);
+  border: 1px solid var(--dash-card-border);
+}
+
+.admin-stat-card {
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+:root.dark .admin-stat-card, html.dark .admin-stat-card, .dark .admin-stat-card {
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  background-color: rgba(255, 255, 255, 0.03) !important;
+}
+
+.admin-dash-card-glass {
+  background-color: var(--dash-card-bg);
+}
+
+.admin-dash-text-main { color: var(--dash-text-main) !important; }
+.admin-dash-text-muted { color: var(--dash-text-muted) !important; }
+.admin-dash-border { border-color: var(--dash-table-border) !important; }
+.admin-dash-header-bg { background-color: var(--dash-table-header) !important; }

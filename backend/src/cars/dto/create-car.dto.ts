@@ -5,6 +5,7 @@ export class CreateCarDto {
   year: number;
   rentalType: string;
   pricePerDay: number;
+  priceTiers?: { days: number; pricePerDay: number; discountPercentage?: number }[];
   images: string[];
   description?: string;
   content?: string;
@@ -32,4 +33,28 @@ export class CreateCarDto {
   tags?: string[];
   amenities?: string[];
   colors?: string[];
+   distanceIncluded?: number;
+   extraDistanceFee?: number;
+   extras?: {
+      name: string;
+      description?: string;
+      price: number;
+      priceType: 'per_day' | 'per_trip';
+      category?: string;
+   }[];
+  documents?: { name: string; url: string; type: string; expiryDate?: Date }[];
+  condition?: string;
+  color?: string;
+  acceleration?: number;
+  chargingType?: string;
+  batteryCapacity?: number;
+  range?: number;
+  pickupLocations?: {
+    name: string;
+    address: string;
+    latitude?: number;
+    longitude?: number;
+    price: number;
+  }[];
+  customSpecs?: Record<string, any>;
 }

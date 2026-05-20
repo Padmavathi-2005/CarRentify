@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 async function checkDB() {
   try {
-    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/CarRentify');
+    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/carrental');
     console.log('Connected to DB');
     
     // We can't easily access the Models here without defining them, 

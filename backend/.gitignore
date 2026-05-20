@@ -54,3 +54,17 @@ pids
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# Zip backups & Database backups
+*.zip
+/db_backups/
+
+# Local JSON dumps/configs & local scripts
+/*.json
+!/package.json
+!/package-lock.json
+!/tsconfig.json
+!/tsconfig.build.json
+/*.js
+/scratch/
+/brain/

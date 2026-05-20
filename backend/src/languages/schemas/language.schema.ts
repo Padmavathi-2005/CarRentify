@@ -14,6 +14,9 @@ export class Language {
   @Prop({ required: true, unique: true })
   code: string;
 
+  @Prop({ default: 'ltr', enum: ['ltr', 'rtl'] })
+  direction: string;
+
   @Prop({ default: true })
   isActive: boolean;
 }

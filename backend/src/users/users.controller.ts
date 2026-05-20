@@ -1,5 +1,18 @@
-import { Controller, Post, Get, Param, Body, NotFoundException, Put, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Param,
+  Body,
+  NotFoundException,
+  Put,
+  Delete,
+  UseGuards,
+} from '@nestjs/common';
 import { UsersService } from './users.service';
+import { JwtAuthGuard } from '../auth/strategies/jwt-auth.guard';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
 
 @Controller('users')
 export class UsersController {
@@ -25,8 +38,9 @@ export class UsersController {
   // --- ADMIN ROUTES ---
 
   @Get()
+  @UseGuards(JwtAuthGuard)
   async findAll() {
-    return this.usersService.findAll();
+    return this.usersService.findAllSafe();
   }
 
   @Get(':id')
@@ -47,5 +61,10 @@ export class UsersController {
   @Delete(':id')
   async remove(@Param('id') id: string) {
     return this.usersService.remove(id);
+  }
+
+  @Post('recover')
+  async recover(@Body('email') email: string) {
+    return this.usersService.recoverByEmail(email);
   }
 }

@@ -11,8 +11,20 @@ export class User {
   @Prop({ required: true })
   lastName: string;
 
-  @Prop()
+  @Prop({ unique: true, sparse: true })
   displayName: string;
+
+  @Prop({ default: false })
+  isVerified: boolean;
+
+  @Prop({ default: false })
+  isGoogleVerified: boolean;
+
+  @Prop({ default: false })
+  isFacebookVerified: boolean;
+
+  @Prop({ default: false })
+  isTwitterVerified: boolean;
 
   @Prop({ required: true, unique: true })
   email: string;
@@ -21,10 +33,13 @@ export class User {
   password: string; // Stored as Bcrypt Hash
 
   @Prop({ default: 'user' })
-  role: 'user' | 'vendor' | 'admin';
+  role: 'user' | 'admin';
 
   @Prop()
   phone: string;
+
+  @Prop()
+  dob: string; // ISO Date string for Age verification
 
   @Prop()
   doorNo: string;
@@ -54,7 +69,7 @@ export class User {
   profileImage: string;
 
   // --- SECURITY EXTRA FIELDS ---
-  
+
   @Prop({ default: 0 })
   loginAttempts: number;
 
@@ -72,6 +87,22 @@ export class User {
 
   @Prop({ type: [String], default: [] })
   wishlist: string[];
+
+  @Prop({ default: 0 })
+  walletBalance: number;
+
+  // Granular verification status managed by admin
+  @Prop({ enum: ['not_submitted', 'pending', 'approved', 'rejected'], default: 'not_submitted' })
+  verificationStatus: string;
+
+  @Prop({ unique: true, sparse: true })
+  slug: string;
+
+  @Prop({ default: true })
+  isActive: boolean;
+
+  @Prop()
+  deactivatedAt: Date;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

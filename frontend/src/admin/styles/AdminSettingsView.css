@@ -1,60 +1,106 @@
 /* --- High-Density Admin Station Styles --- */
 .admin-sidebar-list {
   display: flex !important;
-  flex-direction: column !important;
-  align-items: stretch !important;
+  flex-direction: row !important;
+  align-items: center !important;
   justify-content: flex-start !important;
-  background-color: #f8fafc !important;
-  border-right: 1px solid #f1f5f9 !important;
+  background-color: var(--admin-bg) !important;
+  border-bottom: 1px solid var(--admin-border) !important;
+  border-right: none !important;
   border-radius: 0 !important;
-  padding: 1.5rem !important;
+  padding: 0.75rem !important;
   width: 100% !important;
   height: auto !important;
-  gap: 0.25rem !important;
+  gap: 0.5rem !important;
   position: relative;
+  overflow-x: auto !important;
+  scrollbar-width: none; /* Hide scrollbar for clean look */
+}
+
+.admin-sidebar-list::-webkit-scrollbar {
+  display: none;
 }
 
 @media (min-width: 768px) {
   .admin-sidebar-list {
+    flex-direction: column !important;
+    align-items: stretch !important;
     width: 16rem !important;
     height: 100% !important;
+    border-right: 1px solid var(--admin-border) !important;
+    border-bottom: none !important;
+    padding: 1.5rem !important;
+    overflow-x: visible !important;
   }
 }
 
 .admin-tab-trigger {
   justify-content: flex-start !important;
-  gap: 0.75rem !important;
-  padding: 0.75rem 1.25rem !important;
+  gap: 0.5rem !important;
+  padding: 0.5rem 1rem !important;
   border-radius: 12px !important; /* Synchronized Premium Curvature */
   transition: all 0.2s ease;
   font-weight: 700 !important;
-  font-size: 0.875rem !important;
-  color: #64748b !important;
+  font-size: 0.75rem !important;
+  color: var(--admin-text-muted) !important;
   text-align: left;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+}
+
+@media (min-width: 768px) {
+  .admin-tab-trigger {
+    gap: 0.75rem !important;
+    padding: 0.75rem 1.25rem !important;
+    font-size: 0.875rem !important;
+  }
 }
 
 .admin-tab-trigger[data-state="active"] {
-  background-color: white !important;
-  color: #3f147b !important;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03) !important;
-  border: 1px solid #f1f5f9 !important;
+  background-color: var(--admin-card-bg) !important;
+  color: var(--admin-text-main) !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+  border: 1px solid var(--admin-border) !important;
   border-radius: 12px !important;
   position: relative;
   z-index: 10;
 }
-.admin-tab-trigger:hover:not([data-state="active"]) {
-  color: #0f172a !important;
-  background-color: rgba(63, 20, 123, 0.03) !important;
-}
 
-/* --- High-Aesthetic Input Overrides --- */
-::placeholder {
-  color: #94a3b8 !important; /* Lighter Slate-400 */
-  font-weight: 500 !important;
-  opacity: 0.6 !important;
+.admin-tab-trigger:hover:not([data-state="active"]) {
+  color: var(--admin-text-main) !important;
+  background-color: var(--admin-card-bg) !important;
+  opacity: 0.8;
 }
 
 input:focus::placeholder {
   opacity: 0.3 !important;
   transition: opacity 0.2s ease;
+}
+
+/* Fix for dark mode input visibility */
+.dark input, .dark textarea {
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
+  color: #ffffff !important;
+  background-color: rgba(15, 23, 42, 0.5) !important; /* Slightly lighter than pure black for depth */
+}
+
+.dark input:focus, .dark textarea:focus {
+  border-color: #ffffff !important;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1) !important;
+  background-color: rgba(15, 23, 42, 0.8) !important;
+}
+
+.dark label {
+  color: #ffffff !important;
+  opacity: 0.9;
+  font-weight: 800 !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+.dark button:not(.bg-primary) {
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+}
+
+.dark button:hover:not(.bg-primary) {
+  border-color: rgba(255, 255, 255, 0.6) !important;
 }

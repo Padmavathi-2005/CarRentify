@@ -19,4 +19,14 @@ export class ReviewsController {
   async findByUser(@Param('userId') userId: string) {
     return await this.reviewsService.findByUser(userId);
   }
+
+  @Get('stats/:userId')
+  async getUserStats(@Param('userId') userId: string, @Query('isHost') isHost: string) {
+    return await this.reviewsService.getUserStats(userId, isHost === 'true');
+  }
+
+  @Get('host/:userId')
+  async findByHost(@Param('userId') userId: string) {
+    return await this.reviewsService.findByHost(userId);
+  }
 }

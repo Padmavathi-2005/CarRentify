@@ -5,7 +5,9 @@ import { Currency, CurrencyDocument } from './schemas/currency.schema';
 
 @Injectable()
 export class CurrenciesService {
-  constructor(@InjectModel(Currency.name) private model: Model<CurrencyDocument>) {}
+  constructor(
+    @InjectModel(Currency.name) private model: Model<CurrencyDocument>,
+  ) {}
 
   async create(dto: any): Promise<Currency> {
     const created = new this.model(dto);
@@ -17,7 +19,9 @@ export class CurrenciesService {
   }
 
   async update(id: string, dto: any): Promise<Currency> {
-    const updated = await this.model.findByIdAndUpdate(id, dto, { new: true }).exec();
+    const updated = await this.model
+      .findByIdAndUpdate(id, dto, { returnDocument: 'after' })
+      .exec();
     if (!updated) throw new NotFoundException(`Currency #${id} not found`);
     return updated;
   }

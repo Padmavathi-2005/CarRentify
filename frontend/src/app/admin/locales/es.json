@@ -1,109 +1,109 @@
 {
-  "sidebar": {
-    "dashboard": "Tablero",
-    "staticPages": "Páginas Estáticas",
-    "currencies": "Monedas",
-    "languages": "Idiomas",
-    "settings": "Configuración",
-    "signOut": "Cerrar Sesión"
-  },
-  "header": {
-    "infrastructureControl": "Control de Infraestructura",
-    "masterPrincipal": "Principal del Sistema Maestro",
-    "translateProfile": "Traducir Perfil",
-    "active": "Activo",
-    "masterAuthority": "Autoridad Maestra"
-  },
-  "dashboard": {
-    "totalRevenue": "Ingresos Totales",
-    "activeUsers": "Usuarios Activos",
-    "fleetStatus": "Estado de la Flota",
-    "recentActivity": "Actividad Reciente"
-  },
-  "staticPages": {
-    "title": "Páginas Estáticas",
-    "addPage": "Agregar Nueva Página",
-    "table": {
-      "titleSlug": "Título de la Página y Slug",
-      "visibility": "Visibilidad",
-      "createdAt": "Creado en",
-      "actions": "Acciones"
-    }
-  },
-  "currencies": {
-    "title": "Monedas",
-    "add": "Agregar Moneda",
-    "table": {
-      "unit": "Unidad Monetaria",
-      "code": "Código ISO",
-      "symbol": "Símbolo"
-    }
-  },
-  "languages": {
-    "title": "Idiomas",
-    "add": "Agregar Idioma",
-    "table": {
-      "name": "Nombre del Idioma",
-      "code": "Código ISO",
-      "status": "Estado de la Plataforma"
-    }
-  },
-  "settings": {
-    "title": "Configuración",
-    "tabs": {
-      "general": "Configuración del Sitio",
-      "social": "Redes Sociales",
-      "smtp": "Configuración de Correo",
-      "financials": "Finanzas",
-      "listings": "Anuncios"
-    },
-    "general": {
-      "name": "Nombre del Sitio",
-      "url": "URL del Sitio",
-      "logoDark": "Logo (Oscuro)",
-      "logoLight": "Logo (Claro)",
-      "favicon": "Favicon",
-      "defaultLanguage": "Idioma Predeterminado",
-      "defaultCurrency": "Moneda Predeterminada",
-      "timezone": "Zona Horaria de la Plataforma",
-      "primaryColor": "Color Primario",
-      "secondaryColor": "Tono Secundario",
-      "supportEmail": "Correo de Soporte",
-      "supportPhone": "Teléfono de Soporte",
-      "copyright": "Firma de Copyright"
-    },
-    "social": {
-      "facebook": "Protocolo Meta",
-      "instagram": "Flujo Visual",
-      "linkedin": "Red Pro",
-      "twitter": "Flujo de Señal"
-    },
-    "smtp": {
-      "verification": "Verificación de Correo",
-      "otpDesc": "Hacer cumplir protocolos OTP",
-      "host": "Servidor SMTP",
-      "port": "Puerto SMTP",
-      "user": "Usuario SMTP",
-      "pass": "Contraseña SMTP",
-      "from": "Dirección de remitente"
-    },
-    "financials": {
-      "balance": "Saldo de la plataforma",
-      "payoutMin": "Pago Mínimo",
-      "payoutDesc": "Umbral mínimo de retiro",
-      "systemFee": "Tarifa del sistema",
-      "feeDesc": "Comisión de la plataforma por reserva"
-    },
-    "listings": {
-      "uploadLimit": "Límite de carga de imágenes",
-      "limitDesc": "Máximo de imágenes por anuncio de vehículo"
-    },
-    "actions": {
-      "save": "Guardar",
-      "saving": "Sincronizando...",
-      "success": "Configuración sincronizada exitosamente",
-      "dbError": "Fallo en la sincronización: base de datos inalcanzable",
-      "error": "Error crítico: conexión rechazada"
-    }
-  }
+    "sidebar":  {
+                    "dashboard":  "Tablero",
+                    "staticPages":  "PÃ¡ginas EstÃ¡ticas",
+                    "currencies":  "Monedas",
+                    "languages":  "Idiomas",
+                    "settings":  "ConfiguraciÃ³n",
+                    "signOut":  "Cerrar SesiÃ³n"
+                },
+    "header":  {
+                   "infrastructureControl":  "Control de Infraestructura",
+                   "masterPrincipal":  "Principal del Sistema Maestro",
+                   "translateProfile":  "Traducir Perfil",
+                   "active":  "Activo",
+                   "masterAuthority":  "Autoridad Maestra"
+               },
+    "dashboard":  {
+                      "totalRevenue":  "Ingresos Totales",
+                      "activeUsers":  "Usuarios Activos",
+                      "fleetStatus":  "Estado de la Flota",
+                      "recentActivity":  "Actividad Reciente"
+                  },
+    "staticPages":  {
+                        "title":  "PÃ¡ginas EstÃ¡ticas",
+                        "addPage":  "Agregar Nueva PÃ¡gina",
+                        "table":  {
+                                      "titleSlug":  "TÃ­tulo de la PÃ¡gina y Slug",
+                                      "visibility":  "Visibilidad",
+                                      "createdAt":  "Creado en",
+                                      "actions":  "Acciones"
+                                  }
+                    },
+    "currencies":  {
+                       "title":  "Monedas",
+                       "add":  "Agregar Moneda",
+                       "table":  {
+                                     "unit":  "Unidad Monetaria",
+                                     "code":  "CÃ³digo ISO",
+                                     "symbol":  "SÃ­mbolo"
+                                 }
+                   },
+    "languages":  {
+                      "title":  "Idiomas",
+                      "add":  "Agregar Idioma",
+                      "table":  {
+                                    "name":  "Nombre del Idioma",
+                                    "code":  "CÃ³digo ISO",
+                                    "status":  "Estado de la Plataforma"
+                                }
+                  },
+    "settings":  {
+                     "title":  "ConfiguraciÃ³n",
+                     "tabs":  {
+                                  "general":  "ConfiguraciÃ³n del Sitio",
+                                  "social":  "Redes Sociales",
+                                  "smtp":  "ConfiguraciÃ³n de Correo",
+                                  "financials":  "Finanzas",
+                                  "listings":  "Anuncios"
+                              },
+                     "general":  {
+                                     "name":  "Nombre del Sitio",
+                                     "url":  "URL del Sitio",
+                                     "logoDark":  "Logo (Oscuro)",
+                                     "logoLight":  "Logo (Claro)",
+                                     "favicon":  "Favicon",
+                                     "defaultLanguage":  "Idioma Predeterminado",
+                                     "defaultCurrency":  "Moneda Predeterminada",
+                                     "timezone":  "Zona Horaria de la Plataforma",
+                                     "primaryColor":  "Color Primario",
+                                     "secondaryColor":  "Tono Secundario",
+                                     "supportEmail":  "Correo de Soporte",
+                                     "supportPhone":  "TelÃ©fono de Soporte",
+                                     "copyright":  "Firma de Copyright"
+                                 },
+                     "social":  {
+                                    "facebook":  "Protocolo Meta",
+                                    "instagram":  "Flujo Visual",
+                                    "linkedin":  "Red Pro",
+                                    "twitter":  "Flujo de SeÃ±al"
+                                },
+                     "smtp":  {
+                                  "verification":  "VerificaciÃ³n de Correo",
+                                  "otpDesc":  "Hacer cumplir protocolos OTP",
+                                  "host":  "Servidor SMTP",
+                                  "port":  "Puerto SMTP",
+                                  "user":  "Usuario SMTP",
+                                  "pass":  "ContraseÃ±a SMTP",
+                                  "from":  "DirecciÃ³n de remitente"
+                              },
+                     "financials":  {
+                                        "balance":  "Saldo de la plataforma",
+                                        "payoutMin":  "Pago MÃ­nimo",
+                                        "payoutDesc":  "Umbral mÃ­nimo de retiro",
+                                        "systemFee":  "Tarifa del sistema",
+                                        "feeDesc":  "ComisiÃ³n de la plataforma por reserva"
+                                    },
+                     "listings":  {
+                                      "uploadLimit":  "LÃ­mite de carga de imÃ¡genes",
+                                      "limitDesc":  "MÃ¡ximo de imÃ¡genes por anuncio de vehÃ­culo"
+                                  },
+                     "actions":  {
+                                     "save":  "Guardar",
+                                     "saving":  "Sincronizando...",
+                                     "success":  "ConfiguraciÃ³n sincronizada exitosamente",
+                                     "dbError":  "Fallo en la sincronizaciÃ³n: base de datos inalcanzable",
+                                     "error":  "Error crÃ­tico: conexiÃ³n rechazada"
+                                 }
+                 }
 }

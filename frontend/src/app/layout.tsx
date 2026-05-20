@@ -1,39 +1,50 @@
 import type { Metadata } from "next";
-import { Manrope } from "next/font/google";
+import { Outfit } from "next/font/google";
 import "./globals.css";
 import ThemeProvider from "@/components/ThemeProvider";
 import { AuthProvider } from "@/components/AuthContext";
 import { LocaleProvider } from "@/components/LocaleContext";
+import { SocketProvider } from "@/components/SocketProvider";
+import { ToastProvider } from "@/components/Toast";
 
-const manrope = Manrope({
-  variable: "--font-manrope",
-  subsets: ["latin"],
+const outfit = Outfit({
+ variable: "--font-outfit",
+ subsets: ["latin"],
+ weight: ["300", "400", "500", "600", "700", "800", "900"],
 });
 
 export const metadata: Metadata = {
-  title: "CarRentify | Premium Car Rental Services",
-  description: "Experience the ultimate in mobility with our elite vehicle fleet.",
+ title: "CarRental | Premium Car Rental Services",
+ description: "Experience the ultimate in mobility with our elite vehicle fleet.",
 };
 
 export default function RootLayout({
-  children,
+ children,
 }: Readonly<{
-  children: React.ReactNode;
+ children: React.ReactNode;
 }>) {
-  return (
-    <html
-      lang="en"
-      className={`${manrope.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col font-sans">
-        <AuthProvider>
-          <LocaleProvider>
-            <ThemeProvider>
-              {children}
-            </ThemeProvider>
-          </LocaleProvider>
-        </AuthProvider>
-      </body>
-    </html>
-  );
+ return (
+ <html
+ lang="en"
+ className={`${outfit.variable} h-full antialiased`}
+ >
+ <head>
+ <link rel="preload" href="/logo.png" as="image" />
+ <link rel="preload" href="/images/site/car-bg.png" as="image" />
+ </head>
+ <body className="min-h-full font-sans" suppressHydrationWarning>
+ <ToastProvider>
+ <LocaleProvider>
+ <AuthProvider>
+ <SocketProvider>
+ <ThemeProvider>
+ {children}
+ </ThemeProvider>
+ </SocketProvider>
+ </AuthProvider>
+ </LocaleProvider>
+ </ToastProvider>
+ </body>
+ </html>
+ );
 }

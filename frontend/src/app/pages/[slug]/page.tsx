@@ -70,7 +70,7 @@ export default function StaticPageView() {
            <Header />
            <div className="max-w-7xl mx-auto px-6 pt-40 pb-20 text-center">
               <h1 className="text-4xl font-black text-slate-800 mb-4">Content Not Accessible</h1>
-              <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Please check the platform slug synchronization fruition completion fruition fruition audition" (Truncated)</p>
+               <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">The requested content is currently unavailable. Please check the URL or try searching for another page.</p>
            </div>
            <Footer />
         </div>
@@ -100,7 +100,7 @@ export default function StaticPageView() {
 
       {/* Clean Content Stage */}
       <main className="max-w-4xl mx-auto px-6 pb-32 pt-12">
-         <div className="bg-white p-8 md:p-12 rounded-[2rem] border border-slate-100 shadow-sm relative group">
+         <div className="bg-white p-8 md:p-12 rounded-app border border-slate-100 shadow-sm relative group">
             {/* Localized Article Content */}
             <article className="prose prose-slate max-w-none prose-headings:font-black prose-headings:tracking-tighter prose-p:font-medium prose-p:text-slate-600 prose-p:leading-[1.8] prose-p:text-lg">
                <div 
@@ -110,7 +110,7 @@ export default function StaticPageView() {
                
                {/* SEO Discovery Tag */}
                {localizedContent.metaDescription && (
-                 <div className="mt-16 p-8 rounded-3xl bg-slate-50/50 border border-slate-100 flex items-start gap-4">
+                 <div className="mt-16 p-8 rounded-app bg-slate-50/50 border border-slate-100 flex items-start gap-4">
                     <ShieldCheck className="text-emerald-500 mt-1" size={20} />
                     <p className="text-sm font-bold text-slate-500 leading-relaxed italic">{localizedContent.metaDescription}</p>
                  </div>

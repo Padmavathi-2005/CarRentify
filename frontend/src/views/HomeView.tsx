@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
-import { Star, Quote, MapPin, Calendar, ChevronRight, User, ShoppingBag, Menu, Car, Truck, Zap, Mountain, Clock, Heart, Users, Mail } from "lucide-react";
+import { Star, Quote, MapPin, Calendar, ChevronLeft, ChevronRight, ChevronDown, User, ShoppingBag, Menu, Car, Truck, Zap, Mountain, Clock, Heart, Users, Mail, Check, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -12,568 +12,720 @@ import Footer from "@/components/Footer";
 import CarCard from "@/components/CarCard";
 import { useSettings } from "@/components/ThemeProvider";
 import { useLocale } from "@/components/LocaleContext";
-import { API_BASE_URL } from "@/config/api";
+import { useAuth } from "@/components/AuthContext";
+import { API_BASE_URL, BACKEND_URL, getImageUrl } from "@/config/api";
+import { CustomDatePicker, PremiumRangePicker, PremiumTimeRangePicker } from "@/components/CustomDateTimePicker";
+import LocationAutocomplete from "@/components/LocationAutocomplete";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
+
+const OfficeMap = dynamic(() => import("@/components/OfficeMap"), {
+ ssr: false,
+ loading: () => (
+ <div className="w-full h-full bg-muted animate-pulse flex items-center justify-center rounded-app">
+ <div className="flex flex-col items-center gap-4">
+ <MapPin className="w-10 h-10 text-primary/20 animate-bounce" />
+ <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Initializing Geographic Grid...</span>
+ </div>
+ </div>
+ )
+});
 import {
-  CARS,
-  DESTINATIONS,
-  TESTIMONIALS,
+ CARS,
+ DESTINATIONS,
+ TESTIMONIALS,
 } from "@/data/mockData";
 
+// Fallback destination images (Unsplash — royalty-free)
+const FALLBACK_DESTINATION_IMAGES = [
+ "https://images.unsplash.com/photo-1565799877535-7c63e7eda70e?w=600&auto=format&fit=crop",
+ "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=600&auto=format&fit=crop",
+ "https://images.unsplash.com/photo-1534430480872-3498386e7856?w=600&auto=format&fit=crop",
+ "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=600&auto=format&fit=crop",
+];
+
 const accessories = [
-  { title: "Roof Box Rental", price: "$20/day" },
-  { title: "Bike Rack", price: "$15/day" },
-  { title: "Insurance Pack", price: "from $30/day" },
-  { title: "Chauffeur Service", price: "$50/hr" },
+ { title: "Roof Box Rental", price: "$20/day" },
+ { title: "Bike Rack", price: "$15/day" },
+ { title: "Insurance Pack", price: "from $30/day" },
+ { title: "Chauffeur Service", price: "$50/hr" },
 ];
 
 const fadeInUp: any = {
-  hidden: { opacity: 0, y: 40 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } }
+ hidden: { opacity: 0, y: 40 },
+ visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } }
 };
 
 const staggerContainer: any = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.1 }
-  }
+ hidden: { opacity: 0 },
+ visible: {
+ opacity: 1,
+ transition: { staggerChildren: 0.1 }
+ }
 };
 
 const getSrc = (img: any) => img?.src || img;
 
 export default function Home() {
-  const { settings } = useSettings();
-  const { language } = useLocale();
-  const [differentReturn, setDifferentReturn] = useState(false);
-  const [brands, setBrands] = useState<any[]>([]);
+ const router = useRouter();
+ const { settings, loading } = useSettings();
+ const { language, t } = useLocale();
+ const { user, setUserType, setShowLoginModal } = useAuth();
+ const [differentReturn, setDifferentReturn] = useState(false);
+ const [pickupLocation, setPickupLocation] = useState("");
+ const [returnLocation, setReturnLocation] = useState("");
+ const [brands, setBrands] = useState<any[]>([]);
+ const [featuredCars, setFeaturedCars] = useState<any[]>([]);
+ const [loadingCars, setLoadingCars] = useState(true);
+ const [destinations, setDestinations] = useState<any[]>([]);
+ const [isCarouselReady, setIsCarouselReady] = useState(false);
 
-  const FALLBACK_BRANDS = [
-    { name: 'Rolls-Royce', logo: 'https://cdn.iconscout.com/icon/free/png-256/free-rolls-royce-8-202758.png' },
-    { name: 'Ferrari', logo: 'https://cdn.iconscout.com/icon/free/png-256/free-ferrari-4-202756.png' },
-    { name: 'Lamborghini', logo: 'https://cdn.iconscout.com/icon/free/png-256/free-lamborghini-3-202754.png' },
-    { name: 'Porsche', logo: 'https://cdn.iconscout.com/icon/free/png-256/free-porsche-12-202755.png' },
-    { name: 'Mercedes-Benz', logo: 'https://cdn.iconscout.com/icon/free/png-256/free-mercedes-benz-4-202753.png' }
-  ];
+ const [fromDate, setFromDate] = useState("");
+ const [fromTime, setFromTime] = useState("");
+ const [toDate, setToDate] = useState("");
+ const [toTime, setToTime] = useState("");
 
-  useEffect(() => {
-    fetch(`${API_BASE_URL}/brands`)
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data) && data.length > 0) {
-          setBrands(data);
-        } else {
-          setBrands(FALLBACK_BRANDS);
-        }
-      })
-      .catch(err => {
-        console.error("Error fetching brands:", err);
-        setBrands(FALLBACK_BRANDS);
-      });
-  }, []);
+ const carouselRef = useRef<HTMLDivElement>(null);
+ const isPaused = useRef(false);
 
-  return (
-    <div className="min-h-screen bg-background font-sans selection:bg-primary selection:text-white">
-      <Header />
+ useEffect(() => {
+ if (destinations.length <= 4 || !carouselRef.current) return;
 
-      {/* Hero Section */}
-      {settings.showHeroSection && (
-        <section className="relative pt-20 min-h-screen flex items-center overflow-hidden">
-          <div className="absolute inset-0 z-0">
-            <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-black/10 z-10" />
-            <img
-              src={settings.heroImageUrl || "https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=2070&auto=format&fit=crop"}
-              alt="Luxury car on highway"
-              className="w-full h-full object-cover object-center"
-            />
-          </div>
+ const carousel = carouselRef.current;
+ const updateDimensions = () => {
+ const first = carousel.firstElementChild as HTMLElement;
+ if (!first) return { itemWidth: 0, gap: 0, setWidth: 0 };
+ const itemWidth = first.clientWidth;
+ if (itemWidth === 0) return { itemWidth: 0, gap: 0, setWidth: 0 }; // Not ready yet
+ const gap = 24;
+ const setWidth = (itemWidth + gap) * destinations.length;
 
-          <div className="relative z-20 max-w-7xl mx-auto px-6 w-full py-20 flex flex-col lg:flex-row items-center gap-12">
-            {/* Booking Card */}
-            <motion.div
-              initial={{ opacity: 0, x: -50 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.7, ease: "easeOut" }}
-              className="w-full lg:w-[340px] shrink-0"
-            >
-              <div className="bg-white rounded-2xl shadow-2xl p-6 border border-white/20">
-                <h3 className="text-lg font-bold text-foreground mb-5">Online Booking</h3>
+ // Start in the middle set, exactly aligned
+ carousel.style.scrollBehavior = 'auto';
+ carousel.scrollLeft = setWidth;
 
-                <div className="mb-4">
-                  <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">Pick Up Location</label>
-                  <div className="relative">
-                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary" />
-                    <Input
-                      placeholder="City, Airport, or Address"
-                      className="pl-9 h-11 text-sm border-border focus-visible:ring-primary/30"
-                      data-testid="input-pickup-location"
-                    />
-                  </div>
-                </div>
+ // Use double RAF to ensure the scroll is applied before showing
+ requestAnimationFrame(() => {
+ requestAnimationFrame(() => {
+ setIsCarouselReady(true);
+ carousel.style.scrollBehavior = 'smooth';
+ });
+ });
 
-                <div className="flex items-center gap-2 mb-4">
-                  <input
-                    type="checkbox"
-                    id="different-return"
-                    checked={differentReturn}
-                    onChange={e => setDifferentReturn(e.target.checked)}
-                    className="w-4 h-4 accent-primary cursor-pointer"
-                    data-testid="checkbox-different-return"
-                  />
-                  <label htmlFor="different-return" className="text-xs text-muted-foreground cursor-pointer select-none">
-                    Different Return Location?
-                  </label>
-                </div>
+ return { itemWidth, gap, setWidth };
+ };
 
-                {differentReturn && (
-                  <div className="mb-4">
-                    <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">Return Location</label>
-                    <div className="relative">
-                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Return location"
-                        className="pl-9 h-11 text-sm border-border focus-visible:ring-primary/30"
-                        data-testid="input-return-location"
-                      />
-                    </div>
-                  </div>
-                )}
+ let { itemWidth, gap, setWidth } = updateDimensions();
 
-                <div className="mb-3">
-                  <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">From</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="relative">
-                      <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input type="date" className="pl-9 h-10 text-xs border-border focus-visible:ring-primary/30" data-testid="input-from-date" />
-                    </div>
-                    <div className="relative">
-                      <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input type="time" className="pl-9 h-10 text-xs border-border focus-visible:ring-primary/30" data-testid="input-from-time" />
-                    </div>
-                  </div>
-                </div>
+ const handleScroll = () => {
+ // Small buffer to prevent stutter
+ if (carousel.scrollLeft >= setWidth * 2) {
+ carousel.scrollLeft = carousel.scrollLeft - setWidth;
+ } else if (carousel.scrollLeft <= setWidth / 2) {
+ carousel.scrollLeft = carousel.scrollLeft + setWidth;
+ }
+ };
 
-                <div className="mb-5">
-                  <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">To</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="relative">
-                      <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input type="date" className="pl-9 h-10 text-xs border-border focus-visible:ring-primary/30" data-testid="input-to-date" />
-                    </div>
-                    <div className="relative">
-                      <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input type="time" className="pl-9 h-10 text-xs border-border focus-visible:ring-primary/30" data-testid="input-to-time" />
-                    </div>
-                  </div>
-                </div>
+ carousel.addEventListener('scroll', handleScroll);
 
-                <Button className="w-full h-11 bg-primary hover:bg-primary-hover text-white font-semibold rounded-xl" data-testid="button-search-cars">
-                  Search Cars
-                </Button>
-              </div>
-            </motion.div>
+ const interval = setInterval(() => {
+ if (isPaused.current) return;
+ carousel.scrollBy({
+ left: itemWidth + gap,
+ behavior: "smooth"
+ });
+ }, 4500);
 
-            {/* Hero Text */}
-            <motion.div
-              initial="hidden"
-              animate="visible"
-              variants={staggerContainer}
-              className="flex-1 text-white"
-            >
-              <motion.h1
-                variants={fadeInUp}
-                className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.1] mb-6 drop-shadow-lg"
-              >
-                {settings.heroTranslations?.[language]?.title || settings.heroTranslations?.['en']?.title || "Your Ride Should Match the Road!"}
-              </motion.h1>
-              <motion.p
-                variants={fadeInUp}
-                className="text-lg md:text-xl text-white/80 max-w-lg drop-shadow"
-              >
-                {settings.heroTranslations?.[language]?.subtitle || settings.heroTranslations?.['en']?.subtitle || "Book your luxury drive in just a few clicks. Experience the ultimate comfort and performance on your next journey."}
-              </motion.p>
+ return () => {
+ carousel.removeEventListener('scroll', handleScroll);
+ clearInterval(interval);
+ };
+ }, [destinations.length]);
 
-              <motion.div variants={fadeInUp} className="mt-10 flex gap-6">
-                <div className="text-center">
-                  <div className="text-3xl font-bold">500+</div>
-                  <div className="text-white/70 text-sm mt-1">Premium Cars</div>
-                </div>
-                <div className="w-px bg-white/20" />
-                <div className="text-center">
-                  <div className="text-3xl font-bold">50+</div>
-                  <div className="text-white/70 text-sm mt-1">Locations</div>
-                </div>
-                <div className="w-px bg-white/20" />
-                <div className="text-center">
-                  <div className="text-3xl font-bold">10k+</div>
-                  <div className="text-white/70 text-sm mt-1">Happy Clients</div>
-                </div>
-              </motion.div>
-            </motion.div>
-          </div>
-        </section>
-      )}
+ const FALLBACK_BRANDS = [
+ { name: 'Rolls-Royce', logo: 'https://cdn.iconscout.com/icon/free/png-256/free-rolls-royce-8-202758.png' },
+ { name: 'Ferrari', logo: 'https://cdn.iconscout.com/icon/free/png-256/free-ferrari-4-202756.png' },
+ { name: 'Lamborghini', logo: 'https://cdn.iconscout.com/icon/free/png-256/free-lamborghini-3-202754.png' },
+ { name: 'Porsche', logo: 'https://cdn.iconscout.com/icon/free/png-256/free-porsche-12-202755.png' },
+ { name: 'Mercedes-Benz', logo: 'https://cdn.iconscout.com/icon/free/png-256/free-mercedes-benz-4-202753.png' }
+ ];
 
-      {/* Vehicle Categories */}
-      {settings.showBrandsSection && (
-        <section className="py-20 max-w-7xl mx-auto px-6">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
-            variants={staggerContainer}
-            className="text-center mb-16"
+ useEffect(() => {
+ fetch(`${API_BASE_URL}/brands`)
+ .then(res => res.json())
+ .then(data => {
+ if (Array.isArray(data) && data.length > 0) {
+ setBrands(data);
+ } else {
+ setBrands(FALLBACK_BRANDS);
+ }
+ })
+ .catch(err => {
+ console.error("Error fetching brands:", err);
+ setBrands(FALLBACK_BRANDS);
+ });
+
+ // Fetch dynamic cars from DB
+ fetch(`${API_BASE_URL}/cars`)
+ .then(res => res.json())
+ .then(data => {
+ if (Array.isArray(data)) {
+ setFeaturedCars(data);
+ }
+ })
+ .catch(err => console.error("Error fetching featured cars:", err))
+ .finally(() => setLoadingCars(false));
+
+ // Fetch real top destinations from DB (admin-curated list with images)
+ Promise.all([
+ fetch(`${API_BASE_URL}/destinations`).then(r => r.json()).catch(() => []),
+ fetch(`${API_BASE_URL}/cars/destinations`).then(r => r.json()).catch(() => []),
+ ]).then(([adminDests, carDests]) => {
+ const countMap: Record<string, number> = {};
+ if (Array.isArray(carDests)) {
+ carDests.forEach((d: any) => {
+ countMap[d.city?.toLowerCase() || ''] = d.count || 0;
+ });
+ }
+
+ if (Array.isArray(adminDests) && adminDests.length > 0) {
+ // Merge admin destinations with live listing counts
+ setDestinations(adminDests.map((d: any) => ({
+ ...d,
+ count: countMap[d.city?.toLowerCase() || ''] || 0,
+ })));
+ } else {
+ // No admin destinations yet — fall back to auto-aggregated car locations
+ if (Array.isArray(carDests) && carDests.length > 0) {
+ setDestinations(carDests);
+ } else {
+ setDestinations(DESTINATIONS.map((d) => ({
+ city: d.name,
+ country: d.country,
+ count: 0,
+ image: null,
+ _fallbackImage: d.image,
+ })));
+ }
+ }
+ });
+ }, []);
+
+ return (
+ <div className="min-h-screen bg-background font-sans selection:bg-primary selection:text-white">
+ <Header />
+
+ {/* Hero Section */}
+ {settings.showHeroSection && (
+ <section className="relative pt-16 lg:pt-20 min-h-screen flex items-center overflow-hidden">
+ <div className="absolute inset-0 z-0 bg-slate-800">
+ <div className="absolute inset-0 bg-gradient-to-l from-black/20 via-black/5 to-transparent z-10" />
+ <img
+ src={(() => {
+   if (loading) return `/images/site/car-bg.png`;
+   const url = settings.heroImageUrl;
+   if (!url) return `/images/site/car-bg.png`;
+   if (url.startsWith('/')) return `${BACKEND_URL}${url}`;
+   if (url === 'site-1777369870612-erik-mclean-QYRdVxPeFqc-unsplash.jpg') return `/images/site/car-bg.png`;
+   return `${BACKEND_URL}/images/site/${url}`;
+  })()}
+  onError={(e) => {
+   const target = e.target as HTMLImageElement;
+   target.src = `/images/site/car-bg.png`;
+  }}
+ alt="Luxury car on highway"
+ className="w-full h-full object-cover object-center"
+ loading="eager"
+ fetchPriority="high"
+ />
+ </div>
+
+ <div className="relative z-20 max-w-7xl mx-auto px-6 w-full py-20 flex flex-col lg:flex-row items-center gap-12">
+ {/* Booking Card */}
+ <motion.div
+ initial={{ opacity: 0, x: -50 }}
+ animate={{ opacity: 1, x: 0 }}
+ transition={{ duration: 0.7, ease: "easeOut" }}
+ className="w-full lg:w-[340px] shrink-0 order-2 lg:order-1"
+ >
+ <div className="bg-card rounded-app p-6 border border-border/50 backdrop-blur-md">
+ <h3 className="text-lg font-bold text-[hsl(224,71.4%,4.1%)] dark:text-white mb-5">
+ {settings.heroTranslations?.[language]?.onlineBooking || settings.heroTranslations?.['en']?.onlineBooking || t('home.online_booking')}
+ </h3>
+
+ <div className="mb-4">
+ <label className="text-[10px] font-black text-[hsl(224,71.4%,4.1%)] dark:text-white uppercase tracking-widest mb-2 block px-1">{t('home.pickup_location')}</label>
+ <div className="relative">
+ <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary dark:text-white z-10" />
+ <LocationAutocomplete
+ placeholder={t('home.pickup_placeholder')}
+ className="flex h-11 w-full rounded-app border bg-muted/50 px-3 py-2 pl-9 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 border-border focus-visible:ring-primary/30 text-foreground font-medium"
+ value={pickupLocation}
+ onChange={setPickupLocation}
+ data-testid="input-pickup-location"
+ />
+ </div>
+ </div>
+
+ <div className="flex items-center gap-2 mb-4">
+ <input
+ type="checkbox"
+ id="different-return"
+ checked={differentReturn}
+ onChange={e => setDifferentReturn(e.target.checked)}
+ className="w-4 h-4 accent-primary cursor-pointer"
+ data-testid="checkbox-different-return"
+ />
+ <label htmlFor="different-return" className="text-[10px] font-black text-[hsl(224,71.4%,4.1%)] dark:text-white uppercase tracking-widest cursor-pointer select-none px-1">
+ {t('home.different_return')}
+ </label>
+ </div>
+
+ {differentReturn && (
+ <div className="mb-4">
+ <label className="text-[10px] font-black text-[hsl(224,71.4%,4.1%)] dark:text-white uppercase tracking-widest mb-2 block px-1">{t('home.return_location')}</label>
+ <div className="relative">
+ <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground dark:text-white z-10" />
+ <LocationAutocomplete
+ placeholder={t('home.return_placeholder')}
+ className="flex h-11 w-full rounded-app border bg-muted/50 px-3 py-2 pl-9 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 border-border focus-visible:ring-primary/30 text-foreground font-medium"
+ value={returnLocation}
+ onChange={setReturnLocation}
+ data-testid="input-return-location"
+ />
+ </div>
+ </div>
+ )}
+
+ <div className="mb-6">
+ <PremiumRangePicker
+ startDate={fromDate}
+ endDate={toDate}
+ position="side"
+ align="center"
+ sideOffsetTop="-140px"
+ onRangeChange={(start, end) => {
+ setFromDate(start);
+ setToDate(end);
+ }}
+ />
+ </div>
+
+ <div className="mb-8">
+ <PremiumTimeRangePicker
+ startTime={fromTime}
+ endTime={toTime}
+ position="side"
+ align="left"
+ sideOffsetTop="-236px"
+ onRangeTimeChange={(start, end) => {
+ setFromTime(start);
+ setToTime(end);
+ }}
+ />
+ </div>
+
+ <Button
+ className="w-full h-11 bg-primary hover:bg-primary-hover text-white font-semibold rounded-app flex items-center justify-center gap-2"
+ onClick={() => {
+ const params = new URLSearchParams();
+ // Just pass the text directly so the VehiclesView handles "Madurai", "London", etc.
+ if (pickupLocation) params.set("city", pickupLocation.split(',')[0].trim());
+ if (fromDate) params.set("startDate", fromDate);
+ if (toDate) params.set("endDate", toDate);
+ if (fromTime) params.set("startTime", fromTime);
+ if (toTime) params.set("endTime", toTime);
+ router.push(`/vehicles?${params.toString()}`);
+ }}
+ data-testid="button-search-cars"
+ >
+ <Search className="w-4 h-4 shrink-0" />
+ {t('home.search_cars')}
+ </Button>
+ </div>
+ </motion.div>
+
+ {/* Hero Text */}
+ <motion.div
+ initial={{ opacity: 0, x: 50 }}
+ animate={{ opacity: 1, x: 0 }}
+ variants={staggerContainer}
+ className="flex-1 text-white order-1 lg:order-2"
+ >
+ <motion.h1
+ variants={fadeInUp}
+ className="text-5xl md:text-6xl lg:text-7xl font-[900] tracking-tight leading-[1.1] mb-6 drop-shadow"
+ >
+ {settings.heroTranslations?.[language]?.title || settings.heroTranslations?.['en']?.title || "Your Ride Should Match the Road!"}
+ </motion.h1>
+ <motion.p
+ variants={fadeInUp}
+ className="text-lg md:text-xl text-white/80 max-w-lg drop-shadow"
+ >
+ {settings.heroTranslations?.[language]?.subtitle || settings.heroTranslations?.['en']?.subtitle || "Book your luxury drive in just a few clicks. Experience the ultimate comfort and performance on your next journey."}
+ </motion.p>
+
+ <motion.div variants={fadeInUp} className="mt-10 flex gap-6">
+ <div className="text-center">
+ <div className="text-3xl font-bold">{settings.stats?.premiumCars || "500+"}</div>
+ <div className="text-white/70 text-sm mt-1">
+ {settings.heroTranslations?.[language]?.premiumCarsLabel || settings.heroTranslations?.['en']?.premiumCarsLabel || t('home.premium_cars')}
+ </div>
+ </div>
+ <div className="w-px bg-white/20" />
+ <div className="text-center">
+ <div className="text-3xl font-bold">{settings.stats?.locations || "50+"}</div>
+ <div className="text-white/70 text-sm mt-1">
+ {settings.heroTranslations?.[language]?.locationsLabel || settings.heroTranslations?.['en']?.locationsLabel || t('home.locations')}
+ </div>
+ </div>
+ <div className="w-px bg-white/20" />
+ <div className="text-center">
+ <div className="text-3xl font-bold">{settings.stats?.happyClients || "10k+"}</div>
+ <div className="text-white/70 text-sm mt-1">
+ {settings.heroTranslations?.[language]?.happyClientsLabel || settings.heroTranslations?.['en']?.happyClientsLabel || t('home.happy_clients')}
+ </div>
+ </div>
+ </motion.div>
+ </motion.div>
+ </div>
+ </section>
+ )}
+
+ {/* Vehicle Categories */}
+ {settings.showBrandsSection && (
+ <section className="py-20 max-w-7xl mx-auto px-6">
+ <motion.div
+ initial="hidden"
+ whileInView="visible"
+ viewport={{ once: true, margin: "-100px" }}
+ variants={staggerContainer}
+ className="text-center mb-16"
+ >
+ <motion.p variants={fadeInUp} className="text-primary font-semibold tracking-wider uppercase text-sm mb-3">
+ {settings.heroTranslations?.[language]?.brandsTitle || settings.heroTranslations?.['en']?.brandsTitle || "Plan your trip"}
+ </motion.p>
+ <motion.h2 variants={fadeInUp} className="text-4xl font-bold mb-4 text-foreground">
+ {settings.heroTranslations?.[language]?.brandsSubtitle || settings.heroTranslations?.['en']?.brandsSubtitle || "Explore Our Elite Brands"}
+ </motion.h2>
+ <motion.p variants={fadeInUp} className="text-slate-900 dark:text-slate-300 max-w-2xl mx-auto">
+ {settings.heroTranslations?.[language]?.brandsDescription || settings.heroTranslations?.['en']?.brandsDescription || "Select your perfect ride from our diverse collection of premium automotive partners."}
+ </motion.p>
+ </motion.div>
+
+ <div className="relative overflow-hidden py-4 w-full">
+ <style>
+ {`
+ @keyframes marquee {
+ 0% { transform: translateX(0); }
+ 100% { transform: translateX(-50%); }
+ }
+ .marquee-inner {
+ display: flex;
+ gap: 5rem;
+ width: max-content;
+ animation: marquee 40s linear infinite;
+ }
+ .marquee-container:hover .marquee-inner {
+ animation-play-state: paused;
+ }
+ `}
+ </style>
+ <div className="marquee-container w-full">
+ <div className="marquee-inner pb-6">
+ {brands.length > 0 ? [...brands, ...brands, ...brands].map((brand, i) => (
+ <div
+ key={`${brand._id}-${i}`}
+ onClick={() => {
+ router.push(`/vehicles?brand=${encodeURIComponent(brand.name)}`);
+ }}
+ className="flex flex-col items-center gap-6 cursor-pointer group min-w-[140px] transition-all hover:-translate-y-2"
+ >
+ <div
+ className="w-24 h-24 bg-white dark:bg-white rounded-app p-4 transition-all duration-500 transform group-hover:scale-110 flex items-center justify-center dark:border-none dark:border dark:border-white/10"
+              style={{ boxShadow: '0px 0px 0px 1px #ccc' }}
+ >
+ <img
+ src={brand.logo}
+ alt={brand.name}
+ className="w-full h-full object-contain"
+ />
+ </div>
+ <span className="font-bold tracking-[0.2em] uppercase text-[10px] text-slate-900 dark:text-slate-300 group-hover:text-primary transition-colors">{brand.name}</span>
+ </div>
+ )) : (
+ <div className="py-10 text-center w-full text-muted-foreground opacity-50 font-medium tracking-widest uppercase text-xs">
+ {settings.heroTranslations?.[language]?.loadingBrands || settings.heroTranslations?.['en']?.loadingBrands || "Loading Elite Brands..."}
+ </div>
+ )}
+ </div>
+ </div>
+ </div>
+ </section>
+ )}
+
+ {/* Car Listings */}
+ {settings.showFeaturedCars && featuredCars.length > 0 && (
+ <section className="py-24 bg-muted/30 border-y border-border/50">
+ <div className="max-w-7xl mx-auto px-6">
+ <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
+ <div>
+ <h2 className="text-4xl font-bold mb-4 text-foreground">
+ {settings.heroTranslations?.[language]?.featuredTitle || settings.heroTranslations?.['en']?.featuredTitle || "Featured Cars"}
+ </h2>
+ <p className="text-slate-900 dark:text-slate-300">
+ {settings.heroTranslations?.[language]?.featuredSubtitle || settings.heroTranslations?.['en']?.featuredSubtitle || "Premium vehicles available for your next luxury experience."}
+ </p>
+ </div>
+ <Button variant="ghost" onClick={() => router.push('/vehicles')} className="text-primary hover:text-foreground hover:bg-transparent pr-0">
+ {settings.heroTranslations?.[language]?.viewAllVehicles || settings.heroTranslations?.['en']?.viewAllVehicles || "View all vehicles"} <ChevronRight className="w-4 h-4 ml-1" />
+ </Button>
+ </div>
+
+ <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+ {featuredCars.slice(0, 8).map((car, i) => (
+ <CarCard key={car._id || car.id} car={car} index={i} />
+ ))}
+ </div>
+ </div>
+ </section>
+ )}
+
+ {/* Drive Destinations */}
+ {settings.showDestinationsSection && (
+ <section className="pt-24 pb-8 max-w-7xl mx-auto px-6">
+ <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
+ <div>
+ <h2 className="text-4xl font-bold mb-4 text-foreground">
+ {settings.heroTranslations?.[language]?.destinationsTitle || settings.heroTranslations?.['en']?.destinationsTitle || "Drive Destinations"}
+ </h2>
+ <p className="text-slate-900 dark:text-slate-300 max-w-2xl">
+ {settings.heroTranslations?.[language]?.destinationsSubtitle || settings.heroTranslations?.['en']?.destinationsSubtitle || "Curated routes for the ultimate driving experience."}
+ </p>
+ </div>
+ {destinations.length > 4 && (
+ <div className="flex gap-3">
+ <button
+ onMouseEnter={() => isPaused.current = true}
+ onMouseLeave={() => isPaused.current = false}
+ onClick={() => {
+ if (carouselRef.current) {
+ const itemWidth = carouselRef.current.firstElementChild?.clientWidth || 0;
+ const gap = 24;
+ carouselRef.current.scrollBy({ left: -(itemWidth + gap), behavior: 'smooth' });
+ }
+ }}
+ className="w-12 h-12 rounded-app border border-border flex items-center justify-center hover:bg-primary hover:text-white transition-all group"
+ >
+ <ChevronLeft className="w-5 h-5 text-muted-foreground/60 group-hover:text-white" />
+ </button>
+ <button
+ onMouseEnter={() => isPaused.current = true}
+ onMouseLeave={() => isPaused.current = false}
+ onClick={() => {
+ if (carouselRef.current) {
+ const itemWidth = carouselRef.current.firstElementChild?.clientWidth || 0;
+ const gap = 24;
+ carouselRef.current.scrollBy({ left: (itemWidth + gap), behavior: 'smooth' });
+ }
+ }}
+ className="w-12 h-12 rounded-app bg-primary text-white flex items-center justify-center hover:bg-primary-hover transition-all "
+ >
+ <ChevronRight className="w-5 h-5" />
+ </button>
+ </div>
+ )}
+ </div>
+
+ <div
+ ref={carouselRef}
+ className={`flex overflow-x-auto gap-6 snap-x snap-mandatory pb-16 pt-10 -mt-10 custom-scrollbar-hide transition-opacity duration-700 ${isCarouselReady ? 'opacity-100' : 'opacity-0'}`}
+ style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+ >
+ <style jsx>{`
+ div::-webkit-scrollbar {
+ display: none;
+ }
+ `}</style>
+ {([...destinations, ...destinations, ...destinations]).map((dest, i) => {
+ // Resolve card image: real listing image → fallback cityscape → mock route image
+ const bgImage: any =
+ dest.image
+ ? getImageUrl(dest.image)
+ : dest._fallbackImage
+ ? (typeof dest._fallbackImage === 'object' ? (dest._fallbackImage?.src || '') : dest._fallbackImage)
+ : FALLBACK_DESTINATION_IMAGES[i % FALLBACK_DESTINATION_IMAGES.length];
+
+ return (
+ <motion.div
+ key={`${dest.city}-${i}`}
+ initial={{ opacity: 0 }}
+ animate={isCarouselReady ? { opacity: 1 } : { opacity: 0 }}
+ transition={{ duration: 0.5, delay: isCarouselReady ? (i % destinations.length) * 0.03 : 0 }}
+  onClick={() => window.location.href = `/vehicles?city=${encodeURIComponent(dest.city)}`}
+  className="group relative rounded-app overflow-hidden aspect-[4/5] cursor-pointer shrink-0 w-full md:w-[calc(33.333%-16px)] lg:w-[calc(25%-18px)] snap-start transition-shadow"
+ >
+ <img src={bgImage} alt={dest.city} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+ <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+ {/* Listing count badge */}
+ {dest.count > 0 && (
+ <div className="absolute top-4 right-4 bg-black/20 backdrop-blur-md border border-white/20 px-3 py-1.5 rounded-app">
+ <span className="text-white text-[10px] font-black uppercase tracking-widest">
+ {dest.count} {dest.count === 1
+ ? (settings.heroTranslations?.[language]?.listingLabel || settings.heroTranslations?.['en']?.listingLabel || 'listing')
+ : (settings.heroTranslations?.[language]?.listingsLabel || settings.heroTranslations?.['en']?.listingsLabel || 'listings')}
+ </span>
+ </div>
+ )}
+ <div className="absolute bottom-0 left-0 right-0 p-6 text-white transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+ <div className="flex items-center gap-1.5 text-white/70 text-[11px] font-black uppercase tracking-widest mb-2">
+ <MapPin className="w-3.5 h-3.5" /> {dest.country}
+ </div>
+ <h3 className="text-2xl font-black mb-2 tracking-tight">{dest.city}</h3>
+ <div className="flex items-center gap-2 text-sm font-medium text-white/80 opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-100">
+ {settings.heroTranslations?.[language]?.browseVehicles || settings.heroTranslations?.['en']?.browseVehicles || "Browse vehicles"} <ChevronRight className="w-4 h-4" />
+ </div>
+ </div>
+ </motion.div>
+ );
+ })}
+ </div>
+ </section>
+ )}
+
+ {/* Two Promo Cards Section */}
+ {settings.showCTASection && (
+  <section className="py-2 max-w-7xl mx-auto px-6 mb-8">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.5 }}
+        className="relative rounded-3xl overflow-hidden p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 md:gap-4 lg:gap-8 min-h-[280px] bg-card dark:bg-slate-900 shadow-sm border border-border dark:border-white/10"
+      >
+        <div className="flex-1 z-10">
+          <h3 className="text-2xl font-black text-primary mb-3 tracking-wider">
+            {settings.heroTranslations?.[language]?.ctaTitleRenter || "Finding Your Ideal Match?"}
+          </h3>
+          <p className="text-slate-500 dark:text-slate-400 text-[11px] font-bold uppercase tracking-widest mb-6 leading-relaxed max-w-[240px]">
+            Explore options for your next vehicle. Compare, decide, and connect.
+          </p>
+          <Link href="/vehicles">
+            <Button className="bg-primary hover:bg-primary-hover text-white rounded-app px-6 h-11 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all border-none shadow-lg shadow-primary/20">
+              {settings.heroTranslations?.[language]?.ctaButtonRenter || "Explore Options"} <ChevronRight className="w-3 h-3" />
+            </Button>
+          </Link>
+        </div>
+        <div className="w-full md:w-2/5 h-[240px] shrink-0 rounded-2xl overflow-hidden ">
+          <img
+            src={settings.ctaImageRenter ? (settings.ctaImageRenter.startsWith('http') || settings.ctaImageRenter.startsWith('/') ? settings.ctaImageRenter : `${BACKEND_URL}/images/site/${settings.ctaImageRenter}`) : "/cta-renter.jpg"}
+            onError={(e) => { (e.target as HTMLImageElement).src = "/cta-renter.jpg"; }}
+            alt="Find your match car"
+            className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+          />
+        </div>
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.5, delay: 0.1 }}
+        className="relative rounded-3xl overflow-hidden p-8 flex flex-col md:flex-row md:items-center justify-between gap-8 min-h-[280px] bg-card dark:bg-slate-900 shadow-sm border border-border dark:border-white/10"
+      >
+        <div className="flex-1 z-10">
+          <h3 className="text-2xl font-black text-primary mb-3 tracking-wider">
+            {settings.heroTranslations?.[language]?.ctaTitleHost || "Managing Your Car Journey?"}
+          </h3>
+          <p className="text-slate-500 dark:text-slate-400 text-[11px] font-bold uppercase tracking-widest mb-6 leading-relaxed max-w-[240px]">
+            Unlock tools to track, manage, or find a new home for your vehicle.
+          </p>
+          <div
+            onClick={() => {
+              if (!user) {
+                setShowLoginModal(true);
+              } else {
+                setUserType("host");
+                router.push("/dashboard/cars/new");
+              }
+            }}
+            className="cursor-pointer"
           >
-            <motion.p variants={fadeInUp} className="text-primary font-semibold tracking-wider uppercase text-sm mb-3">
-              {settings.heroTranslations?.[language]?.brandsTitle || settings.heroTranslations?.['en']?.brandsTitle || "Plan your trip"}
-            </motion.p>
-            <motion.h2 variants={fadeInUp} className="text-4xl font-bold mb-4 text-foreground">
-              {settings.heroTranslations?.[language]?.brandsSubtitle || settings.heroTranslations?.['en']?.brandsSubtitle || "Explore Our Brands"}
-            </motion.h2>
-            <motion.p variants={fadeInUp} className="text-muted-foreground max-w-2xl mx-auto">
-              {settings.heroTranslations?.[language]?.brandsDescription || settings.heroTranslations?.['en']?.brandsDescription || "Select your perfect ride from our diverse fleet of premium automotive partners."}
-            </motion.p>
-          </motion.div>
-
-          <div className="relative overflow-hidden py-4 w-full">
-            <style>
-              {`
-                @keyframes marquee {
-                  0% { transform: translateX(0); }
-                  100% { transform: translateX(-50%); }
-                }
-                .marquee-inner {
-                  display: flex;
-                  gap: 5rem;
-                  width: max-content;
-                  animation: marquee 40s linear infinite;
-                }
-                .marquee-container:hover .marquee-inner {
-                  animation-play-state: paused;
-                }
-              `}
-            </style>
-            <div className="marquee-container w-full">
-              <div className="marquee-inner pb-6">
-                {brands.length > 0 ? [...brands, ...brands, ...brands].map((brand, i) => (
-                  <div
-                    key={`${brand._id}-${i}`}
-                    className="flex flex-col items-center gap-6 cursor-pointer group min-w-[140px] transition-all hover:-translate-y-2"
-                  >
-                    <div className="w-16 h-16 transition-all duration-500 transform group-hover:scale-110">
-                      <img
-                        src={brand.logo}
-                        alt={brand.name}
-                        className="w-full h-full object-contain"
-                      />
-                    </div>
-                    <span className="font-bold tracking-[0.2em] uppercase text-[10px] text-slate-600 group-hover:text-primary transition-colors">{brand.name}</span>
-                  </div>
-                )) : (
-                  <div className="py-10 text-center w-full text-muted-foreground opacity-50 font-medium tracking-widest uppercase text-xs">
-                    Loading Elite Brands...
-                  </div>
-                )}
-              </div>
-            </div>
+            <Button className="bg-primary hover:bg-primary-hover text-white rounded-app px-6 h-11 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all border-none shadow-lg shadow-primary/20">
+              {settings.heroTranslations?.[language]?.ctaButtonHost || "List Your Car"} <ChevronRight className="w-3 h-3" />
+            </Button>
           </div>
-        </section>
-      )}
-
-      {/* Car Listings */}
-      {settings.showFeaturedCars && (
-        <section className="py-24 bg-muted/30 border-y border-border/50">
-          <div className="max-w-7xl mx-auto px-6">
-            <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
-              <div>
-                <h2 className="text-4xl font-bold mb-4 text-foreground">
-                  {settings.heroTranslations?.[language]?.featuredTitle || settings.heroTranslations?.['en']?.featuredTitle || "Featured Fleet"}
-                </h2>
-                <p className="text-muted-foreground">
-                  {settings.heroTranslations?.[language]?.featuredSubtitle || settings.heroTranslations?.['en']?.featuredSubtitle || "Premium vehicles available for your next luxury experience."}
-                </p>
-              </div>
-              <Button variant="ghost" className="text-primary hover:text-black hover:bg-transparent pr-0">
-                View all vehicles <ChevronRight className="w-4 h-4 ml-1" />
-              </Button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {CARS.slice(0, 8).map((car, i) => (
-                <CarCard key={car.id} car={car} index={i} />
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Drive Destinations */}
-      {settings.showDestinationsSection && (
-        <section className="py-24 max-w-7xl mx-auto px-6">
-          <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
-            <div>
-              <h2 className="text-4xl font-bold mb-4 text-foreground">
-                {settings.heroTranslations?.[language]?.destinationsTitle || settings.heroTranslations?.['en']?.destinationsTitle || "Drive Destinations"}
-              </h2>
-              <p className="text-muted-foreground max-w-2xl">
-                {settings.heroTranslations?.[language]?.destinationsSubtitle || settings.heroTranslations?.['en']?.destinationsSubtitle || "Curated routes for the ultimate driving experience."}
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {DESTINATIONS.map((route, i) => (
-              <motion.div
-                key={route.id}
-                initial={{ opacity: 0, scale: 0.95 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.15 }}
-                className="group relative rounded-2xl overflow-hidden aspect-[3/4] cursor-pointer"
-                data-testid={`card-route-${route.id}`}
-              >
-                <img src={getSrc(route.image)} alt={route.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                <div className="absolute bottom-0 left-0 right-0 p-6 text-white transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
-                  <h3 className="text-xl font-bold mb-2">{route.name}</h3>
-                  <div className="flex items-center gap-2 text-sm font-medium text-white/80 opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-100">
-                    Drive this route <ChevronRight className="w-4 h-4" />
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </section>
-      )}
-
-
-      {/* Testimonials */}
-      {settings.showTestimonials && (
-        <section className="py-24 bg-muted/30 border-y border-border/50">
-          <div className="max-w-7xl mx-auto px-6">
-            <motion.div
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: "-80px" }}
-              variants={staggerContainer}
-              className="text-center mb-16"
-            >
-              <motion.p variants={fadeInUp} className="text-primary font-semibold tracking-wider uppercase text-sm mb-3">
-                {settings.heroTranslations?.[language]?.testimonialsTitle || settings.heroTranslations?.['en']?.testimonialsTitle || "What Our Clients Say"}
-              </motion.p>
-              <motion.h2 variants={fadeInUp} className="text-4xl font-bold mb-4 text-foreground">
-                {settings.heroTranslations?.[language]?.testimonialsSubtitle || settings.heroTranslations?.['en']?.testimonialsSubtitle || "Trusted by Thousands"}
-              </motion.h2>
-              <motion.p variants={fadeInUp} className="text-muted-foreground max-w-2xl mx-auto">
-                {settings.heroTranslations?.[language]?.testimonialsDescription || settings.heroTranslations?.['en']?.testimonialsDescription || "Real stories from real CarRentify clients around the world."}
-              </motion.p>
-            </motion.div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {TESTIMONIALS.map((t, i) => (
-                <motion.div
-                  key={t.name}
-                  initial={{ opacity: 0, y: 24 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
-                  data-testid={`card-testimonial-${i}`}
-                >
-                  <Card className="h-full rounded-2xl border-border/40 bg-white hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 p-6 flex flex-col">
-                    <Quote className="w-8 h-8 text-primary/20 mb-4 shrink-0" />
-                    <p className="text-foreground/75 text-sm leading-relaxed flex-1 mb-6">"{t.content}"</p>
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white text-xs font-bold shrink-0">
-                        {t.name.split(' ').map(n => n[0]).join('')}
-                      </div>
-                      <div>
-                        <div className="font-semibold text-sm text-foreground">{t.name}</div>
-                        <div className="text-xs text-muted-foreground">{t.role}</div>
-                      </div>
-                      <div className="ml-auto flex gap-0.5">
-                        {Array.from({ length: 5 }).map((_, si) => (
-                          <Star key={si} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                        ))}
-                      </div>
-                    </div>
-                  </Card>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Two Promo Cards Section */}
-      {settings.showCTASection && (
-        <section className="py-16 max-w-7xl mx-auto px-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-              className="relative rounded-3xl overflow-hidden p-8 flex items-center justify-between gap-6 min-h-[220px] border border-primary/5"
-              style={{ background: "var(--primary-brand-lite)" }}
-            >
-              <div className="flex-1 z-10">
-                <h3 className="text-2xl font-bold text-slate-900 mb-3 tracking-wider">
-                  {settings.heroTranslations?.[language]?.ctaTitleRenter || settings.heroTranslations?.['en']?.ctaTitleRenter || "Finding Your Ideal Match?"}
-                </h3>
-                <p className="text-slate-600 text-sm mb-6 max-w-[220px]">
-                  {settings.heroTranslations?.[language]?.ctaSubtitleRenter || settings.heroTranslations?.['en']?.ctaSubtitleRenter || "Explore options for your next vehicle. Compare, decide, and connect to find the perfect ride for your journey."}
-                </p>
-                <Link href="/vehicles">
-                  <Button className="bg-primary hover:bg-primary/90 text-white rounded-full px-6 h-11 font-semibold flex items-center gap-2 shadow-lg shadow-primary/20">
-                    {settings.heroTranslations?.[language]?.ctaButtonRenter || settings.heroTranslations?.['en']?.ctaButtonRenter || "Explore Options"} <ChevronRight className="w-4 h-4" />
-                  </Button>
-                </Link>
-              </div>
-              <div className="w-[180px] shrink-0">
-                <img src={settings.ctaImageRenter || "/car-5.png"} alt="Find your match car" className="w-full object-contain drop-shadow-xl" />
-              </div>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              className="relative rounded-3xl overflow-hidden p-8 flex items-center justify-between gap-6 min-h-[220px] shadow-xl shadow-primary/20"
-              style={{ background: "linear-gradient(135deg, var(--primary-brand-color) 0%, var(--secondary-brand-color) 100%)" }}
-            >
-              <div className="flex-1 z-10">
-                <h3 className="text-2xl font-bold text-white mb-3 tracking-wider">
-                  {settings.heroTranslations?.[language]?.ctaTitleHost || settings.heroTranslations?.['en']?.ctaTitleHost || "Managing Your Car Journey?"}
-                </h3>
-                <p className="text-white/60 text-sm mb-6 max-w-[220px]">
-                  {settings.heroTranslations?.[language]?.ctaSubtitleHost || settings.heroTranslations?.['en']?.ctaSubtitleHost || "Unlock tools to track, manage, or find a new home for your vehicle with effortless ease and complete security."}
-                </p>
-                <Link href="/dashboard/fleet/new">
-                  <Button className="bg-white hover:bg-white/90 text-primary rounded-full px-6 h-11 font-semibold flex items-center gap-2">
-                    {settings.heroTranslations?.[language]?.ctaButtonHost || settings.heroTranslations?.['en']?.ctaButtonHost || "List Your Car"} <ChevronRight className="w-4 h-4" />
-                  </Button>
-                </Link>
-              </div>
-              <div className="w-[180px] shrink-0">
-                <img src={settings.ctaImageHost || "/car-2.png"} alt="Manage your car" className="w-full object-contain drop-shadow-xl brightness-110" />
-              </div>
-            </motion.div>
-          </div>
-        </section>
-      )}
-
-      {/* Map & Locations */}
-      {settings.showLocationsSection && (
-        <section className="py-24 bg-primary text-primary-foreground relative overflow-hidden">
-          <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white to-transparent" />
-          <div className="max-w-7xl mx-auto px-6 relative z-10 flex flex-col lg:flex-row gap-12 items-center">
-            <div className="lg:w-1/3">
-              <h2 className="text-4xl font-bold mb-6">
-                {settings.heroTranslations?.[language]?.locationsTitle || settings.heroTranslations?.['en']?.locationsTitle || "Find us globally"}
-              </h2>
-              <p className="text-primary-foreground/80 mb-8 text-lg">
-                {settings.heroTranslations?.[language]?.locationsSubtitle || settings.heroTranslations?.['en']?.locationsSubtitle || "We have premium locations in all major cities and airports across the globe, ensuring you are never far from your next luxury drive."}
-              </p>
-              <div className="space-y-6">
-                {[
-                  { city: "New York", address: "JFK International Airport" },
-                  { city: "London", address: "Heathrow Airport, Terminal 5" },
-                  { city: "Dubai", address: "Dubai International Airport" },
-                ].map((loc, i) => (
-                  <div key={i} className="flex gap-4 items-start">
-                    <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center shrink-0">
-                      <MapPin className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-lg">{loc.city}</h4>
-                      <p className="text-primary-foreground/70">{loc.address}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <Link href="/locations">
-                <Button variant="outline" className="mt-10 border-white text-primary bg-white hover:bg-white/90 rounded-full px-8 h-12 font-bold">
-                  {settings.heroTranslations?.[language]?.locationsButton || settings.heroTranslations?.['en']?.locationsButton || "View All Locations"}
-                </Button>
-              </Link>
-            </div>
-            <div className="lg:w-2/3 w-full h-[500px] rounded-3xl overflow-hidden relative shadow-2xl shadow-black/20 bg-white/5 border border-white/10 p-2">
-              <div className="w-full h-full rounded-2xl bg-[#E8EAE6] relative overflow-hidden flex items-center justify-center">
-                <div className="relative z-10 flex flex-col items-center">
-                  <MapPin className="w-12 h-12 text-primary animate-bounce mb-4" />
-                  <div className="bg-white text-primary font-bold px-6 py-3 rounded-xl shadow-lg">Interactive Map Coming Soon</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Enhance Your Experience */}
-      {settings.showEnhanceSection !== false && (
-        <section className="py-24 max-w-7xl mx-auto px-6">
-          <div className="flex flex-col lg:flex-row gap-12">
-            <div className="lg:w-1/2">
-              <h2 className="text-4xl font-bold mb-6 text-foreground">
-                {settings.heroTranslations?.[language]?.enhanceTitle || settings.heroTranslations?.['en']?.enhanceTitle || "Enhance Your Experience"}
-              </h2>
-              <p className="text-muted-foreground mb-10 text-lg">
-                {settings.heroTranslations?.[language]?.enhanceSubtitle || settings.heroTranslations?.['en']?.enhanceSubtitle || "Find premium accessories and book exclusive services to make your journey truly unforgettable."}
-              </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {accessories.map((acc, i) => (
-                <div key={i} className="p-6 rounded-2xl border border-border/50 bg-muted/30 hover:border-primary/30 transition-colors">
-                  <h4 className="font-bold text-foreground mb-2">{acc.title}</h4>
-                  <p className="text-primary font-medium">{acc.price}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-            <div className="lg:w-1/2">
-              <div className="w-full h-full min-h-[400px] rounded-3xl overflow-hidden">
-                <img src={settings.enhanceImage || "/enhance.png"} alt="Luxury Accessories" className="w-full h-full object-cover" />
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Get the App */}
-      {settings.showAppSection !== false && (
-        <section className="py-24 bg-muted/30 border-t border-border/50">
-          <div className="max-w-7xl mx-auto px-6">
-            <div className="bg-primary rounded-[3rem] overflow-hidden relative shadow-2xl flex flex-col lg:flex-row items-center">
-              <div className="lg:w-1/2 p-12 lg:p-20 relative z-10">
-                <h2 className="text-4xl md:text-5xl font-bold mb-6 text-white">
-                  {settings.heroTranslations?.[language]?.appTitle || settings.heroTranslations?.['en']?.appTitle || "Get the Drive App"}
-                </h2>
-                <p className="text-white/80 mb-10 text-lg">
-                  {settings.heroTranslations?.[language]?.appSubtitle || settings.heroTranslations?.['en']?.appSubtitle || "Download the app and find your perfect drive instantly. Manage bookings, unlock cars directly, and access 24/7 premium support."}
-                </p>
-              <div className="flex flex-wrap gap-4">
-                <a href={settings.appStoreLink || "https://apple.com/app-store"} target="_blank" rel="noopener noreferrer">
-                  <Button className="bg-white text-primary hover:bg-white/90 h-14 px-8 rounded-xl text-base font-bold flex gap-3" data-testid="button-app-store">
-                    {settings.heroTranslations?.[language]?.appStoreLabel || settings.heroTranslations?.['en']?.appStoreLabel || "App Store"}
-                  </Button>
-                </a>
-                <a href={settings.googlePlayLink || "https://play.google.com/store"} target="_blank" rel="noopener noreferrer">
-                  <Button className="bg-white text-primary hover:bg-white/90 h-14 px-8 rounded-xl text-base font-bold flex gap-3" data-testid="button-google-play">
-                    {settings.heroTranslations?.[language]?.googlePlayLabel || settings.heroTranslations?.['en']?.googlePlayLabel || "Google Play"}
-                  </Button>
-                </a>
-              </div>
-            </div>
-              <div className="lg:w-1/2 relative w-full flex items-end justify-center lg:justify-end h-[320px] md:h-[450px] lg:h-[600px] overflow-hidden px-8 lg:px-0">
-                <img src={settings.appImage || "/app-mockup.png"} alt="App Mockups" className="w-auto h-full max-w-none object-contain object-bottom transform lg:translate-y-16 lg:translate-x-12 lg:scale-110" />
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
-
-      <Footer />
+        </div>
+        <div className="w-full md:w-2/5 h-[240px] shrink-0 rounded-2xl overflow-hidden ">
+          <img
+            src={settings.ctaImageHost ? (settings.ctaImageHost.startsWith('http') || settings.ctaImageHost.startsWith('/') ? settings.ctaImageHost : `${BACKEND_URL}/images/site/${settings.ctaImageHost}`) : "/cta-host.jpg"}
+            onError={(e) => { (e.target as HTMLImageElement).src = "/cta-host.jpg"; }}
+            alt="Manage your car"
+            className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+          />
+        </div>
+      </motion.div>
     </div>
-  );
+  </section>
+  )}
+
+ {/* Map & Locations */}
+ {settings.showLocationsSection && (
+ <section className="py-24 bg-primary text-primary-foreground relative overflow-hidden">
+ <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white to-transparent" />
+ <div className="max-w-7xl mx-auto px-6 relative z-10 flex flex-col lg:flex-row gap-12 items-center">
+ <div className="lg:w-1/3">
+ <h2 className="text-4xl font-bold mb-6">
+ {settings.heroTranslations?.[language]?.locationsTitle || settings.heroTranslations?.['en']?.locationsTitle || "Find us globally"}
+ </h2>
+ <p className="text-primary-foreground/80 mb-8 text-lg">
+ {settings.heroTranslations?.[language]?.locationsSubtitle || settings.heroTranslations?.['en']?.locationsSubtitle || "We have premium locations in all major cities and airports across the globe, ensuring you are never far from your next luxury drive."}
+ </p>
+ <div className="space-y-6">
+ {((settings?.officeLocations?.length || 0) > 0
+ ? settings.officeLocations!
+ : [
+ { city: "New York", address: "JFK International Airport" },
+ { city: "London", address: "Heathrow Airport, Terminal 5" },
+ { city: "Dubai", address: "Dubai International Airport" },
+ ]
+ ).map((loc: any, i: number) => (
+ <div key={i} className="flex gap-4 items-start">
+ <div className="w-10 h-10 rounded-app bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
+ <MapPin className="w-5 h-5" />
+ </div>
+ <div>
+ <h4 className="font-bold text-lg">{loc.city}</h4>
+ <p className="text-primary-foreground/70">{loc.address}</p>
+ </div>
+ </div>
+ ))}
+ </div>
+
+ </div>
+ <div className="lg:w-2/3 w-full h-[500px] rounded-app overflow-hidden relative bg-white/5 border border-white/10 p-2">
+ <div className="w-full h-full rounded-app bg-muted relative overflow-hidden">
+ <OfficeMap
+ locations={((settings?.officeLocations?.length || 0) > 0
+ ? settings.officeLocations!
+ : [
+ { city: "New York", address: "JFK International Airport" },
+ { city: "London", address: "Heathrow Airport, Terminal 5" },
+ { city: "Dubai", address: "Dubai International Airport" },
+ ]
+ )}
+ />
+ </div>
+ </div>
+ </div>
+ </section>
+ )}
+
+
+ <Footer />
+ </div>
+ );
 }

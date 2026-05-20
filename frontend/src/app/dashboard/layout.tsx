@@ -3,26 +3,27 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { 
-  BarChart3, 
-  Car, 
-  Settings, 
-  LogOut, 
-  Menu, 
-  X,
-  ChevronRight,
-  PlusCircle,
-  LayoutDashboard,
-  CalendarCheck,
-  User as UserIcon,
-  Heart,
-  Wallet,
-  History,
-  ShieldCheck,
-  Key,
-  Star,
-  Users,
-  Trash2
+import {
+ BarChart3,
+ Car,
+ Settings,
+ LogOut,
+ Menu,
+ X,
+ ChevronRight,
+ PlusCircle,
+ LayoutDashboard,
+ CalendarCheck,
+ User as UserIcon,
+ Heart,
+ Wallet,
+ History,
+ ShieldCheck,
+ Key,
+ Star,
+ Users,
+ Trash2,
+ MessageSquare
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Header from "@/components/Header";
@@ -30,111 +31,145 @@ import Footer from "@/components/Footer";
 import { authService } from "@/services/authService";
 import { useSettings } from "@/components/ThemeProvider";
 import { useAuth } from "@/components/AuthContext";
+import { chatService } from "@/services/chatService";
+import { API_BASE_URL } from "@/config/api";
+import DeleteAccountModal from "@/components/DeleteAccountModal";
+import { useLocale } from "@/components/LocaleContext";
 
 export default function DashboardLayout({
-  children,
+ children,
 }: {
-  children: React.ReactNode;
+ children: React.ReactNode;
 }) {
-  const pathname = usePathname();
-  const { settings } = useSettings();
-  const { userType } = useAuth();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [user, setUser] = useState<any>(null);
+ const pathname = usePathname();
+ const { settings } = useSettings();
+ const { user, userType, logout } = useAuth();
+ const { language, t } = useLocale();
+ const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+ const [hasChats, setHasChats] = useState(false);
 
-  useEffect(() => {
-    setUser(authService.getCurrentUser());
-  }, []);
+ useEffect(() => {
+   const checkChats = async () => {
+     if (!user?._id) return;
+     try {
+       const conversations = await chatService.getConversations(user._id);
+       setHasChats(conversations.length > 0);
+     } catch (err) {
+       console.error("Error checking chats:", err);
+     }
+   };
+   checkChats();
+ }, [user?._id]);
 
-  const menuItems = [
-    { name: "Overview", icon: LayoutDashboard, href: "/dashboard" },
-    { name: "Profile", icon: UserIcon, href: "/dashboard/profile" },
-    { name: "Change Password", icon: Key, href: "/dashboard/security" },
-    { name: "My Bookings", icon: CalendarCheck, href: "/dashboard/bookings" },
-    { name: "My Reviews", icon: Star, href: "/dashboard/reviews" },
-    { name: "Upgrade to Vendor", icon: Users, href: "/dashboard/upgrade" },
-  ];
+ const renterItems = [
+  { name: t('dashboard.nav.overview'), icon: LayoutDashboard, href: "/dashboard" },
+  { name: userType === 'host' ? t('dashboard.nav.manage_bookings') : t('dashboard.nav.my_bookings'), icon: CalendarCheck, href: "/dashboard/bookings" },
+  ...(hasChats ? [{ name: t('dashboard.nav.messages'), icon: MessageSquare, href: "/dashboard/messages" }] : []),
+  { name: t('dashboard.nav.my_wishlist'), icon: Heart, href: "/dashboard/favorites" },
+  { name: t('dashboard.nav.wallet'), icon: Wallet, href: "/dashboard/wallet" },
+ ];
 
-  const isFullPage = pathname.includes('/fleet/new');
+ const hostItems = [
+  { name: t('dashboard.nav.fleet_overview'), icon: LayoutDashboard, href: "/dashboard" },
+  { name: t('dashboard.nav.manage_bookings'), icon: CalendarCheck, href: "/dashboard/bookings" },
+  { name: t('dashboard.nav.fleet_logistics'), icon: Car, href: "/dashboard/cars" },
+  ...(hasChats ? [{ name: t('dashboard.nav.messages'), icon: MessageSquare, href: "/dashboard/messages" }] : []),
+  { name: t('dashboard.nav.wallet_earnings'), icon: Wallet, href: "/dashboard/wallet" },
+ ];
 
-  return (
-    <div className="min-h-screen bg-[#F8FAFC] flex flex-col font-sans selection:bg-primary selection:text-white">
-      {!isFullPage && <Header />}
-      
-      <div className={`flex-1 transition-all duration-700 ${isFullPage ? 'max-w-full' : 'max-w-[1420px] mx-auto'} w-full px-6 ${isFullPage ? 'pt-10' : 'pt-24'} pb-20`}>
-        <div className="flex flex-col lg:flex-row gap-10 items-start h-full">
-          
-          {/* Left Side Sidebar - Hidden in Full Page Mode */}
-          {!isFullPage && (
-            <aside className="w-full lg:w-[320px] shrink-0 sticky top-24 animate-in slide-in-from-left duration-700">
-              <div className="bg-white rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/50 overflow-hidden flex flex-col h-full">
-                
-                {/* Profile Card Header */}
-                <div className="p-10 text-center flex flex-col items-center border-b border-slate-50 relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2" />
-                  <div className="w-28 h-28 rounded-3xl overflow-hidden border-4 border-slate-50 shadow-2xl mb-6 ring-4 ring-primary/5 group cursor-pointer transition-transform hover:scale-105 active:scale-95 duration-500">
-                     <img src="https://i.pravatar.cc/150?u=alena" alt="Alena Thiel" className="w-full h-full object-cover" />
-                  </div>
-                  <h3 className="text-xl font-black text-slate-900 tracking-tight leading-none mb-2">Alena Thiel</h3>
-                  <p className="text-xs font-bold text-slate-400">customer@rentify.io</p>
-                  
-                  <div className="mt-6 inline-flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 rounded-full text-[9px] font-black uppercase tracking-widest border border-emerald-100/50">
-                     <ShieldCheck size={10} fill="currentColor" /> Verified Account
-                  </div>
-                </div>
+ const commonItems = [
+ { name: t('dashboard.nav.profile_settings'), icon: UserIcon, href: "/dashboard/profile" },
+ ];
 
-                {/* Navigation Links */}
-                <nav className="flex-1 p-6 space-y-1">
-                  {menuItems.map((item) => {
-                    const isActive = pathname === item.href;
-                    return (
-                      <Link key={item.name} href={item.href}>
-                        <button className={`w-full flex items-center gap-4 px-6 py-4 rounded-2xl transition-all group ${isActive ? 'bg-primary/5 text-primary' : 'text-slate-400 hover:bg-slate-50'}`}>
-                           <item.icon size={18} className={isActive ? 'text-primary' : 'group-hover:text-primary transition-colors'} />
-                           <span className={`text-[11px] font-black uppercase tracking-widest ${isActive ? 'text-primary' : 'group-hover:text-slate-800'}`}>{item.name}</span>
-                           {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-primary" />}
-                        </button>
-                      </Link>
-                    );
-                  })}
-                  
-                  {/* Logout */}
-                  <button className="w-full flex items-center gap-4 px-6 py-4 rounded-2xl text-slate-400 hover:bg-slate-50 hover:text-rose-500 transition-all group mt-2">
-                     <LogOut size={18} className="group-hover:translate-x-1 transition-transform" />
-                     <span className="text-[11px] font-black uppercase tracking-widest">Logout Account</span>
-                  </button>
-                </nav>
+ const menuItems = userType === "host" ? [...hostItems, ...commonItems] : [...renterItems, ...commonItems];
 
-                {/* Delete Account at Bottom */}
-                <div className="p-6 mt-auto border-t border-slate-50">
-                   <button className="w-full flex items-center justify-center gap-2 h-14 rounded-2xl text-rose-500 bg-rose-50/30 hover:bg-rose-500 hover:text-white transition-all text-[11px] font-black uppercase tracking-widest group shadow-sm active:scale-95">
-                      <Trash2 size={16} className="group-hover:animate-shake" />
-                      Delete My Account
-                   </button>
-                </div>
-              </div>
-            </aside>
-          )}
+ const isFullPage = pathname.includes('/fleet/new') || pathname.includes('/dashboard/cars/new') || pathname.includes('/dashboard/new') || pathname.includes('/dashboard/cars/edit');
 
-          {/* Right Content Area */}
-          <main className={`flex-1 w-full min-w-0 ${isFullPage ? 'max-w-[1600px] mx-auto' : ''}`}>
-             {children}
-          </main>
-        </div>
-      </div>
-      
-      <Footer />
-      
-      <style jsx global>{`
-        @keyframes shake {
-          0%, 100% { transform: rotate(0deg); }
-          25% { transform: rotate(-5deg); }
-          75% { transform: rotate(5deg); }
-        }
-        .group-hover\:animate-shake:hover {
-          animation: shake 0.3s ease-in-out infinite;
-        }
-      `}</style>
-    </div>
-  );
+ return (
+ <div className="min-h-screen bg-[#F8FAFC] dark:bg-black flex flex-col font-sans selection:bg-primary selection:text-white overflow-x-clip transition-colors duration-300">
+ {!isFullPage && <Header />}
+
+ <div className={`flex-1 transition-all duration-700 ${isFullPage ? 'max-w-full' : 'max-w-[1420px] mx-auto'} w-full px-6 lg:px-6 ${isFullPage ? 'pt-10' : 'pt-24'} pb-10`}>
+ <div className="flex flex-col lg:flex-row gap-10 items-start h-full">
+
+ {/* Left Side Sidebar - Hidden in Full Page Mode */}
+ {!isFullPage && (
+ <aside className="hidden lg:block lg:w-[320px] shrink-0 lg:sticky lg:top-24 animate-in slide-in-from-left duration-700">
+ <div className="bg-white dark:bg-slate-950 rounded-app border border-slate-100 dark:border-white/10 overflow-hidden flex flex-col h-full">
+
+ {/* Profile Card Header */}
+ <div className="p-4 lg:p-5 pb-1 text-center flex flex-col items-center relative overflow-hidden">
+
+ {/* Profile Image / Avatar Placeholder */}
+ <div className="relative group/avatar mb-2">
+ <div className="w-24 h-24 lg:w-28 lg:h-28 rounded-app overflow-hidden border-4 border-slate-50 dark:border-slate-900 ring-4 ring-primary/5 cursor-pointer transition-all duration-500 relative">
+ {user?.profileImage ? (
+ <img src={user.profileImage} alt={user.displayName || "User"} className="w-full h-full object-cover group-hover/avatar:scale-110 transition-transform duration-700" />
+ ) : (
+ <div className="w-full h-full bg-gradient-to-br from-primary to-primary-hover flex items-center justify-center text-white text-4xl font-black uppercase">
+ {(user?.displayName || user?.firstName || "G")[0]}
+ </div>
+ )}
+
+ {/* Edit Overlay */}
+ <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/avatar:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px]">
+ <div className="w-10 h-10 bg-white/20 backdrop-blur-md rounded-app flex items-center justify-center text-white border border-white/30">
+ <PlusCircle size={20} />
+ </div>
+ </div>
+ </div>
+ </div>
+
+ <div className="flex flex-col items-center gap-2 mb-2 w-full px-4">
+ <h3 className="text-lg lg:text-xl font-black text-slate-900 dark:text-white tracking-tight leading-none truncate max-w-full">
+ {user?.displayName || (user?.firstName ? `${user.firstName} ${user.lastName || ''}` : t('dashboard.common.guest'))}
+ </h3>
+ <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 w-full truncate text-center">{user?.email || "guest@carrental.com"}</p>
+ </div>
+ </div>
+
+ {/* Navigation Links */}
+ <nav className="px-4 pt-0 pb-0 space-y-0.5">
+ {menuItems.map((item) => {
+ const isActive = pathname === item.href;
+ return (
+ <Link key={item.name} href={item.href}>
+ <button className={`w-full flex items-center gap-4 px-6 py-3 rounded-app transition-all group ${isActive ? 'bg-primary/5 text-primary dark:bg-primary/10 border border-transparent dark:border-primary/20' : 'text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-white/5'}`}>
+ <item.icon size={18} className={isActive ? 'text-primary' : 'group-hover:text-primary transition-colors'} />
+ <span className={`text-[11px] font-black uppercase tracking-widest ${isActive ? 'text-primary' : 'group-hover:text-slate-800 dark:group-hover:text-white'}`}>{item.name}</span>
+
+ </button>
+ </Link>
+ );
+ })}
+
+ </nav>
+ <div className="h-10" />
+ </div>
+ </aside>
+ )}
+
+ {/* Right Content Area */}
+ <main className={`flex-1 w-full min-w-0 ${isFullPage ? 'max-w-[1600px] mx-auto' : ''}`}>
+ {children}
+ </main>
+ </div>
+ </div>
+
+
+
+ <Footer />
+
+ <style jsx global>{`
+ @keyframes shake {
+ 0%, 100% { transform: rotate(0deg); }
+ 25% { transform: rotate(-5deg); }
+ 75% { transform: rotate(5deg); }
+ }
+ .group-hover\:animate-shake:hover {
+ animation: shake 0.3s ease-in-out infinite;
+ }
+ `}</style>
+ </div>
+ );
 }

@@ -3,10 +3,14 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { ReviewsService } from './reviews.service';
 import { ReviewsController } from './reviews.controller';
 import { Review, ReviewSchema } from './schemas/review.schema';
+import { Car, CarSchema } from '../cars/schemas/car.schema';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: Review.name, schema: ReviewSchema }]),
+    MongooseModule.forFeature([
+      { name: Review.name, schema: ReviewSchema },
+      { name: Car.name, schema: CarSchema }
+    ]),
   ],
   providers: [ReviewsService],
   controllers: [ReviewsController],

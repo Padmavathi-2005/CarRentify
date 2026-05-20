@@ -1,130 +1,130 @@
 {
-  "sidebar": {
-    "dashboard": "Tableau de Bord",
-    "staticPages": "Pages Statiques",
-    "currencies": "Devises",
-    "languages": "Langues",
-    "settings": "Paramètres",
-    "signOut": "Se Déconnecter"
-  },
-  "header": {
-    "infrastructureControl": "Contrôle Infrastructure",
-    "masterPrincipal": "Principal Système Maître",
-    "translateProfile": "Profil Traduire",
-    "active": "Actif",
-    "masterAuthority": "Autorité Maîtresse"
-  },
-  "dashboard": {
-    "totalRevenue": "Revenu Total",
-    "activeUsers": "Utilisateurs Actifs",
-    "fleetStatus": "Statut de la Flotte",
-    "recentActivity": "Activité Récente"
-  },
-  "staticPages": {
-    "title": "Pages Statiques",
-    "desc": "Gérer le contenu informatif de la plateforme.",
-    "addPage": "Nouvelle Page",
-    "save": "Enregistrer la Page",
-    "placeholder": "ex: Conditions d'Utilisation",
-    "table": {
-      "titleSlug": "Titre & Slug",
-      "visibility": "Visibilité",
-      "createdAt": "Créé le",
-      "status": "Statut",
-      "actions": "Actions"
-    }
-  },
-  "currencies": {
-    "title": "Devises",
-    "desc": "Gérer les unités monétaires mondiales.",
-    "add": "Ajouter Devise",
-    "save": "Enregistrer Devise",
-    "table": {
-      "unit": "Unité Monétaire",
-      "code": "Code ISO",
-      "symbol": "Symbole"
-    }
-  },
-  "languages": {
-    "title": "Langues",
-    "desc": "Gérer les centres de localisation de la plateforme.",
-    "add": "Ajouter Langue",
-    "save": "Enregistrer Langue",
-    "modalTitle": "Ajouter une nouvelle langue",
-    "fields": {
-      "name": "Nom affiché (Anglais)",
-      "native": "Nom natif (Localisé)",
-      "code": "Code ISO"
-    },
-    "table": {
-      "hub": "Centre Linguistique",
-      "code": "Code ISO",
-      "status": "Statut du système"
-    }
-  },
-  "settings": {
-    "title": "Paramètres",
-    "tabs": {
-      "general": "Configuration du Site",
-      "social": "Réseaux Sociaux",
-      "smtp": "Paramètres Email",
-      "financials": "Finances",
-      "listings": "Annonces",
-      "footer": "Config Pied de page"
-    },
-    "general": {
-      "name": "Nom du Site",
-      "url": "URL du Site",
-      "logoDark": "Logo (Sombre)",
-      "logoLight": "Logo (Clair)",
-      "favicon": "Favicon",
-      "defaultLanguage": "Langue par Défaut",
-      "defaultCurrency": "Devise par Défaut",
-      "timezone": "Fuseau Horaire",
-      "primaryColor": "Couleur Primaire",
-      "secondaryColor": "Hue Secondaire",
-      "supportEmail": "Email de Support",
-      "supportPhone": "Téléphone de Support",
-      "copyright": "Signature Copyright"
-    },
-    "social": {
-      "facebook": "Protocole Meta",
-      "instagram": "Flux Visuel",
-      "linkedin": "Réseau Pro",
-      "twitter": "Flux de Signal"
-    },
-    "smtp": {
-      "verification": "Vérification Email",
-      "otpDesc": "Appliquer les protocoles OTP",
-      "host": "Hôte SMTP",
-      "port": "Port SMTP",
-      "user": "Nom d'utilisateur SMTP",
-      "pass": "Mot de passe SMTP",
-      "from": "Adresse Email d'expédition"
-    },
-    "financials": {
-      "balance": "Solde de la plateforme",
-      "payoutMin": "Retrait Min.",
-      "payoutDesc": "Seuil de retrait minimum",
-      "systemFee": "Frais système",
-      "feeDesc": "Commission de la plateforme par réservation"
-    },
-    "listings": {
-      "uploadLimit": "Limite de téléchargement d'images",
-      "limitDesc": "Images max par annonce de véhicule"
-    },
-    "actions": {
-      "save": "Enregistrer",
-      "saving": "Synchronisation...",
-      "success": "Configuration synchronisée avec succès",
-      "dbError": "Échec de la synchronisation : base de données inaccessible",
-      "error": "Erreur critique : connexion refusée"
-    },
-    "footerTabs": {
-      "newsletter": "Bannière Newsletter",
-      "social": "Réseaux Sociaux",
-      "links": "Liens Rapides",
-      "text": "Texte & Copyright"
-    }
-  }
+    "sidebar":  {
+                    "dashboard":  "Tableau de Bord",
+                    "staticPages":  "Pages Statiques",
+                    "currencies":  "Devises",
+                    "languages":  "Langues",
+                    "settings":  "ParamÃ¨tres",
+                    "signOut":  "Se DÃ©connecter"
+                },
+    "header":  {
+                   "infrastructureControl":  "ContrÃ´le Infrastructure",
+                   "masterPrincipal":  "Principal SystÃ¨me MaÃ®tre",
+                   "translateProfile":  "Profil Traduire",
+                   "active":  "Actif",
+                   "masterAuthority":  "AutoritÃ© MaÃ®tresse"
+               },
+    "dashboard":  {
+                      "totalRevenue":  "Revenu Total",
+                      "activeUsers":  "Utilisateurs Actifs",
+                      "fleetStatus":  "Statut de la Flotte",
+                      "recentActivity":  "ActivitÃ© RÃ©cente"
+                  },
+    "staticPages":  {
+                        "title":  "Pages Statiques",
+                        "desc":  "GÃ©rer le contenu informatif de la plateforme.",
+                        "addPage":  "Nouvelle Page",
+                        "save":  "Enregistrer la Page",
+                        "placeholder":  "ex: Conditions d\u0027Utilisation",
+                        "table":  {
+                                      "titleSlug":  "Titre \u0026 Slug",
+                                      "visibility":  "VisibilitÃ©",
+                                      "createdAt":  "CrÃ©Ã© le",
+                                      "status":  "Statut",
+                                      "actions":  "Actions"
+                                  }
+                    },
+    "currencies":  {
+                       "title":  "Devises",
+                       "desc":  "GÃ©rer les unitÃ©s monÃ©taires mondiales.",
+                       "add":  "Ajouter Devise",
+                       "save":  "Enregistrer Devise",
+                       "table":  {
+                                     "unit":  "UnitÃ© MonÃ©taire",
+                                     "code":  "Code ISO",
+                                     "symbol":  "Symbole"
+                                 }
+                   },
+    "languages":  {
+                      "title":  "Langues",
+                      "desc":  "GÃ©rer les centres de localisation de la plateforme.",
+                      "add":  "Ajouter Langue",
+                      "save":  "Enregistrer Langue",
+                      "modalTitle":  "Ajouter une nouvelle langue",
+                      "fields":  {
+                                     "name":  "Nom affichÃ© (Anglais)",
+                                     "native":  "Nom natif (LocalisÃ©)",
+                                     "code":  "Code ISO"
+                                 },
+                      "table":  {
+                                    "hub":  "Centre Linguistique",
+                                    "code":  "Code ISO",
+                                    "status":  "Statut du systÃ¨me"
+                                }
+                  },
+    "settings":  {
+                     "title":  "ParamÃ¨tres",
+                     "tabs":  {
+                                  "general":  "Configuration du Site",
+                                  "social":  "RÃ©seaux Sociaux",
+                                  "smtp":  "ParamÃ¨tres Email",
+                                  "financials":  "Finances",
+                                  "listings":  "Annonces",
+                                  "footer":  "Config Pied de page"
+                              },
+                     "general":  {
+                                     "name":  "Nom du Site",
+                                     "url":  "URL du Site",
+                                     "logoDark":  "Logo (Sombre)",
+                                     "logoLight":  "Logo (Clair)",
+                                     "favicon":  "Favicon",
+                                     "defaultLanguage":  "Langue par DÃ©faut",
+                                     "defaultCurrency":  "Devise par DÃ©faut",
+                                     "timezone":  "Fuseau Horaire",
+                                     "primaryColor":  "Couleur Primaire",
+                                     "secondaryColor":  "Hue Secondaire",
+                                     "supportEmail":  "Email de Support",
+                                     "supportPhone":  "TÃ©lÃ©phone de Support",
+                                     "copyright":  "Signature Copyright"
+                                 },
+                     "social":  {
+                                    "facebook":  "Protocole Meta",
+                                    "instagram":  "Flux Visuel",
+                                    "linkedin":  "RÃ©seau Pro",
+                                    "twitter":  "Flux de Signal"
+                                },
+                     "smtp":  {
+                                  "verification":  "VÃ©rification Email",
+                                  "otpDesc":  "Appliquer les protocoles OTP",
+                                  "host":  "HÃ´te SMTP",
+                                  "port":  "Port SMTP",
+                                  "user":  "Nom d\u0027utilisateur SMTP",
+                                  "pass":  "Mot de passe SMTP",
+                                  "from":  "Adresse Email d\u0027expÃ©dition"
+                              },
+                     "financials":  {
+                                        "balance":  "Solde de la plateforme",
+                                        "payoutMin":  "Retrait Min.",
+                                        "payoutDesc":  "Seuil de retrait minimum",
+                                        "systemFee":  "Frais systÃ¨me",
+                                        "feeDesc":  "Commission de la plateforme par rÃ©servation"
+                                    },
+                     "listings":  {
+                                      "uploadLimit":  "Limite de tÃ©lÃ©chargement d\u0027images",
+                                      "limitDesc":  "Images max par annonce de vÃ©hicule"
+                                  },
+                     "actions":  {
+                                     "save":  "Enregistrer",
+                                     "saving":  "Synchronisation...",
+                                     "success":  "Configuration synchronisÃ©e avec succÃ¨s",
+                                     "dbError":  "Ã‰chec de la synchronisation : base de donnÃ©es inaccessible",
+                                     "error":  "Erreur critique : connexion refusÃ©e"
+                                 },
+                     "footerTabs":  {
+                                        "newsletter":  "BanniÃ¨re Newsletter",
+                                        "social":  "RÃ©seaux Sociaux",
+                                        "links":  "Liens Rapides",
+                                        "text":  "Texte \u0026 Copyright"
+                                    }
+                 }
 }

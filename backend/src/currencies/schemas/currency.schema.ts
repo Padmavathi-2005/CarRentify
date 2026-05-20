@@ -14,6 +14,12 @@ export class Currency {
   @Prop({ required: true })
   symbol: string;
 
+  @Prop({ default: 'left', enum: ['left', 'right'] })
+  symbolPosition: string;
+
+  @Prop({ required: true, default: 1 })
+  exchangeRate: number;
+
   @Prop({ default: true })
   isActive: boolean;
 }

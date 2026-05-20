@@ -6,7 +6,9 @@ import { Currency, CurrencySchema } from './schemas/currency.schema';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: Currency.name, schema: CurrencySchema }]),
+    MongooseModule.forFeature([
+      { name: Currency.name, schema: CurrencySchema },
+    ]),
   ],
   controllers: [CurrenciesController],
   providers: [CurrenciesService],

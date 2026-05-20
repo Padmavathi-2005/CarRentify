@@ -6,6 +6,7 @@ import { Setting, SettingSchema } from './schemas/setting.schema';
 import { Currency, CurrencySchema } from './schemas/currency.schema';
 import { Language, LanguageSchema } from './schemas/language.schema';
 import { Timezone, TimezoneSchema } from './schemas/timezone.schema';
+import { PaymentGateway, PaymentGatewaySchema } from './schemas/payment-gateway.schema';
 
 @Module({
   imports: [
@@ -13,7 +14,8 @@ import { Timezone, TimezoneSchema } from './schemas/timezone.schema';
       { name: Setting.name, schema: SettingSchema },
       { name: Currency.name, schema: CurrencySchema },
       { name: Language.name, schema: LanguageSchema },
-      { name: Timezone.name, schema: TimezoneSchema }
+      { name: Timezone.name, schema: TimezoneSchema },
+      { name: PaymentGateway.name, schema: PaymentGatewaySchema },
     ]),
   ],
   controllers: [SettingsController],

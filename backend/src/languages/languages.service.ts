@@ -5,7 +5,9 @@ import { Language, LanguageDocument } from './schemas/language.schema';
 
 @Injectable()
 export class LanguagesService {
-  constructor(@InjectModel(Language.name) private model: Model<LanguageDocument>) {}
+  constructor(
+    @InjectModel(Language.name) private model: Model<LanguageDocument>,
+  ) {}
 
   async create(dto: any): Promise<Language> {
     const created = new this.model(dto);
@@ -17,7 +19,9 @@ export class LanguagesService {
   }
 
   async update(id: string, dto: any): Promise<Language> {
-    const updated = await this.model.findByIdAndUpdate(id, dto, { new: true }).exec();
+    const updated = await this.model
+      .findByIdAndUpdate(id, dto, { returnDocument: 'after' })
+      .exec();
     if (!updated) throw new NotFoundException(`Language #${id} not found`);
     return updated;
   }

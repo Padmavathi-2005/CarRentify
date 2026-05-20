@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
 *,
 *::before,
@@ -21,30 +22,86 @@ input[type="button"] {
   --card-foreground: 224 71.4% 4.1%;
   --popover: 0 0% 100%;
   --popover-foreground: 224 71.4% 4.1%;
-  --primary: 265 72.3% 28.2%;
-  /* #3f147b */
+  --primary: 340 78% 50%;
+  /* #e31c5f */
   --primary-foreground: 210 20% 98%;
-  --primary-hover: 265 60.5% 17.6%;
-  /* #291249 */
-  --secondary: 220 14.3% 95.9%;
+  --primary-hover: 340 78% 41.6%;
+  /* #bd174f */
+  --secondary: 340 78% 41.6%;
   --secondary-foreground: 220.9 39.3% 11%;
   --muted: 220 14.3% 95.9%;
-  --muted-foreground: 220 8.9% 46.1%;
+  --muted-foreground: 220 10% 35%;
   --accent: 220 14.3% 95.9%;
   --accent-foreground: 220.9 39.3% 11%;
   --destructive: 0 84.2% 60.2%;
   --destructive-foreground: 210 20% 98%;
-  --border: 220 13% 91%;
-  --input: 220 13% 91%;
-  --ring: 224 71.4% 4.1%;
-  --radius: 0.75rem;
+  --border: 220 13% 70%;
+  --input: 220 13% 70%;
+  --ring: 340 78% 50%;
+  --radius: 0.5rem;
+  --app-radius: 0.8rem;
 
-  --primary-brand-color: #3f147b;
-  --secondary-brand-color: #291249;
-  --primary-rgb: 63, 20, 123;
-  --primary-brand-lite: color-mix(in srgb, var(--primary-brand-color), white 98.5%);
+  --primary-brand-color: #e31c5f;
+  --secondary-brand-color: #bd174f;
+  --primary-rgb: 227, 28, 95;
+  --primary-brand-lite: color-mix(in srgb, var(--primary-brand-color), white 95%);
   --accent-muted: color-mix(in srgb, var(--primary-brand-color), transparent 80%);
 }
+
+.dark {
+  --background: 224 71.4% 4.1%;
+  --foreground: 210 20% 98%;
+  --card: 224 71.4% 4.1%;
+  --card-foreground: 210 20% 98%;
+  --popover: 224 71.4% 4.1%;
+  --popover-foreground: 210 20% 98%;
+  --primary-foreground: 210 20% 98%;
+  --secondary: 340 78% 30%;
+  --secondary-foreground: 210 20% 98%;
+  --muted: 217.2 32.6% 12.5%;
+  --muted-foreground: 215 20% 85%;
+  --accent: 217.2 32.6% 17.5%;
+  --accent-foreground: 210 40% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 217 32% 75%;
+  --input: 217 32% 75%;
+  --ring: 224.3 76.3% 48%;
+  --app-radius: 0.8rem;
+  --primary-brand-lite: color-mix(in srgb, var(--primary-brand-color), black 60%);
+  --accent-muted: color-mix(in srgb, var(--primary-brand-color), transparent 85%);
+}
+
+
+
+/* Global Utility Overrides for Visibility (Light Mode) */
+:root {
+
+  /* Darken light greys that are often hard to see */
+  .text-slate-400 {
+    color: #64748b !important;
+  }
+
+  /* Darken to slate-500 */
+  .text-slate-500 {
+    color: #475569 !important;
+  }
+
+  /* Darken to slate-600 */
+
+  .border-slate-50,
+  .border-slate-100 {
+    border-color: #cbd5e1 !important;
+  }
+
+  /* Darken to slate-300 */
+  .border-slate-200 {
+    border-color: #94a3b8 !important;
+  }
+
+  /* Darken to slate-400 */
+}
+
 
 @theme {
   --spacing: 0.25rem;
@@ -71,19 +128,61 @@ input[type="button"] {
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
-  --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --radius-app: var(--app-radius);
+  --font-sans: "Outfit", ui-sans-serif, system-ui, sans-serif;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
+  font-weight: 400;
+  /* Set a clean base weight */
   font-size: 16px;
   line-height: 1.6;
-  overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   scroll-behavior: smooth;
+}
+
+html {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+body {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  width: 8px;
+}
+
+html::-webkit-scrollbar-track,
+body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+html::-webkit-scrollbar-thumb,
+body::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+  border: 2px solid #F8FAFC;
+}
+
+html::-webkit-scrollbar-thumb:hover,
+body::-webkit-scrollbar-thumb:hover {
+  background: #e31c5f;
 }
 
 
@@ -95,21 +194,20 @@ body {
 }
 
 .brand-gradient {
-  background: linear-gradient(135deg, var(--primary-brand-color) 0%, #3f147b 100%);
+  background: linear-gradient(135deg, var(--primary-brand-color) 0%, #bd174f 100%);
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
 .brand-btn {
-  background: linear-gradient(135deg, var(--primary-brand-color) 0%, #3f147b 100%);
+  background: linear-gradient(135deg, var(--primary-brand-color) 0%, #bd174f 100%);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .brand-btn:hover {
   background: var(--secondary-brand-color);
   transform: translateY(-2px);
-  box-shadow: 0 10px 20px rgba(41, 18, 73, 0.3);
 }
 
 @keyframes fadeIn {
@@ -126,4 +224,146 @@ body {
 
 .animate-fade-in {
   animation: fadeIn 0.8s ease-out forwards;
+}
+
+/* Custom Premium Scrollbar - Applied Globally */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 10px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+  transition: all 0.3s;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: #e31c5f;
+}
+
+.custom-scrollbar {
+  /* Class still exists for specific overrides if needed */
+}
+
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
+}
+
+/* Global Placeholder Styles - Balanced for readability */
+input::placeholder,
+textarea::placeholder {
+  color: #475569 !important;
+  /* slate-600 */
+  opacity: 0.9 !important;
+}
+
+/* 
+   AGGRESSIVE DARK MODE OVERRIDES 
+   Ensures borders and text are visible regardless of hardcoded Tailwind classes
+*/
+html.dark,
+.dark {
+
+  /* Force borders to be visible */
+  .border-white\/5,
+  .border-white\/10,
+  .border-white\/20,
+  .border-white\/30,
+  .border-white\/40,
+  .border-white\/50,
+  .border-slate-100,
+  .border-slate-200,
+  .border-border,
+  .border-border\/40,
+  .border-border\/50 {
+    border-color: rgba(255, 255, 255, 0.3) !important;
+    border-width: 1px !important;
+  }
+
+  /* Force secondary/muted text to be light enough to read */
+  .text-slate-400,
+  .text-slate-500,
+  .text-slate-600,
+  .text-muted-foreground {
+    color: #94a3b8 !important;
+    /* slate-400 */
+    opacity: 1 !important;
+  }
+
+  /* Force headings and primary text to be very bright */
+  .text-slate-900,
+  .text-slate-800,
+  .text-foreground {
+    color: #f1f5f9 !important;
+    /* slate-100 */
+  }
+
+  /* Force placeholder text to be visible in dark mode */
+  input::placeholder,
+  textarea::placeholder {
+    color: #94a3b8 !important;
+    /* slate-400 */
+    opacity: 0.8 !important;
+  }
+
+  /* Background overrides for cards to ensure contrast */
+  .bg-white,
+  .bg-card,
+  .bg-slate-900 {
+    background-color: #0f172a !important;
+    /* slate-900 */
+  }
+}
+
+/* Tame the Outfit font weights which can appear too heavy */
+.font-black {
+  font-weight: 600 !important;
+  /* Reduced from 700 */
+}
+
+.font-bold {
+  font-weight: 500 !important;
+  /* Reduced from 600 */
+}
+
+.font-extrabold {
+  font-weight: 600 !important;
+}
+
+/* Further refine headings and bold text */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: 600;
+}
+
+strong,
+b {
+  font-weight: 600;
 }
