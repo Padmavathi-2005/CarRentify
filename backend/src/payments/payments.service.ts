@@ -6,6 +6,7 @@ import { Booking, BookingDocument, BookingStatus } from '../bookings/schemas/boo
 import { PaymentGateway, PaymentGatewayDocument } from '../settings/schemas/payment-gateway.schema';
 import { Setting, SettingDocument } from '../settings/schemas/setting.schema';
 import Stripe from 'stripe';
+import { BookingsService } from '../bookings/bookings.service';
 
 @Injectable()
 export class PaymentsService {
@@ -14,6 +15,7 @@ export class PaymentsService {
     @InjectModel(PaymentGateway.name) private gatewayModel: Model<PaymentGatewayDocument>,
     @InjectModel(Setting.name) private settingModel: Model<SettingDocument>,
     private readonly configService: ConfigService,
+    private readonly bookingsService: BookingsService,
   ) {}
 
   private async getStripeInstance() {
@@ -224,6 +226,7 @@ export class PaymentsService {
               status: BookingStatus.CONFIRMED,
               paymentId: session.id,
             });
+            this.bookingsService.processCommission(bookingId).catch(e => console.error("Commission processing error:", e));
           }
         }
       }
@@ -262,6 +265,7 @@ export class PaymentsService {
           status: BookingStatus.CONFIRMED,
           paymentId: orderId,
         });
+        this.bookingsService.processCommission(bookingId).catch(e => console.error("Commission processing error:", e));
       }
       return { success: true };
     } else {
@@ -286,6 +290,7 @@ export class PaymentsService {
           status: BookingStatus.CONFIRMED,
           paymentId: session.id
         });
+        this.bookingsService.processCommission(bookingId).catch(e => console.error("Commission processing error:", e));
       }
       return { success: true };
     } else {

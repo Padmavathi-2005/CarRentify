@@ -394,8 +394,8 @@ function CheckoutContent() {
  setLastBookingId(bookingId);
  setLastBookingHash(bookingHash || bookingId);
 
- // If an online payment method is selected, initialize the checkout session
- if (['stripe', 'paypal'].includes(paymentMethod.toLowerCase())) {
+ // If an online payment method is selected and it is an instant booking, initialize the checkout session
+ if (['stripe', 'paypal'].includes(paymentMethod.toLowerCase()) && car?.bookingType === 'Instant') {
  try {
  setIsProcessing(true); // Keep processing state while redirecting
  const sessionRes = await fetch(`${API_BASE_URL}/payments/create-session/${bookingId}`, {
@@ -430,7 +430,7 @@ function CheckoutContent() {
  }
  }
 
- // Show Success Overlay instead of instant redirect ONLY for non-online methods
+ // Show Success Overlay instead of instant redirect ONLY for non-online methods or Request bookings
  setUserType('renter');
  setShowSuccess(true);
  setTimeout(() => {
@@ -443,7 +443,7 @@ function CheckoutContent() {
  console.error("Booking error:", err);
  alert("Something went wrong while processing your reservation.");
  } finally {
- if (!['stripe', 'paypal'].includes(paymentMethod.toLowerCase())) {
+ if (!['stripe', 'paypal'].includes(paymentMethod.toLowerCase()) || car?.bookingType !== 'Instant') {
  setIsProcessing(false);
  }
  }

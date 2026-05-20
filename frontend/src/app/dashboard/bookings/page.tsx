@@ -1862,29 +1862,28 @@ function MyBookingsContent() {
                                   <div className="w-8 h-8 rounded-app bg-amber-500/10 flex items-center justify-center text-amber-500"><CreditCard size={14} /></div>
                                   <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest">{t('bookings.status.awaiting_payment')}</span>
                                 </div>
-                                <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest leading-relaxed">
+                                  <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest leading-relaxed">
                                   Your booking is confirmed, but payment is required to activate the journey.
                                 </p>
                                 <Button
                                   onClick={() => {
                                     setIsFinalizing(true);
                                     const method = b.paymentMethod?.toLowerCase() || 'stripe';
-                                    if (method === 'stripe') {
-                                      fetch(`${API_BASE_URL}/payments/create-session/${b._id}`, {
-                                        method: 'POST',
-                                        headers: { 'Authorization': `Bearer ${authService.getToken()}` }
+                                    fetch(`${API_BASE_URL}/payments/create-session/${b._id}`, {
+                                      method: 'POST',
+                                      headers: {
+                                        'Authorization': `Bearer ${authService.getToken()}`,
+                                        'Content-Type': 'application/json'
+                                      },
+                                      body: JSON.stringify({ paymentMethod: method })
+                                    })
+                                      .then(r => r.json())
+                                      .then(data => {
+                                        if (data.url) window.location.href = data.url;
+                                        else alert("Failed to initialize payment.");
                                       })
-                                        .then(r => r.json())
-                                        .then(data => {
-                                          if (data.url) window.location.href = data.url;
-                                          else alert("Failed to initialize payment.");
-                                        })
-                                        .catch(() => alert("Error connecting to payment gateway."))
-                                        .finally(() => setIsFinalizing(false));
-                                    } else if (method === 'paypal') {
-                                      // PayPal logic would go here, or just redirect back to checkout
-                                      router.push(`/checkout?bookingId=${b._id}&gateway=paypal`);
-                                    }
+                                      .catch(() => alert("Error connecting to payment gateway."))
+                                      .finally(() => setIsFinalizing(false));
                                   }}
                                   className="w-full h-12 bg-primary hover:bg-primary-hover text-white rounded-app text-[10px] font-black uppercase tracking-widest border-none"
                                 >

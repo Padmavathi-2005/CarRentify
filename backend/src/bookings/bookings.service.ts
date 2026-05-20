@@ -255,10 +255,13 @@ export class BookingsService {
     if (booking.status !== BookingStatus.PENDING)
       throw new BadRequestException('Booking is not pending');
 
-    booking.status = BookingStatus.CONFIRMED;
+    const isOnlineMethod = ['stripe', 'paypal'].includes((booking.paymentMethod || '').toLowerCase());
+    booking.status = isOnlineMethod ? BookingStatus.AWAITING_PAYMENT : BookingStatus.CONFIRMED;
     await booking.save();
 
-    await this.processCommission(bookingId);
+    if (booking.status === BookingStatus.CONFIRMED) {
+      await this.processCommission(bookingId);
+    }
 
     const customerUser = await this.userModel.findById(booking.customerId);
     const vendorUser = await this.userModel.findById(booking.vendorId);
@@ -266,9 +269,11 @@ export class BookingsService {
     // Persistent Notification to Customer
     await this.sendCommunication(
       customerUser,
-      `Approved: ${(booking.carId as any).name}`,
-      `Great news! Your booking for ${(booking.carId as any).name} has been approved by the host.`,
-      'success',
+      isOnlineMethod ? `Payment Required: ${(booking.carId as any).name}` : `Approved: ${(booking.carId as any).name}`,
+      isOnlineMethod
+        ? `Your request for ${(booking.carId as any).name} has been approved! Please click here to complete your payment.`
+        : `Great news! Your booking for ${(booking.carId as any).name} has been approved by the host.`,
+      isOnlineMethod ? 'info' : 'success',
       { type: 'booking', bookingId: booking._id.toString(), userType: 'renter' }
     );
     // Persistent Notification to Vendor
