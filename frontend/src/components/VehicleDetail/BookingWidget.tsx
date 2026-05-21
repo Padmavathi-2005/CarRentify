@@ -5,6 +5,8 @@ import { Zap, ShieldCheck, Info, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PremiumRangePicker, PremiumTimeRangePicker, PremiumLocationPicker, formatTimeDisplay, formatDateDisplay } from "@/components/CustomDateTimePicker";
 import { useSettings } from "../ThemeProvider";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/components/AuthContext";
 
 export const BookingWidget = ({
  car,
@@ -29,9 +31,12 @@ export const BookingWidget = ({
  submitting,
  bookingError,
  isAdmin,
+ isOwner,
  t
 }: any) => {
  const { settings } = useSettings();
+ const router = useRouter();
+ const { userType, setUserType } = useAuth();
  const d = getPricingDetails();
  const total = calculateTotal();
 
@@ -140,10 +145,21 @@ export const BookingWidget = ({
  {startDate && endDate ? (
  <>
  <div className="pt-4 border-t border-border space-y-3">
- <div className="flex justify-between items-center text-[11px] font-bold text-muted-foreground uppercase tracking-widest">
- <span>{formatPrice(d?.pricePerDay || car.pricePerDay || 0)} x {Math.max(1, Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)))} days</span>
- <span>{formatPrice(total)}</span>
- </div>
+  <div className="flex justify-between items-center text-[11px] font-bold text-muted-foreground uppercase tracking-widest">
+    <span>Rental Fee</span>
+    <div className="flex flex-col items-end">
+      <span className="text-[9px] opacity-60 mb-0.5 lowercase tracking-normal">
+        {formatPrice(d?.pricePerDay || car.pricePerDay || 0)} x {d?.totalDays || 1} days =
+      </span>
+      <span className="text-[12px] font-black text-foreground">{formatPrice((d?.pricePerDay || car.pricePerDay || 0) * (d?.totalDays || 1))}</span>
+    </div>
+  </div>
+  {d?.deliveryFee > 0 && (
+    <div className="flex justify-between items-center text-[11px] font-bold text-muted-foreground uppercase tracking-widest">
+      <span>Delivery Fee</span>
+      <span>{formatPrice(d.deliveryFee)}</span>
+    </div>
+  )}
  <div className="flex justify-between items-center pt-2 border-t border-border">
  <span className="text-xs font-black uppercase tracking-widest">Total</span>
  <span className="text-xl font-black text-primary tracking-tighter">{formatPrice(total)}</span>
@@ -168,6 +184,19 @@ export const BookingWidget = ({
  </div>
  )}
 
+ {isOwner ? (
+ <Button
+ onClick={() => {
+ if (userType === 'renter') {
+ setUserType('host');
+ }
+ router.push(`/dashboard/cars/edit/${car._id}`);
+ }}
+ className="w-full h-14 rounded-xl font-black uppercase tracking-[0.2em] text-[10px] bg-primary hover:bg-secondary hover:text-white transition-all duration-300 border-none"
+ >
+ Manage Vehicle
+ </Button>
+ ) : (
  <Button
  disabled={submitting || isAdmin}
  onClick={handleBooking}
@@ -175,6 +204,7 @@ export const BookingWidget = ({
  >
  {submitting ? 'Processing...' : (car.bookingType === 'Instant' ? 'Instant Booking' : 'Request Booking')}
  </Button>
+ )}
 
  </div>
  </div>

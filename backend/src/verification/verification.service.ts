@@ -124,9 +124,28 @@ export class VerificationService {
     submission.reviewedAt = new Date();
     await submission.save();
 
-    // Update user isVerified
+    const updatePayload: any = {
+      isVerified: true, verificationStatus: 'approved'
+    };
+
+    const licenseFrontDoc = submission.documents.find((d: any) => d.fieldId === 'driving_license_front' || d.fieldId === 'licenseImage');
+    const licenseBackDoc = submission.documents.find((d: any) => d.fieldId === 'driving_license_back');
+    const licenseExpDoc = submission.documents.find((d: any) => d.fieldId === 'licenseExpiryDate');
+
+    if (licenseFrontDoc?.value) {
+      updatePayload.licenseImage = licenseFrontDoc.value;
+    }
+    if (licenseBackDoc?.value) {
+      updatePayload.licenseBackImage = licenseBackDoc.value;
+    }
+    if (licenseExpDoc?.value) {
+      updatePayload.licenseExpiryDate = new Date(licenseExpDoc.value);
+      updatePayload.licenseExpiryNotified = false; // Reset notification state
+    }
+
+    // Update user isVerified and license info
     await this.userModel.findByIdAndUpdate(submission.userId, {
-      $set: { isVerified: true, verificationStatus: 'approved' }
+      $set: updatePayload
     });
 
     // Notify user via Platform Notification

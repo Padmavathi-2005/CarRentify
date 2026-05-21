@@ -58,6 +58,8 @@ function CheckoutContent() {
  const [dob, setDob] = useState("");
  const [phoneNumber, setPhoneNumber] = useState("");
  const [phoneError, setPhoneError] = useState<string | null>(null);
+ const [email, setEmail] = useState("");
+ const [emailError, setEmailError] = useState<string | null>(null);
 
  useEffect(() => {
     if (user) {
@@ -66,6 +68,7 @@ function CheckoutContent() {
         const digits = user.phone.replace(/\D/g, "").slice(-10);
         setPhoneNumber(digits);
       }
+      if (user.email) setEmail(user.email);
     }
   }, [user]);
  
@@ -343,6 +346,14 @@ function CheckoutContent() {
  return;
  }
 
+ if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+ setEmailError("Please enter a valid email address");
+ const emailField = document.getElementById('email-field');
+ if (emailField) emailField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+ return;
+ }
+ setEmailError(null);
+
  if (!phoneNumber || phoneNumber.length !== 10 || !/^\d+$/.test(phoneNumber)) {
  setPhoneError(t('checkout.labels.placeholder_mobile'));
  // Scroll to phone field
@@ -503,16 +514,21 @@ function CheckoutContent() {
  />
  </div>
  </div>
- <div className="space-y-2">
+ <div className="space-y-2" id="email-field">
  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">{t('checkout.labels.email')}</label>
  <div className="relative group/input">
  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300 group-focus-within/input:text-primary transition-all" />
  <Input 
- defaultValue={user?.email || ""} 
+ value={email} 
+ onChange={(e) => {
+   setEmail(e.target.value);
+   if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.target.value)) setEmailError(null);
+ }}
  placeholder={t('checkout.labels.placeholder_email')}
- className="h-12 pl-12 bg-slate-50 border-none rounded-app text-sm font-bold focus:bg-white focus:ring-4 focus:ring-primary/5 transition-all outline-none"
+ className={`h-12 pl-12 bg-slate-50 border-none rounded-app text-sm font-bold focus:bg-white focus:ring-4 focus:ring-primary/5 transition-all outline-none ${emailError ? 'ring-2 ring-red-500 ' : ''}`}
  />
  </div>
+ {emailError && <p className="text-[9px] font-bold text-red-500 uppercase tracking-widest px-1 animate-pulse">{emailError}</p>}
  </div>
  <div className="space-y-2">
  <CustomDatePicker 
@@ -767,7 +783,7 @@ function CheckoutContent() {
  <div>
  <h4 className="text-[11px] font-bold text-emerald-600 uppercase tracking-widest leading-none mb-2">Free Cancellation</h4>
  <p className="text-[10px] font-bold text-emerald-500/80 leading-relaxed mb-1">Cancel for a full refund up to 24 hours before your journey starts.</p>
- <Link href="/pages/slug/cancellation-policy" target="_blank" className="text-[9px] font-bold text-emerald-600 uppercase tracking-widest border-b border-emerald-300 hover:text-black hover:border-black transition-all">Read Cancellation Policy</Link>
+ <Link href="/pages/cancellation-policy" target="_blank" className="text-[9px] font-bold text-emerald-600 uppercase tracking-widest border-b border-emerald-300 hover:text-black hover:border-black transition-all">Read Cancellation Policy</Link>
  </div>
  </div>
  </div>

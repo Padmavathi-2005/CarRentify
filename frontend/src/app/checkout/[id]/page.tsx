@@ -49,9 +49,13 @@ export default function CheckoutPage({ params }: { params: any }) {
           else setError(t('checkout.final_valuation.not_found'));
         }
         
-        // Fetch User Profile for Age verification
+        // Fetch User Profile for Age and License verification
         const profile = await authService.getProfile();
         setUser(profile);
+
+        if (found && (!profile.licenseExpiryDate || new Date(profile.licenseExpiryDate).getTime() < new Date(found.endDate).getTime())) {
+          setError(t('checkout.final_valuation.license_expired') || "Your driver's license is missing or will expire before this trip ends. Please update it in your profile.");
+        }
       } catch (err) { setError("Network error synchronizing telemetry."); }
       finally { setLoading(false); }
     };
@@ -107,7 +111,12 @@ export default function CheckoutPage({ params }: { params: any }) {
        <div className="w-20 h-20 bg-rose-50 rounded-full flex items-center justify-center text-rose-500 mb-6"><Lock size={32} /></div>
        <h2 className="text-2xl font-black text-slate-900 mb-4 uppercase tracking-tighter">{t('checkout.final_valuation.error')}</h2>
        <p className="text-slate-500 font-bold mb-8 max-w-sm mx-auto">{error || t('checkout.final_valuation.registry_error')}</p>
-       <Link href="/dashboard/bookings"><Button className="bg-slate-900 hover:bg-black text-white px-10 h-14 rounded-app font-bold uppercase tracking-widest text-[10px]">{t('checkout.final_valuation.back_dashboard')}</Button></Link>
+       <div className="flex gap-4 justify-center">
+         <Link href="/dashboard/bookings"><Button className="bg-slate-900 hover:bg-black text-white px-10 h-14 rounded-app font-bold uppercase tracking-widest text-[10px]">{t('checkout.final_valuation.back_dashboard')}</Button></Link>
+         {error.includes('license') && (
+           <Link href="/dashboard/profile?updateLicense=true"><Button className="bg-primary hover:bg-secondary text-white px-10 h-14 rounded-app font-bold uppercase tracking-widest text-[10px]">Update License</Button></Link>
+         )}
+       </div>
     </div>
   );
 

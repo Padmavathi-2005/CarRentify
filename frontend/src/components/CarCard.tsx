@@ -116,7 +116,7 @@ export default function CarCard({ car, index = 0, isOwner = false, onEdit, onDel
  (e.target as HTMLImageElement).src = PLACEHOLDER_IMAGE;
  }}
  />
- <div className="absolute top-4 left-4 flex flex-col gap-2 pointer-events-none z-30">
+ <div className="absolute top-4 start-4 flex flex-col gap-2 pointer-events-none z-30">
  {(() => {
  const allBadges = [...(car.badges || [])];
  
@@ -170,7 +170,7 @@ export default function CarCard({ car, index = 0, isOwner = false, onEdit, onDel
  <button 
  onClick={toggleWishlist}
  disabled={loadingWishlist}
- className={`absolute top-4 right-4 w-11 h-11 bg-card/90 backdrop-blur-md rounded-app flex items-center justify-center transition-all z-20 group/heart border border-border/40 ${isWishlisted ? 'text-rose-500 bg-rose-500/10 border-rose-500/20' : 'text-muted-foreground/80 dark:text-white/60 hover:text-rose-500 hover:border-rose-500/30'}`}
+ className={`absolute top-4 end-4 w-11 h-11 bg-card/90 backdrop-blur-md rounded-app flex items-center justify-center transition-all z-20 group/heart border border-border/40 ${isWishlisted ? 'text-rose-500 bg-rose-500/10 border-rose-500/20' : 'text-muted-foreground/80 dark:text-white/60 hover:text-rose-500 hover:border-rose-500/30'}`}
  >
  <Heart className={`w-5 h-5 ${isWishlisted ? 'fill-current animate-pulse' : 'group-hover:scale-125 transition-transform'}`} />
  </button>

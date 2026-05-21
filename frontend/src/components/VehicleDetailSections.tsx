@@ -15,7 +15,7 @@ export const HostSection = ({ car, reviews }: { car: any, reviews: any[] }) => {
   // Calculate average rating
   const avgRating = reviews.length > 0
     ? (reviews.reduce((acc: number, r: any) => acc + (r.rating || 5), 0) / reviews.length).toFixed(1)
-    : "5.0";
+    : "New";
 
   return (
     <div className="space-y-8">
@@ -57,7 +57,7 @@ export const HostSection = ({ car, reviews }: { car: any, reviews: any[] }) => {
               <span className="text-2xl font-bold text-foreground">
                 {avgRating}
               </span>
-              <Star size={16} className="text-amber-400 fill-amber-400" />
+              {reviews.length > 0 && <Star size={16} className="text-amber-400 fill-amber-400" />}
             </div>
             <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Host Rating</p>
           </div>

@@ -1,16 +1,58 @@
 "use client";
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, Circle, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import { MapPin, ArrowRightLeft, Navigation2, Zap, Target, ChevronDown, CheckCircle2, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import "leaflet/dist/leaflet.css";
+import { useToast } from "@/components/Toast";
 
 export type LocationOption = {
   name: string;
   lat: number;
   lng: number;
+  type?: string;
+  price?: number;
 };
+
+function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const R = 3958.8; // Radius of the earth in miles
+  const dLat = (lat2 - lat1) * Math.PI / 180;  
+  const dLon = (lon2 - lon1) * Math.PI / 180; 
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2); 
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+  return R * c; // Distance in miles
+}
+
+function MapEventsHandler({ customDelivery, mainLocation, onAddCustomLocation, onPickupChange, showToast }: any) {
+  useMapEvents({
+    click: async (e) => {
+      if (!customDelivery?.enabled || !mainLocation || !onAddCustomLocation) return;
+      const { lat, lng } = e.latlng;
+      const dist = calculateDistance(mainLocation.lat, mainLocation.lng, lat, lng);
+      
+      if (dist > customDelivery.maxDistance) {
+        showToast(`Delivery Unavailable: This location is too far. The host can only deliver vehicles within a ${customDelivery.maxDistance} mile radius from their main location.`, 'error', 'center');
+        return;
+      }
+      
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+        const data = await res.json();
+        const address = data.display_name || "Custom Location";
+        const loc = { name: "Custom: " + address.substring(0, 50) + "...", lat, lng, type: 'custom', price: customDelivery.price };
+        onAddCustomLocation(loc);
+        onPickupChange(loc);
+      } catch (err) {
+        showToast("Failed to retrieve address details.", 'error', 'center');
+      }
+    }
+  });
+  return null;
+}
 
 // Internal map controller
 function SetViewOnClick({ animateTo }: { animateTo: [number, number] | null }) {
@@ -23,24 +65,31 @@ function SetViewOnClick({ animateTo }: { animateTo: [number, number] | null }) {
   return null;
 }
 
+const CIRCLE_OPTIONS = { color: '#2563eb', fillColor: '#3b82f6', fillOpacity: 0.1, weight: 2, dashArray: '5, 10' };
+
 export default function DynamicMap({ 
   pickup, 
   returnLoc, 
   options = [],
+  customDelivery,
   onPickupChange, 
   onReturnChange,
+  onAddCustomLocation
 }: { 
   pickup: LocationOption | null, 
   returnLoc: LocationOption | null, 
   options: LocationOption[],
+  customDelivery?: any,
   onPickupChange: (loc: LocationOption) => void,
   onReturnChange: (loc: LocationOption) => void,
+  onAddCustomLocation?: (loc: LocationOption) => void,
 }) {
   const [targetPos, setTargetPos] = useState<[number, number] | null>(null);
   const [isPickupOpen, setIsPickupOpen] = useState(false);
   const [isReturnOpen, setIsReturnOpen] = useState(false);
   const [isOverlayVisible, setIsOverlayVisible] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const { showToast } = useToast();
 
   useEffect(() => {
     const checkMobile = () => {
@@ -130,28 +179,53 @@ export default function DynamicMap({
           key="main-dynamic-map"
           center={[pickup.lat, pickup.lng]} 
           zoom={14} 
-          scrollWheelZoom={false} 
+          scrollWheelZoom={true} 
           className="h-full w-full"
         >
           <TileLayer
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           />
-          {icons.pickup && pickup && (
-            <Marker position={[pickup.lat, pickup.lng]} icon={icons.pickup} draggable={false}>
-              <Popup minWidth={90}>
-                <span className="font-black text-[10px] uppercase tracking-widest text-primary">Pickup: {pickup.name}</span>
-              </Popup>
-            </Marker>
-          )}
 
-          {!isSame && returnLoc && icons.return && (
-            <Marker position={[returnLoc.lat, returnLoc.lng]} icon={icons.return} draggable={false}>
-              <Popup minWidth={90}>
-                <span className="font-black text-[10px] uppercase tracking-widest text-rose-600">Return: {returnLoc.name}</span>
-              </Popup>
-            </Marker>
-          )}
+          {customDelivery?.enabled && options.find(o => o.type === 'host') && (() => {
+            const hostLoc = options.find(o => o.type === 'host')!;
+            return (
+              <Circle 
+                key={`delivery-zone-${hostLoc.lat}-${hostLoc.lng}`}
+                center={[hostLoc.lat, hostLoc.lng]} 
+                radius={(customDelivery.maxDistance || 5) * 1609.34} 
+                pathOptions={CIRCLE_OPTIONS} 
+              />
+            );
+          })()}
+
+          <MapEventsHandler 
+             customDelivery={customDelivery} 
+             mainLocation={options.find(o => o.type === 'host')} 
+             onAddCustomLocation={onAddCustomLocation} 
+             onPickupChange={onPickupChange} 
+             showToast={showToast}
+          />
+
+          {options.map((opt, i) => {
+            const isSelected = pickup?.name === opt.name || returnLoc?.name === opt.name;
+            const icon = opt.type === 'predefined' ? icons.return : icons.pickup; // Use different colored icons
+            
+            // Only render marker if it is a predefined or host location, OR if it's currently selected
+            if (opt.type !== 'host' && opt.type !== 'predefined' && !isSelected) return null;
+
+            return (
+              <Marker key={i} position={[opt.lat, opt.lng]} icon={icon as L.Icon} draggable={false}>
+                <Popup minWidth={120}>
+                  <div className="space-y-1">
+                     <span className="font-black text-[10px] uppercase tracking-widest text-primary">{opt.type === 'host' ? 'Host Location' : opt.type === 'predefined' ? 'Delivery Point' : 'Custom Location'}</span>
+                     <p className="text-[10px] font-bold text-slate-600 truncate max-w-[150px]">{opt.name}</p>
+                     {opt.price ? <p className="text-[10px] font-black text-emerald-600">+${opt.price} Delivery Fee</p> : null}
+                  </div>
+                </Popup>
+              </Marker>
+            );
+          })}
 
           <SetViewOnClick animateTo={targetPos} />
         </MapContainer>

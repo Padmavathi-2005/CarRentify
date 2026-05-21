@@ -258,7 +258,11 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
                     const contentType = response.headers.get("content-type");
                     if (contentType && contentType.includes("application/json")) {
                         const data = await response.json();
+                        const localTheme = localStorage.getItem('theme');
                         const merged = { ...settings, ...data };
+                        if (localTheme && (localTheme === 'light' || localTheme === 'dark')) {
+                            merged.theme = localTheme; // User preference overrides DB default
+                        }
                         setSettings(merged);
                         applySettings(merged);
                         setLoading(false);

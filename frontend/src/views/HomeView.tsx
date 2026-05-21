@@ -433,7 +433,7 @@ export default function Home() {
  }
  `}
  </style>
- <div className="marquee-container w-full">
+ <div className="marquee-container w-full" dir="ltr">
  <div className="marquee-inner pb-6">
  {brands.length > 0 ? [...brands, ...brands, ...brands].map((brand, i) => (
  <div

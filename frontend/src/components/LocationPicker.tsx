@@ -345,14 +345,16 @@ export default function LocationPicker({
               Add Location
             </button>
           )}
-          <button
-            type="button"
-            onClick={handleManualSearch}
-            disabled={isSearching}
-            className="h-10 px-5 bg-primary text-white text-[10px] font-black uppercase tracking-widest rounded-app hover:bg-secondary transition-all active:scale-95"
-          >
-            {isSearching ? <Loader2 size={16} className="animate-spin" /> : "Locate"}
-          </button>
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={handleManualSearch}
+              disabled={isSearching}
+              className="h-10 px-5 bg-primary text-white text-[10px] font-black uppercase tracking-widest rounded-app hover:bg-secondary transition-all active:scale-95"
+            >
+              {isSearching ? <Loader2 size={16} className="animate-spin" /> : "Search"}
+            </button>
+          )}
         </div>
 
         {/* Autocomplete Suggestions */}

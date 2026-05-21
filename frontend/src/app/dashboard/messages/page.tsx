@@ -18,7 +18,9 @@ import {
   Camera,
   Plus,
   X,
-  MapPin
+  MapPin,
+  ZoomIn,
+  ZoomOut
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { chatService } from "@/services/chatService";
@@ -92,18 +94,29 @@ function MessagesContent() {
   const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);
   const [hasFetched, setHasFetched] = useState(false);
 
+  // Lightbox state
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const [lightboxZoomed, setLightboxZoomed] = useState(false);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // Lock body scroll when modal is open to prevent scroll-over-header bug
   useEffect(() => {
-    if (isNewChatModalOpen) {
+    if (isNewChatModalOpen || lightboxUrl) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
     }
     return () => { document.body.style.overflow = ''; };
-  }, [isNewChatModalOpen]);
+  }, [isNewChatModalOpen, lightboxUrl]);
+
+  // Close lightbox on Escape key
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { setLightboxUrl(null); setLightboxZoomed(false); } };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
 
   useEffect(() => {
@@ -357,10 +370,7 @@ function MessagesContent() {
                   </div>
                 </div>
               </div>
-              <div className="flex gap-1 lg:gap-2">
-                <button className="w-9 h-9 lg:w-10 lg:h-10 bg-slate-50 dark:bg-white/5 rounded-app flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-primary transition-all"><Phone size={16} /></button>
-                <button className="w-9 h-9 lg:w-10 lg:h-10 bg-slate-50 dark:bg-white/5 rounded-app flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-primary transition-all"><Video size={16} /></button>
-              </div>
+
             </div>
 
             <div 
@@ -374,13 +384,20 @@ function MessagesContent() {
                     <div className={`max-w-[70%] flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
                       <div className={`rounded-app text-sm font-medium relative overflow-hidden ${isMe ? 'bg-primary text-white rounded-tr-none' : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 rounded-tl-none border border-slate-100 dark:border-white/5'}`}>
                         {m.type === 'image' ? (
-                          <div className="p-1">
+                          <div
+                            className="relative group/img cursor-zoom-in overflow-hidden"
+                            style={{ width: 150, height: 150, flexShrink: 0 }}
+                            onClick={() => { setLightboxUrl(m.imageUrl || null); setLightboxZoomed(false); }}
+                          >
                             <img
                               src={m.imageUrl}
                               alt="Shared Image"
-                              className="max-w-full rounded-app object-cover cursor-pointer hover:opacity-90 transition-opacity"
-                              onClick={() => window.open(m.imageUrl, '_blank')}
+                              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                              className="hover:brightness-90 transition-all duration-200"
                             />
+                            <div className="absolute inset-0 bg-black/0 group-hover/img:bg-black/25 flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-all duration-200">
+                              <ZoomIn size={24} className="text-white drop-shadow-lg" />
+                            </div>
                           </div>
                         ) : m.type === 'location' ? (
                           <div className="p-4 space-y-3">
@@ -467,6 +484,59 @@ function MessagesContent() {
           box-shadow: none !important;
         }
       `}</style>
+
+      {/* Image Lightbox */}
+      <AnimatePresence>
+        {lightboxUrl && (
+          <motion.div
+            key="lightbox"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/75 backdrop-blur-sm"
+            onClick={() => { setLightboxUrl(null); setLightboxZoomed(false); }}
+          >
+            {/* Close button */}
+            <button
+              onClick={(e) => { e.stopPropagation(); setLightboxUrl(null); setLightboxZoomed(false); }}
+              className="absolute top-5 right-5 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-all z-10 backdrop-blur-sm border border-white/20"
+            >
+              <X size={20} />
+            </button>
+
+            {/* Zoom toggle button */}
+            <button
+              onClick={(e) => { e.stopPropagation(); setLightboxZoomed(z => !z); }}
+              className="absolute bottom-5 right-5 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-all z-10 backdrop-blur-sm border border-white/20"
+            >
+              {lightboxZoomed ? <ZoomOut size={18} /> : <ZoomIn size={18} />}
+            </button>
+
+            {/* Image wrapper — forces full size via inline styles */}
+            <motion.div
+              key={lightboxUrl}
+              initial={{ scale: 0.7, opacity: 0 }}
+              animate={{ scale: lightboxZoomed ? 1.5 : 1, opacity: 1 }}
+              exit={{ scale: 0.7, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 28 }}
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                width: '88vw',
+                height: '82vh',
+                cursor: lightboxZoomed ? 'zoom-out' : 'zoom-in',
+              }}
+              className="rounded-2xl overflow-hidden shadow-2xl"
+            >
+              <img
+                src={lightboxUrl}
+                alt="Full preview"
+                style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#111' }}
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

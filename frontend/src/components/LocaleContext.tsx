@@ -55,7 +55,7 @@ export const LocaleProvider: React.FC<{ children: React.ReactNode }> = ({ childr
  }
  }
  } catch (err) {
- console.error('Failed to fetch meta data:', err);
+ console.warn('Failed to fetch meta data:', err instanceof Error ? err.message : String(err));
  }
  };
  fetchMeta();

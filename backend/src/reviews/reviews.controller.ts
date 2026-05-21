@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Param, Body, Query } from '@nestjs/common';
+import { Controller, Post, Get, Param, Body, Query, NotFoundException } from '@nestjs/common';
 import { ReviewsService } from './reviews.service';
 
 @Controller('reviews')
@@ -28,5 +28,14 @@ export class ReviewsController {
   @Get('host/:userId')
   async findByHost(@Param('userId') userId: string) {
     return await this.reviewsService.findByHost(userId);
+  }
+
+  @Get('booking/:bookingId')
+  async findByBooking(@Param('bookingId') bookingId: string) {
+    const review = await this.reviewsService.findByBooking(bookingId);
+    if (!review) {
+      throw new NotFoundException('Review not found');
+    }
+    return review;
   }
 }

@@ -71,7 +71,12 @@
     "current_persona": "الشخصية الحالية",
     "regional_prefs": "التفضيلات الإقليمية",
     "login": "تسجيل الدخول",
-    "sign_up": "إنشاء حساب"
+    "sign_up": "إنشاء حساب",
+    "notifications": "الإشعارات",
+    "wishlist": "قائمة الأمنيات",
+    "messages": "الرسائل",
+    "my_bookings": "حجوزاتي",
+    "manage_bookings": "إدارة الحجوزات"
   },
   "common": {
     "loading": "جاري التحميل...",
@@ -280,7 +285,9 @@
       "wallet_earnings": "المحفظة / الأرباح",
       "profile_settings": "إعدادات الملف الشخصي",
       "logout": "تسجيل الخروج",
-      "delete_account": "حذف حسابي"
+      "delete_account": "حذف حسابي",
+      "manage_bookings": "إدارة الحجوزات",
+      "notifications": "الإشعارات"
     },
     "overview": {
       "welcome": "مرحباً بعودتك، {name}!",
@@ -443,6 +450,7 @@
       "subtitle": "KYC Compliance Protocol",
       "verified": "Verified",
       "rejected": "Action Required",
+      "rejected_reupload": "يرجى تحميل المستندات مرة أخرى، لقد رفض المسؤول هذا",
       "confirmed_desc": "Your identity has been verified. You now have full access to premium rentals.",
       "under_review": "Verification Pending",
       "under_review_desc": "Our security team is currently reviewing your identity documents. This usually takes less than 24 hours.",

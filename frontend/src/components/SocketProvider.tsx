@@ -49,7 +49,8 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
 
       newSocket.on('new_notification', (data) => {
         console.log('New Platform Notification:', data);
-        showToast(data.body || data.title, 'info');
+        const msg = data.title && data.body ? `🔔 ${data.title}: ${data.body}` : (data.body || data.title);
+        showToast(msg, 'info');
       });
 
       // Listen for booking notifications

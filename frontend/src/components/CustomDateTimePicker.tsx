@@ -137,7 +137,10 @@ export const PopoverPortal = ({
          zIndex: 99999,
          pointerEvents: 'none'
       };
-      if (sideDirection === 'right') {
+      const isRtl = typeof document !== 'undefined' && document.dir === 'rtl';
+      const actualSideDirection = isRtl ? (sideDirection === 'left' ? 'right' : 'left') : sideDirection;
+
+      if (actualSideDirection === 'right') {
          style.left = `${coords.left + coords.width + sideGap}px`;
       } else {
          style.left = `${coords.left - expectedWidth - sideGap}px`;
@@ -194,6 +197,7 @@ interface CustomDatePickerProps {
    align?: PopoverAlign;
    sideDirection?: SideDirection;
    sideOffsetTop?: string;
+   minDate?: string;
    maxDate?: string;
    defaultViewDate?: string;
    inline?: boolean;
@@ -207,6 +211,7 @@ export const CustomDatePicker = ({
    align = 'left',
    sideDirection = 'right',
    sideOffsetTop,
+   minDate,
    maxDate,
    defaultViewDate,
    inline = false
@@ -333,7 +338,8 @@ export const CustomDatePicker = ({
                            const day = i + 1;
                            const date = new Date(viewDate.getFullYear(), viewDate.getMonth(), day);
                            const isSelected = value && getLocalISODate(date) === value;
-                           const isDisabled = !!(maxDate && getLocalISODate(date) > maxDate);
+                           const localIso = getLocalISODate(date);
+                           const isDisabled = !!((maxDate && localIso > maxDate) || (minDate && localIso < minDate));
 
                            return (
                               <button
@@ -358,7 +364,8 @@ export const CustomDatePicker = ({
                         const monthName = new Date(2000, i, 1).toLocaleString('default', { month: 'short' });
                         const isCurrent = viewDate.getMonth() === i;
                         const testDate = new Date(viewDate.getFullYear(), i, 1);
-                        const isDisabled = !!(maxDate && getLocalISODate(testDate).substring(0, 7) > maxDate.substring(0, 7));
+                        const testIso = getLocalISODate(testDate).substring(0, 7);
+                        const isDisabled = !!((maxDate && testIso > maxDate.substring(0, 7)) || (minDate && testIso < minDate.substring(0, 7)));
 
                         return (
                            <button
@@ -385,7 +392,7 @@ export const CustomDatePicker = ({
                      {Array.from({ length: 100 }).map((_, i) => {
                         const yr = new Date().getFullYear() - 90 + i;
                         const isCurrent = viewDate.getFullYear() === yr;
-                        const isDisabled = !!(maxDate && yr > new Date(maxDate).getFullYear());
+                        const isDisabled = !!((maxDate && yr > new Date(maxDate).getFullYear()) || (minDate && yr < new Date(minDate).getFullYear()));
 
                         return (
                            <button
@@ -418,8 +425,11 @@ export const CustomDatePicker = ({
             <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary dark:text-white z-10 pointer-events-none" />
             <input
                type="text"
+               onKeyDown={(e) => {
+                 if (e.key === ' ') e.preventDefault();
+               }}
                value={inputValue}
-               onChange={(e) => handleManualInput(e.target.value)}
+               onChange={(e) => handleManualInput(e.target.value.replace(/[^0-9\/\-]/g, ''))}
                onFocus={() => setIsOpen(true)}
                placeholder={t('home.date_placeholder')}
                className="w-full h-11 bg-muted/30 border border-border rounded-app pl-12 pr-4 text-sm font-bold text-foreground outline-none focus:border-primary/20 transition-all "
@@ -709,7 +719,7 @@ export const PremiumTimeRangePicker = ({
                                           else onRangeTimeChange(startTime, t);
                                           setIsOpen(false);
                                        }}
-                                       className={`w-full py-2.5 px-3 rounded-app text-xs font-bold transition-all text-left flex items-center justify-between
+                                       className={`w-full py-2.5 px-3 rounded-app text-xs font-bold transition-all text-start flex items-center justify-between
  ${isSelected ? 'bg-primary text-white scale-[1.02]' : isBooked ? 'bg-rose-50 text-rose-500 border border-rose-100 cursor-not-allowed' : isDisabled ? 'opacity-20 cursor-not-allowed bg-slate-50' : 'text-slate-600 hover:bg-slate-50 hover:text-primary'}`}
                                     >
                                        <span>{formatTimeDisplay(t)}</span>

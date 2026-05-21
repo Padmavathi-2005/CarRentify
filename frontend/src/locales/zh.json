@@ -35,7 +35,12 @@
     "current_persona": "当前身份",
     "regional_prefs": "地区与偏好",
     "login": "登录",
-    "sign_up": "注册"
+    "sign_up": "注册",
+    "notifications": "通知",
+    "wishlist": "心愿单",
+    "messages": "消息",
+    "my_bookings": "我的预订",
+    "manage_bookings": "管理预订"
   },
   "common": {
     "loading": "加载中...",
@@ -178,7 +183,9 @@
       "wallet_earnings": "钱包/收益",
       "profile_settings": "个人资料设置",
       "logout": "退出账户",
-      "delete_account": "删除我的账户"
+      "delete_account": "删除我的账户",
+      "manage_bookings": "管理预订",
+      "notifications": "通知"
     },
     "overview": {
       "welcome": "欢迎回来，{name}！",
@@ -341,6 +348,7 @@
       "subtitle": "KYC Compliance Protocol",
       "verified": "Verified",
       "rejected": "Action Required",
+      "rejected_reupload": "请重新上传文件，管理员已拒绝",
       "confirmed_desc": "Your identity has been verified. You now have full access to premium rentals.",
       "under_review": "Verification Pending",
       "under_review_desc": "Our security team is currently reviewing your identity documents. This usually takes less than 24 hours.",

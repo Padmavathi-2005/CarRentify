@@ -56,13 +56,15 @@ const Header = ({
  productTitle = "", 
  totalPrice = "", 
  showOverview = false,
- onBookNow = () => {} 
+ onBookNow = () => {},
+ isOwner = false
 }: { 
  isProductPage?: boolean, 
  productTitle?: string, 
  totalPrice?: string, 
  showOverview?: boolean,
- onBookNow?: () => void 
+ onBookNow?: () => void,
+ isOwner?: boolean
 }) => {
  const router = useRouter();
  const pathname = usePathname();
@@ -271,7 +273,7 @@ const Header = ({
  <div className="max-w-7xl mx-auto px-4 lg:px-6 h-16 lg:h-20 flex items-center justify-between">
  <div className="flex items-center gap-4 lg:gap-12">
  <Link href="/" className="inline-block">
- <div className="bg-transparent dark:bg-white dark:px-3 dark:py-1 dark:rounded-app transition-all inline-block">
+ <div className="bg-transparent transition-all inline-block">
   <img
     src={!mounted
     ? "/logo.png"
@@ -352,7 +354,7 @@ const Header = ({
   onClick={onBookNow}
   className="h-10 lg:h-12 px-4 lg:px-8 bg-primary text-white hover:bg-secondary hover:text-white transition-all duration-300 border-none text-[10px] lg:text-xs font-black uppercase tracking-widest"
   >
-  Book Now
+  {isOwner ? "Manage Vehicle" : "Book Now"}
   </Button>
   </div>
  ) : (
@@ -365,7 +367,7 @@ const Header = ({
  >
  <MessageSquare className="w-5 h-5" />
  {messageCount > 0 && (
- <span className="absolute -top-1 -right-1 w-5 h-5 bg-rose-500 text-white text-[9px] font-black rounded-full flex items-center justify-center border-2 border-background animate-in zoom-in duration-300 -500/20">
+ <span className="absolute -top-1 -end-1 w-5 h-5 bg-rose-500 text-white text-[9px] font-black rounded-full flex items-center justify-center border-2 border-background animate-in zoom-in duration-300 -500/20">
  {messageCount > 9 ? '9+' : messageCount}
  </span>
  )}
@@ -381,7 +383,7 @@ const Header = ({
  >
  <Bell className={`w-5 h-5 ${unreadCount > 0 ? 'animate-wiggle' : ''}`} />
  {unreadCount > 0 && (
- <span className="absolute -top-1 -right-1 w-5 h-5 bg-rose-500 text-white text-[9px] font-black rounded-full flex items-center justify-center border-2 border-background animate-in zoom-in duration-300 -500/20">
+ <span className="absolute -top-1 -end-1 w-5 h-5 bg-rose-500 text-white text-[9px] font-black rounded-full flex items-center justify-center border-2 border-background animate-in zoom-in duration-300 -500/20">
  {unreadCount > 9 ? '9+' : unreadCount}
  </span>
  )}
@@ -395,7 +397,7 @@ const Header = ({
  initial={{ opacity: 0, y: 10, scale: 0.95 }}
  animate={{ opacity: 1, y: 0, scale: 1 }}
  exit={{ opacity: 0, y: 10, scale: 0.95 }}
- className="absolute right-0 mt-4 w-80 lg:w-96 bg-card rounded-app border border-border z-50 overflow-hidden "
+ className="absolute end-0 mt-4 w-80 lg:w-96 bg-card rounded-app border border-border z-50 overflow-hidden "
  >
  <div className="p-6 border-b border-border flex items-center justify-between bg-card relative z-10">
               <div>
@@ -671,7 +673,7 @@ const Header = ({
  animate={{ x: 0 }}
  exit={{ x: "100%" }}
  transition={{ type: "spring", damping: 25, stiffness: 200 }}
- className="fixed right-0 top-0 bottom-0 w-[300px] bg-card z-[1000] lg:hidden p-0 flex flex-col border-l border-border/50"
+ className="fixed end-0 top-0 bottom-0 w-[300px] bg-card z-[1000] lg:hidden p-0 flex flex-col border-l border-border/50"
  >
  {/* Mobile Header with User Profile */}
  <div className="p-5 flex items-center justify-between border-b border-border/50 sticky top-0 bg-card/80 backdrop-blur-md z-10">

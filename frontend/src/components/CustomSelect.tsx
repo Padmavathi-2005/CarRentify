@@ -92,12 +92,15 @@ export default function CustomSelect({
       zIndex: 9999,
     };
 
-    if (side === "left") {
+    const isRtl = typeof document !== 'undefined' && document.dir === 'rtl';
+    const actualSide = isRtl ? (side === 'left' ? 'right' : side === 'right' ? 'left' : side) : side;
+
+    if (actualSide === "left") {
       style.position = "absolute";
       style.left = -(rect.width || 280) - 12;
       style.top = -120;
       style.originX = "right";
-    } else if (side === "right") {
+    } else if (actualSide === "right") {
       style.position = "absolute";
       style.left = (rect.width || 280) + 12;
       style.top = -120;
@@ -111,7 +114,7 @@ export default function CustomSelect({
     }
 
     setDropdownStyle(style);
-  }, [isOpen, inline]);
+  }, [isOpen, inline, side]);
 
   useEffect(() => {
     if (!isOpen || inline) return;

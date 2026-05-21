@@ -31,11 +31,15 @@ import {
   Repeat,
   History,
   MessageSquare,
-  Check
+  Check,
+  MessageCircle
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/components/AuthContext";
 import { BACKEND_URL, API_BASE_URL, getImageUrl, PLACEHOLDER_IMAGE } from "@/config/api";
+import { chatService } from "@/services/chatService";
+import { toPng } from 'html-to-image';
+import { jsPDF } from 'jspdf';
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import Modal from "@/components/ui/modal";
@@ -110,6 +114,7 @@ function MyBookingsContent() {
   const [cancellationSettings, setCancellationSettings] = useState<any>(null);
   const [showCancelPolicy, setShowCancelPolicy] = useState(false);
   const [isFinalizing, setIsFinalizing] = useState(false);
+  const [isStartingChat, setIsStartingChat] = useState(false);
 
   const searchParams = useSearchParams();
   const bookingIdParam = searchParams.get('id');
@@ -135,11 +140,51 @@ function MyBookingsContent() {
   const [isEvidenceExpanded, setIsEvidenceExpanded] = useState(false);
   const [isCheckInAuditExpanded, setIsCheckInAuditExpanded] = useState(false);
   const [isCheckOutAuditExpanded, setIsCheckOutAuditExpanded] = useState(false);
+  const [isReviewExpanded, setIsReviewExpanded] = useState(false);
   const [isDocumentAccepted, setIsDocumentAccepted] = useState(false);
   const [isSettlementDetailExpanded, setIsSettlementDetailExpanded] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [existingReview, setExistingReview] = useState<any>(null);
   const [loadingReview, setLoadingReview] = useState(false);
+  const [isPdfGenerating, setIsPdfGenerating] = useState(false);
+
+  const handleDownloadPDF = async (elementId: string, filename: string) => {
+    const element = document.getElementById(elementId);
+    if (!element) return;
+    
+    setIsPdfGenerating(true);
+    try {
+      const imgData = await toPng(element, { 
+        cacheBust: true, 
+        pixelRatio: 2,
+        backgroundColor: '#ffffff',
+        // Filter out any element that shouldn't be printed
+        filter: (node) => {
+          if (node.classList && node.classList.contains('print:hidden')) {
+            return false;
+          }
+          return true;
+        }
+      });
+      
+      // Dimensions will be based on element's offsetWidth/Height
+      const width = element.offsetWidth;
+      const height = element.offsetHeight;
+
+      const pdf = new jsPDF({
+        orientation: width > height ? 'landscape' : 'portrait',
+        unit: 'px',
+        format: [width, height]
+      });
+      
+      pdf.addImage(imgData, 'PNG', 0, 0, width, height);
+      pdf.save(filename);
+    } catch (err) {
+      console.error('Error generating PDF:', err);
+    } finally {
+      setIsPdfGenerating(false);
+    }
+  };
   // Inline quick-review state: { [bookingId]: { rating, comment, submitted, submitting, review } }
   const [quickReviews, setQuickReviews] = useState<Record<string, any>>({});
   const [filterStatus, setFilterStatus] = useState("All");
@@ -562,6 +607,21 @@ function MyBookingsContent() {
     });
   };
 
+  const handleStartChat = async (targetUserId: string) => {
+    if (!user?._id || !targetUserId) return;
+    setIsStartingChat(true);
+    try {
+      const chat = await chatService.startConversation([user._id, targetUserId]);
+      setIsDetailModalOpen(false);
+      router.push(`/dashboard/messages?id=${chat._id}`);
+    } catch (err) {
+      console.error('Failed to start chat:', err);
+      alert('Failed to open chat. Please try again.');
+    } finally {
+      setIsStartingChat(false);
+    }
+  };
+
   const openDetails = (booking: Booking) => {
     setSelectedBooking(booking);
     setIsDetailModalOpen(true);
@@ -773,9 +833,19 @@ function MyBookingsContent() {
                         )}
                       </h3>
                       <div className="flex items-center gap-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                        <div className="flex items-center gap-1"><Clock size={12} /> {formatDate(booking.startDate)} • {booking.pickupTime}</div>
-                        <div className="w-1 h-1 rounded-full bg-slate-200" />
-                        <div className="flex items-center gap-1 text-primary"><History size={12} /> {t('bookings.labels.updated', { time: formatDateTime(booking.updatedAt) })}</div>
+                        {(() => {
+                          const status = booking.status?.toLowerCase();
+                          if (status === 'completed') {
+                            return <div className="flex items-center gap-1 text-emerald-500"><CheckCircle2 size={12} /> COMPLETED: {formatDate(booking.updatedAt)}</div>;
+                          }
+                          if (status === 'cancelled' || status === 'rejected') {
+                            return <div className="flex items-center gap-1 text-rose-500"><XCircle size={12} /> {status.toUpperCase()}: {formatDate(booking.updatedAt)}</div>;
+                          }
+                          if (status === 'active' || status === 'confirmed') {
+                            return <div className="flex items-center gap-1 text-primary"><Clock size={12} /> PICKUP: {formatDate(booking.startDate)} • {booking.pickupTime}</div>;
+                          }
+                          return <div className="flex items-center gap-1 text-slate-500"><Calendar size={12} /> BOOKED: {formatDate(booking.createdAt)}</div>;
+                        })()}
                       </div>
                     </div>
                     <div className={`px-4 py-2 rounded-full border text-[9px] font-black uppercase tracking-widest ${getStatusColor(booking.status)}`}>
@@ -940,7 +1010,7 @@ function MyBookingsContent() {
                     {showInvoice ? "Back to Tracking" : "View Invoice"}
                   </button>
 
-                  {selectedBooking.settlementAmount && selectedBooking.settlementAmount > 0 && (
+                  {((selectedBooking.settlementAmount || 0) > 0) && (
                     <button
                       onClick={() => { setShowSettlementInvoice(!showSettlementInvoice); setShowInvoice(false); }}
                       className={`w-full h-12 rounded-app border border-primary/20 text-primary hover:bg-primary/5 font-black text-[9px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${showSettlementInvoice ? 'bg-primary/10' : 'bg-white'}`}
@@ -977,6 +1047,7 @@ function MyBookingsContent() {
 
                 {showInvoice ? (
                   <motion.div
+                    id="invoice-print-area"
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     className="bg-white p-4 md:p-12 rounded-app border border-slate-100 space-y-10 print:p-0 print:border-none"
@@ -1281,15 +1352,18 @@ function MyBookingsContent() {
                         <Printer size={16} /> Print Document
                       </button>
                       <button
-                        className="h-10 px-6 bg-rose-600 hover:bg-rose-700 text-white rounded-app text-[9px] font-black uppercase tracking-widest border-none flex items-center gap-2 transition-all"
+                        onClick={() => handleDownloadPDF('invoice-print-area', `Invoice-${selectedBooking.bookingHash || selectedBooking._id.slice(-8)}.pdf`)}
+                        disabled={isPdfGenerating}
+                        className={`h-10 px-6 bg-rose-600 hover:bg-rose-700 text-white rounded-app text-[9px] font-black uppercase tracking-widest border-none flex items-center gap-2 transition-all ${isPdfGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
-                        <Download size={16} /> Download PDF
+                        <Download size={16} /> {isPdfGenerating ? 'Generating...' : 'Download PDF'}
                       </button>
                     </div>
                   </motion.div>
 
                 ) : showSettlementInvoice ? (
                   <motion.div
+                    id="settlement-print-area"
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     className="bg-white p-4 md:p-12 rounded-app border border-slate-100 space-y-10 print:p-0 print:border-none"
@@ -1413,9 +1487,16 @@ function MyBookingsContent() {
                       )}
                       <button
                         onClick={() => window.print()}
-                        className="h-14 px-6 bg-slate-900 hover:bg-slate-800 text-white rounded-app text-[9px] font-black uppercase tracking-widest border-none flex items-center gap-2 transition-all"
+                        className="h-10 px-6 bg-slate-900 hover:bg-slate-800 text-white rounded-app text-[9px] font-black uppercase tracking-widest border-none flex items-center gap-2 transition-all"
                       >
                         <Printer size={16} /> Print Audit
+                      </button>
+                      <button
+                        onClick={() => handleDownloadPDF('settlement-print-area', `Settlement-${selectedBooking.bookingHash || selectedBooking._id.slice(-8)}.pdf`)}
+                        disabled={isPdfGenerating}
+                        className={`h-10 px-6 bg-rose-600 hover:bg-rose-700 text-white rounded-app text-[9px] font-black uppercase tracking-widest border-none flex items-center gap-2 transition-all ${isPdfGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      >
+                        <Download size={16} /> {isPdfGenerating ? 'Generating...' : 'Download PDF'}
                       </button>
                     </div>
                   </motion.div>
@@ -1443,9 +1524,21 @@ function MyBookingsContent() {
                           </h4>
                         </div>
                       </div>
-                      <div className="flex gap-2">
-                        <a href={`tel:${userType === 'host' ? selectedBooking.customerId?.phoneNumber : selectedBooking.vendorId?.phoneNumber}`} className="p-2 bg-white rounded-app border border-slate-100 text-slate-400 hover:text-primary transition-all"><Phone size={14} /></a>
-                        <a href={`mailto:${userType === 'host' ? selectedBooking.customerId?.email : selectedBooking.vendorId?.email}`} className="p-2 bg-white rounded-app border border-slate-100 text-slate-400 hover:text-primary transition-all"><Mail size={14} /></a>
+                      <div className="flex gap-2 items-center">
+                        <button
+                          onClick={() => {
+                            const targetId = userType === 'host'
+                              ? (selectedBooking.customerId?._id || selectedBooking.customerId)
+                              : (selectedBooking.vendorId?._id || selectedBooking.vendorId);
+                            handleStartChat(targetId);
+                          }}
+                          disabled={isStartingChat}
+                          title={userType === 'host' ? 'Message Renter' : 'Message Host'}
+                          className="flex items-center gap-1.5 px-3 h-9 bg-primary text-white rounded-app text-[9px] font-black uppercase tracking-widest hover:bg-primary-hover transition-all border-none disabled:opacity-60 disabled:cursor-not-allowed shadow-sm shadow-primary/20"
+                        >
+                          <MessageCircle size={13} />
+                          {isStartingChat ? 'Opening...' : (userType === 'host' ? 'Msg Renter' : 'Msg Host')}
+                        </button>
                       </div>
                     </div>
 
@@ -1571,17 +1664,17 @@ function MyBookingsContent() {
                                 <div className="bg-white rounded-app border border-slate-100 shadow-sm overflow-hidden">
                                   <div
                                     onClick={() => setIsCheckInAuditExpanded(!isCheckInAuditExpanded)}
-                                    className="p-4 bg-slate-50 flex justify-between items-center cursor-pointer hover:bg-slate-100/80 transition-colors"
+                                    className="p-3 sm:p-4 bg-slate-50 flex flex-wrap justify-between items-center gap-y-2 cursor-pointer hover:bg-slate-100/80 transition-colors"
                                   >
                                     <div className="flex items-center gap-2">
-                                      <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                                      <div className="w-2 h-2 shrink-0 rounded-full bg-emerald-500" />
                                       <p className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Pre-Trip Handover Audit</p>
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-                                        {isCheckInAuditExpanded ? "Hide Audit" : "View Audit (Verified)"}
+                                    <div className="flex items-center gap-1 sm:gap-2 ml-auto">
+                                      <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">
+                                        {isCheckInAuditExpanded ? "Hide Audit" : <><span className="hidden sm:inline">View Audit </span>(Verified)</>}
                                       </span>
-                                      <div className={`p-1 text-slate-400 transition-transform duration-300 ${isCheckInAuditExpanded ? 'rotate-180' : ''}`}>
+                                      <div className={`p-1 text-slate-400 transition-transform duration-300 ${isCheckInAuditExpanded ? '-rotate-90 sm:rotate-180' : 'rotate-90 sm:rotate-0'}`}>
                                         <ChevronRight size={12} />
                                       </div>
                                     </div>
@@ -1666,17 +1759,17 @@ function MyBookingsContent() {
                                 <div className="bg-white rounded-app border border-slate-100 shadow-sm overflow-hidden">
                                   <div
                                     onClick={() => setIsCheckOutAuditExpanded(!isCheckOutAuditExpanded)}
-                                    className="p-4 bg-slate-50 flex justify-between items-center cursor-pointer hover:bg-slate-100/80 transition-colors"
+                                    className="p-3 sm:p-4 bg-slate-50 flex flex-wrap justify-between items-center gap-y-2 cursor-pointer hover:bg-slate-100/80 transition-colors"
                                   >
                                     <div className="flex items-center gap-2">
-                                      <div className="w-2 h-2 rounded-full bg-amber-500" />
+                                      <div className="w-2 h-2 shrink-0 rounded-full bg-amber-500" />
                                       <p className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Post-Trip Return Audit</p>
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-                                        {isCheckOutAuditExpanded ? "Hide Audit" : "View Audit (Verified)"}
+                                    <div className="flex items-center gap-1 sm:gap-2 ml-auto">
+                                      <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">
+                                        {isCheckOutAuditExpanded ? "Hide Audit" : <><span className="hidden sm:inline">View Audit </span>(Verified)</>}
                                       </span>
-                                      <div className={`p-1 text-slate-400 transition-transform duration-300 ${isCheckOutAuditExpanded ? 'rotate-180' : ''}`}>
+                                      <div className={`p-1 text-slate-400 transition-transform duration-300 ${isCheckOutAuditExpanded ? '-rotate-90 sm:rotate-180' : 'rotate-90 sm:rotate-0'}`}>
                                         <ChevronRight size={12} />
                                       </div>
                                     </div>
@@ -1772,15 +1865,50 @@ function MyBookingsContent() {
                                 </div>
                                 {/* Existing Review Display */}
                                 {existingReview && (
-                                  <div className="mt-4 p-4 rounded-app bg-emerald-50 border border-emerald-100 space-y-2">
-                                    <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Your Review</p>
-                                    <div className="flex items-center gap-1">
-                                      {[1, 2, 3, 4, 5].map(s => (
-                                        <span key={s} className={`text-sm ${s <= (existingReview.rating || 0) ? 'text-amber-400' : 'text-slate-200'}`}>★</span>
-                                      ))}
-                                      <span className="ml-1 text-[10px] font-black text-slate-500 uppercase tracking-widest">{existingReview.rating}/5</span>
+                                  <div className="mt-4 p-4 rounded-app bg-emerald-50 border border-emerald-100 space-y-2 cursor-pointer hover:bg-emerald-100/50 transition-colors" onClick={() => setIsReviewExpanded(!isReviewExpanded)}>
+                                    <div className="flex justify-between items-start">
+                                      <div>
+                                        <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Your Review</p>
+                                        <div className="flex items-center gap-1 mt-1">
+                                          {[1, 2, 3, 4, 5].map(s => (
+                                            <span key={s} className={`text-sm ${s <= (existingReview.rating || 0) ? 'text-amber-400' : 'text-slate-200'}`}>★</span>
+                                          ))}
+                                          <span className="ml-1 text-[10px] font-black text-slate-500 uppercase tracking-widest">{existingReview.rating}/5</span>
+                                        </div>
+                                      </div>
+                                      <div className={`p-1 text-slate-400 transition-transform duration-300 ${isReviewExpanded ? '-rotate-90 sm:rotate-180' : 'rotate-90 sm:rotate-0'}`}>
+                                        <ChevronRight size={12} />
+                                      </div>
                                     </div>
                                     {existingReview.comment && <p className="text-xs font-medium text-slate-600 leading-relaxed">&ldquo;{existingReview.comment}&rdquo;</p>}
+                                    <div className={`transition-all duration-500 ease-in-out ${isReviewExpanded ? 'max-h-[500px] opacity-100 pt-3 mt-3 border-t border-emerald-200/50' : 'max-h-0 opacity-0 overflow-hidden pt-0 mt-0'}`}>
+                                      <div className="grid grid-cols-2 gap-2">
+                                        <div className="space-y-1">
+                                          <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Cleanliness</p>
+                                          <p className="text-xs font-black text-slate-700">{existingReview.vehicleCleanliness}/5</p>
+                                        </div>
+                                        <div className="space-y-1">
+                                          <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Accuracy</p>
+                                          <p className="text-xs font-black text-slate-700">{existingReview.listingAccuracy}/5</p>
+                                        </div>
+                                        <div className="space-y-1">
+                                          <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Pickup</p>
+                                          <p className="text-xs font-black text-slate-700">{existingReview.pickupExperience}/5</p>
+                                        </div>
+                                        <div className="space-y-1">
+                                          <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Value</p>
+                                          <p className="text-xs font-black text-slate-700">{existingReview.valueForMoney}/5</p>
+                                        </div>
+                                        <div className="space-y-1">
+                                          <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Host Comms</p>
+                                          <p className="text-xs font-black text-slate-700">{existingReview.hostCommunication}/5</p>
+                                        </div>
+                                        <div className="space-y-1">
+                                          <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Location</p>
+                                          <p className="text-xs font-black text-slate-700">{existingReview.vehicleLocation}/5</p>
+                                        </div>
+                                      </div>
+                                    </div>
                                   </div>
                                 )}
                               </div>
@@ -1845,8 +1973,29 @@ function MyBookingsContent() {
                                   <div className="w-8 h-8 rounded-app bg-primary/10 flex items-center justify-center text-primary"><Clock size={14} /></div>
                                   <span className="text-[10px] font-black text-slate-800 uppercase tracking-widest">Awaiting Approval</span>
                                 </div>
+                                
+                                {b.customerId?.verificationSubmission?.documents?.length > 0 && (
+                                  <label className="flex items-start gap-3 p-4 border border-primary/20 bg-primary/5 rounded-app cursor-pointer">
+                                    <input 
+                                      type="checkbox" 
+                                      className="mt-0.5"
+                                      checked={isDocumentAccepted}
+                                      onChange={(e) => setIsDocumentAccepted(e.target.checked)}
+                                    />
+                                    <span className="text-[10px] font-bold text-slate-700 uppercase tracking-widest leading-relaxed">
+                                      I confirm that I have reviewed the customer's verification documents and approve this rental.
+                                    </span>
+                                  </label>
+                                )}
+
                                 <div className="flex gap-3">
-                                  <Button onClick={() => handleApprove(b._id)} className="flex-1 h-12 bg-primary hover:bg-primary-hover text-white rounded-app text-[10px] font-black uppercase tracking-widest border-none">Approve Request</Button>
+                                  <Button 
+                                    onClick={() => handleApprove(b._id)} 
+                                    disabled={b.customerId?.verificationSubmission?.documents?.length > 0 && !isDocumentAccepted}
+                                    className="flex-1 h-12 bg-primary hover:bg-primary-hover text-white rounded-app text-[10px] font-black uppercase tracking-widest border-none disabled:opacity-50"
+                                  >
+                                    Approve Request
+                                  </Button>
                                   <Button onClick={() => handleReject(b._id)} variant="ghost" className="flex-1 h-12 bg-white border border-slate-100 text-rose-500 hover:bg-rose-50 rounded-app text-[10px] font-black uppercase tracking-widest">Decline</Button>
                                 </div>
                               </div>
@@ -2088,7 +2237,7 @@ function MyBookingsContent() {
                                     onClick={() => setIsDocumentAccepted(!isDocumentAccepted)}
                                     className={`p-4 rounded-app border flex items-start gap-3 cursor-pointer transition-all ${isDocumentAccepted ? 'bg-emerald-100/50 border-emerald-200' : 'bg-white border-slate-100'}`}
                                   >
-                                    <div className={`w-5 h-5 rounded border flex items-center justify-center shrink-0 transition-all ${isDocumentAccepted ? 'bg-emerald-50 border-emerald-500 text-white' : 'bg-white border-slate-200'}`}>
+                                    <div className={`w-5 h-5 rounded border flex items-center justify-center shrink-0 transition-all ${isDocumentAccepted ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white border-slate-200'}`}>
                                       {isDocumentAccepted && <Check size={12} />}
                                     </div>
                                     <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest leading-relaxed">

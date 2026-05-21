@@ -67,11 +67,25 @@ export class BrandsService implements OnModuleInit {
     }
   }
 
-  async findAll() {
-    return this.brandModel.find({ isActive: true }).exec();
+  async findAll(includeInactive = false) {
+    const filter = includeInactive ? {} : { isActive: true };
+    return this.brandModel.find(filter).exec();
   }
 
   async findByName(name: string) {
     return this.brandModel.findOne({ name }).exec();
+  }
+
+  async create(createBrandDto: any) {
+    const newBrand = new this.brandModel(createBrandDto);
+    return newBrand.save();
+  }
+
+  async update(id: string, updateBrandDto: any) {
+    return this.brandModel.findByIdAndUpdate(id, updateBrandDto, { new: true }).exec();
+  }
+
+  async remove(id: string) {
+    return this.brandModel.findByIdAndDelete(id).exec();
   }
 }

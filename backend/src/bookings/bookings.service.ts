@@ -117,6 +117,15 @@ export class BookingsService {
         ? (isOnlineMethod ? BookingStatus.AWAITING_PAYMENT : BookingStatus.CONFIRMED)
         : BookingStatus.PENDING;
 
+    // License Expiry Check
+    const customerUser = await this.userModel.findById(customerId);
+    if (!customerUser) throw new NotFoundException('Customer not found');
+
+    const bookingEndDate = new Date(`${bookingData.endDate}T${bookingData.returnTime || '00:00'}`);
+    if (!customerUser.licenseExpiryDate || customerUser.licenseExpiryDate.getTime() < bookingEndDate.getTime()) {
+      throw new BadRequestException('Your license is missing, expired, or will expire before your trip ends. Please update your license in your profile.');
+    }
+
     // 1. Strict Duplicate Check: Prevent the same user from double-booking the same asset for the same period
     const duplicateBooking = await this.bookingModel.findOne({
       customerId: new Types.ObjectId(customerId),
@@ -647,15 +656,19 @@ export class BookingsService {
             if (hrsUntilPickup <= 24 && hrsUntilPickup > 5 && !booking.pickupAlert24hSent) {
                 booking.pickupAlert24hSent = true;
                 await booking.save();
-                await this.sendCommunication(customer, 'Upcoming Trip (24h)', `Your trip with ${car.name} starts in 24 hours.`, 'info', { type: 'booking', bookingId: booking._id.toString(), userType: 'renter' });
-                await this.sendCommunication(vendor, 'Upcoming Trip (24h)', `Your car ${car.name} is booked starting in 24 hours.`, 'info', { type: 'booking', bookingId: booking._id.toString(), userType: 'host' });
+                const displayHrs = Math.round(hrsUntilPickup);
+                const hrText = displayHrs === 1 ? 'hour' : 'hours';
+                await this.sendCommunication(customer, `Upcoming Trip (${displayHrs}h)`, `Your trip with ${car.name} starts in ${displayHrs} ${hrText}.`, 'info', { type: 'booking', bookingId: booking._id.toString(), userType: 'renter' });
+                await this.sendCommunication(vendor, `Upcoming Trip (${displayHrs}h)`, `Your car ${car.name} is booked starting in ${displayHrs} ${hrText}.`, 'info', { type: 'booking', bookingId: booking._id.toString(), userType: 'host' });
             }
             // 5hr alert
             if (hrsUntilPickup <= 5 && hrsUntilPickup > 0 && !booking.pickupAlert5hSent) {
                 booking.pickupAlert5hSent = true;
                 await booking.save();
-                await this.sendCommunication(customer, 'Upcoming Trip (5h)', `Your trip with ${car.name} starts in 5 hours. Please prepare.`, 'warning', { type: 'booking', bookingId: booking._id.toString(), userType: 'renter' });
-                await this.sendCommunication(vendor, 'Upcoming Trip (5h)', `Your car ${car.name} is picked up in 5 hours.`, 'warning', { type: 'booking', bookingId: booking._id.toString(), userType: 'host' });
+                const displayHrs = Math.round(hrsUntilPickup);
+                const hrText = displayHrs === 1 ? 'hour' : 'hours';
+                await this.sendCommunication(customer, `Upcoming Trip (${displayHrs}h)`, `Your trip with ${car.name} starts in ${displayHrs} ${hrText}. Please prepare.`, 'warning', { type: 'booking', bookingId: booking._id.toString(), userType: 'renter' });
+                await this.sendCommunication(vendor, `Upcoming Trip (${displayHrs}h)`, `Your car ${car.name} is picked up in ${displayHrs} ${hrText}.`, 'warning', { type: 'booking', bookingId: booking._id.toString(), userType: 'host' });
             }
         }
 

@@ -146,6 +146,7 @@ function VehiclesContent() {
   const [error, setError] = useState(false);
   const [showMap, setShowMap] = useState(true);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number } | null>(null);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [mapIcon, setMapIcon] = useState<any>(null);
 
@@ -307,6 +308,7 @@ function VehiclesContent() {
     const carName = car.name || `${car.brandName || ""} ${car.model || ""}`.trim();
     const carBrandName = (typeof car.brand === 'object' && car.brand?.name) || car.brandName || "";
     const carTypeId = (typeof car.vehicleType === 'object' && car.vehicleType?._id) || car.vehicleType || "";
+    const carTypeName = (typeof car.vehicleType === 'object' && car.vehicleType?.name) || "";
     const fuel = car.fuelType || "None";
     const carAmenities = car.amenities || [];
     const basePrice = car.pricePerDay || 0;
@@ -333,7 +335,16 @@ function VehiclesContent() {
     const matchesBrand = selectedBrand === "All" || carBrandName.toLowerCase() === selectedBrand.toLowerCase();
     const matchesFuel = selectedFuel === "All" || fuel.toLowerCase() === selectedFuel.toLowerCase();
     const matchesAmenities = selectedAmenityIds.length === 0 || selectedAmenityIds.every(id => carAmenities.includes(id));
-    const matchesSearch = carName.toLowerCase().includes(searchQuery.toLowerCase());
+    const searchLower = searchQuery.toLowerCase();
+    const searchNumber = parseFloat(searchQuery);
+    const isNumericSearch = !isNaN(searchNumber) && searchQuery.trim() !== "";
+    
+    const matchesSearch = 
+      carName.toLowerCase().includes(searchLower) ||
+      carBrandName.toLowerCase().includes(searchLower) ||
+      carTypeName.toLowerCase().includes(searchLower) ||
+      (isNumericSearch && carPrice <= searchNumber);
+      
     const matchesCity = selectedCity === "All" || (car.location?.city || "").toLowerCase() === selectedCity.toLowerCase();
 
     const matchesMapBounds = (mapFilterActive && mapBounds)
@@ -401,8 +412,8 @@ function VehiclesContent() {
   return (
     <div className="bg-background font-sans selection:bg-primary selection:text-white pt-16 lg:pt-20 w-full">
       <Header />
-      <div className="sticky top-16 lg:top-20 z-40 bg-background/80 backdrop-blur-md border-b border-border dark:border-white/20">
-        <div className="max-w-[1600px] mx-auto px-4 lg:px-6 pt-2 pb-4 lg:py-4 overflow-hidden">
+      <div className="sticky top-16 lg:top-20 z-[60] bg-background/80 backdrop-blur-md border-b border-border dark:border-white/20">
+        <div className="max-w-[1600px] mx-auto px-4 lg:px-6 pt-2 pb-4 lg:py-4 overflow-visible">
           {/* Horizontal Filter Bar - Single Row */}
           <div className="flex-1 relative z-50 overflow-visible" ref={filterBarRef}>
             {/* Mobile Filter Track & Quick Actions */}  {/* Mobile Search - Only visible on very small screens */}
@@ -458,12 +469,18 @@ function VehiclesContent() {
 
 
             {FILTER_CATEGORIES.filter(c => c.id !== 'all').map(cat => (
-              <div key={cat.id} className="relative flex-shrink-0 z-50">
+              <div key={cat.id} className="relative flex-shrink-0">
                 <button
                   onMouseDown={(e) => e.stopPropagation()}
                   onClick={(e) => {
-                    const newActive = activeDropdown === cat.id ? null : cat.id;
-                    setActiveDropdown(newActive);
+                    if (activeDropdown === cat.id) {
+                      setActiveDropdown(null);
+                      setDropdownPos(null);
+                    } else {
+                      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                      setDropdownPos({ top: rect.bottom + 8, left: rect.left });
+                      setActiveDropdown(cat.id);
+                    }
                   }}
                   className={`h-9 px-3 rounded-app border flex items-center gap-1.5 text-[10px] font-black tracking-tight transition-all whitespace-nowrap ${activeDropdown === cat.id
                     ? 'bg-primary text-white border-primary '
@@ -474,245 +491,6 @@ function VehiclesContent() {
                   <span className="uppercase tracking-widest">{cat.label}</span>
                   <ChevronDown size={14} className={activeDropdown === cat.id ? "rotate-180 transition-transform" : "transition-transform"} />
                 </button>
-
-                <AnimatePresence>
-                  {activeDropdown === cat.id && (
-                    <motion.div
-                      ref={dropdownRef}
-                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                      className="absolute top-full left-0 mt-3 z-50 bg-card rounded-app border border-border dark:border-white/10 w-full max-w-[280px] sm:min-w-[280px] overflow-visible shadow-xl"
-                    >
-                      {cat.id === 'type' && (
-                        <div className="p-2 space-y-1">
-                          <div onClick={() => { setSelectedType("All"); setActiveDropdown(null); }} className="px-3 py-2.5 rounded-app hover:bg-muted cursor-pointer text-xs font-bold text-foreground">{t('vehicles.labels.all_vehicles')}</div>
-                          {carTypes.map(t_obj => (
-                            <div key={t_obj.id} onClick={() => { setSelectedType(t_obj.id); setActiveDropdown(null); }} className={`px-3 py-2.5 rounded-app hover:bg-muted cursor-pointer text-xs font-bold ${selectedType === t_obj.id ? 'text-primary bg-primary/5' : 'text-muted-foreground'}`}>{t_obj.name}</div>
-                          ))}
-                        </div>
-                      )}
-                      {cat.id === 'price' && (
-                        <div className="w-full max-w-[350px] sm:min-w-[350px]">
-                          <div className="p-6">
-                            <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mb-6 flex items-center justify-between">
-                              {t('vehicles.labels.price_range')}
-                              <span className="text-primary text-xs tracking-tight">{formatPrice(priceRange[0])} - {priceRange[1] >= 1000 ? `${formatPrice(1000)}+` : formatPrice(priceRange[1])}</span>
-                            </h4>
-                            <div className="px-3">
-                              <div className="relative h-12 flex items-center mb-4" ref={priceTrackRef}>
-                                <div className="absolute left-0 right-0 h-1 bg-muted rounded-full" />
-                                <motion.div
-                                  className="absolute h-1 bg-primary rounded-full"
-                                  style={{
-                                    left: `${(priceRange[0] / 1000) * 100}%`,
-                                    right: `${100 - (Math.min(priceRange[1], 1000) / 1000) * 100}%`
-                                  }}
-                                />
-                                <motion.div
-                                  drag="x"
-                                  dragConstraints={priceTrackRef}
-                                  dragElastic={0}
-                                  dragMomentum={false}
-                                  onDrag={(e, info) => {
-                                    const rect = priceTrackRef.current?.getBoundingClientRect();
-                                    if (!rect) return;
-                                    const percent = Math.min(Math.max((info.point.x - rect.left) / rect.width, 0), 1);
-                                    const price = Math.round(percent * 1000);
-                                    if (price < priceRange[1] && price !== priceRange[0]) {
-                                      setPriceRange([price, priceRange[1]]);
-                                    }
-                                  }}
-                                  className="absolute left-0 w-7 h-7 -ml-3.5 bg-card border-2 border-border dark:border-white/40 rounded-full cursor-grab active:cursor-grabbing z-10 hover:border-primary transition-all flex items-center justify-center font-black"
-                                  style={{ x: (priceRange[0] / 1000) * (priceTrackRef.current?.offsetWidth || 350) }}
-                                >
-                                  <div className="w-1.5 h-1.5 bg-muted rounded-full" />
-                                </motion.div>
-                                <motion.div
-                                  drag="x"
-                                  dragConstraints={priceTrackRef}
-                                  dragElastic={0}
-                                  dragMomentum={false}
-                                  onDrag={(e, info) => {
-                                    const rect = priceTrackRef.current?.getBoundingClientRect();
-                                    if (!rect) return;
-                                    const percent = Math.min(Math.max((info.point.x - rect.left) / rect.width, 0), 1);
-                                    const price = Math.round(percent * 1000);
-                                    if (price > priceRange[0] && price !== priceRange[1]) {
-                                      setPriceRange([priceRange[0], price]);
-                                    }
-                                  }}
-                                  className="absolute left-0 w-7 h-7 -ml-3.5 bg-card border-2 border-border dark:border-white/40 rounded-full flex items-center justify-center cursor-grab active:cursor-grabbing z-10 hover:border-primary transition-all font-black"
-                                  style={{ x: (Math.min(priceRange[1], 1000) / 1000) * (priceTrackRef.current?.offsetWidth || 350) }}
-                                >
-                                  <div className="w-1.5 h-1.5 bg-muted rounded-full" />
-                                </motion.div>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="p-4 bg-muted/20 border-t border-border flex items-center justify-between gap-4">
-                            <button onClick={() => setPriceRange([0, 1000])} className="h-10 px-6 rounded-app border border-border dark:border-white/10 bg-card text-xs font-black uppercase tracking-widest text-muted-foreground hover:bg-muted transition-all">{t('vehicles.labels.reset')}</button>
-                            <Button onClick={() => setActiveDropdown(null)} className="flex-1 h-10 bg-primary hover:bg-primary-dark text-white rounded-app font-black text-[10px] uppercase tracking-widest">{t('vehicles.labels.apply')}</Button>
-                          </div>
-                        </div>
-                      )}
-                      {cat.id === 'make' && (
-                        <div className="p-4 space-y-3 w-full max-w-[280px] sm:min-w-[280px]">
-                          <div className="flex justify-between items-center mb-1">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">{t('vehicles.labels.all_brands')}</span>
-                            <button onClick={() => setSelectedBrand("All")} className="text-[9px] font-black text-primary uppercase">{t('vehicles.labels.reset')}</button>
-                          </div>
-                          <div className="grid grid-cols-2 gap-2">
-                            {brands.slice(0, 10).map(b => (
-                              <div
-                                key={b.id}
-                                onClick={() => { setSelectedBrand(b.name); setActiveDropdown(null); }}
-                                className={`px-3 py-2 rounded-app border text-[10px] font-black uppercase tracking-tighter cursor-pointer transition-all ${selectedBrand === b.name ? 'bg-primary text-white border-primary ' : 'border-border text-muted-foreground hover:border-primary/30'}`}
-                              >
-                                {b.name}
-                              </div>
-                            ))}
-                          </div>
-                          <Button onClick={() => setIsFilterOpen(true)} variant="outline" className="w-full h-10 rounded-app text-[9px] font-black uppercase tracking-widest border-border dark:border-white/10">{t('vehicles.labels.view_more_brands')}</Button>
-                        </div>
-                      )}
-                      {cat.id === 'years' && (
-                        <div className="p-6 w-full max-w-[320px] sm:min-w-[320px]">
-                          <div className="flex justify-between items-end mb-6">
-                            <div>
-                              <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mb-1">Model Year</h4>
-                              <p className="text-sm font-black text-foreground tracking-tight">{yearRange[0]} - {yearRange[1]}</p>
-                            </div>
-                          </div>
-                          <div className="px-5">
-                            <div className="relative h-12 flex items-center" ref={yearTrackRef}>
-                              <div className="absolute left-0 right-0 h-1 bg-muted rounded-full" />
-                              <motion.div
-                                className="absolute h-1 bg-primary rounded-full transition-all"
-                                style={{
-                                  left: `${((yearRange[0] - 1950) / (currentYear - 1950)) * 100}%`,
-                                  right: `${100 - ((yearRange[1] - 1950) / (currentYear - 1950)) * 100}%`
-                                }}
-                              />
-                              <motion.div
-                                drag="x"
-                                dragConstraints={yearTrackRef}
-                                dragElastic={0}
-                                dragMomentum={false}
-                                onDrag={(e, info) => {
-                                  const rect = yearTrackRef.current?.getBoundingClientRect();
-                                  if (!rect) return;
-                                  const percent = Math.min(Math.max((info.point.x - rect.left) / rect.width, 0), 1);
-                                  const year = 1950 + Math.round(percent * (currentYear - 1950));
-                                  if (year < yearRange[1] && year !== yearRange[0]) {
-                                    setYearRange([year, yearRange[1]]);
-                                  }
-                                }}
-                                className="absolute left-0 w-7 h-7 -ml-3.5 bg-card border-2 border-border dark:border-white/40 rounded-full flex items-center justify-center cursor-grab active:cursor-grabbing z-10 hover:border-primary transition-all"
-                                style={{ x: ((yearRange[0] - 1950) / (currentYear - 1950)) * (yearTrackRef.current?.offsetWidth || 280) }}
-                              >
-                                <div className="w-1.5 h-1.5 bg-muted rounded-full" />
-                              </motion.div>
-                              <motion.div
-                                drag="x"
-                                dragConstraints={yearTrackRef}
-                                dragElastic={0}
-                                dragMomentum={false}
-                                onDrag={(e, info) => {
-                                  const rect = yearTrackRef.current?.getBoundingClientRect();
-                                  if (!rect) return;
-                                  const percent = Math.min(Math.max((info.point.x - rect.left) / rect.width, 0), 1);
-                                  const year = 1950 + Math.round(percent * (currentYear - 1950));
-                                  if (year > yearRange[0] && year !== yearRange[1]) {
-                                    setYearRange([yearRange[0], year]);
-                                  }
-                                }}
-                                className="absolute left-0 w-7 h-7 -ml-3.5 bg-card border-2 border-border dark:border-white/40 rounded-full flex items-center justify-center cursor-grab active:cursor-grabbing z-10 hover:border-primary transition-all"
-                                style={{ x: ((yearRange[1] - 1950) / (currentYear - 1950)) * (yearTrackRef.current?.offsetWidth || 280) }}
-                              >
-                                <div className="w-1.5 h-1.5 bg-muted rounded-full" />
-                              </motion.div>
-                            </div>
-                          </div>
-                          <div className="mt-8 flex gap-3">
-                            <button onClick={() => setYearRange([1950, currentYear])} className="flex-1 h-10 rounded-app border border-border dark:border-white/10 bg-card text-[9px] font-black uppercase tracking-widest text-muted-foreground hover:bg-muted">Reset</button>
-                            <Button onClick={() => setActiveDropdown(null)} className="flex-[2] h-10 bg-primary text-white rounded-app text-[9px] font-black uppercase tracking-widest">Apply</Button>
-                          </div>
-                        </div>
-                      )}
-                      {cat.id === 'seats' && (
-                        <div className="p-4 w-full max-w-[280px] sm:min-w-[280px] space-y-4">
-                          <p className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-widest border-b border-border dark:border-white/10 pb-2">{t('vehicles.labels.min_seats')}</p>
-                          <div className="grid grid-cols-2 gap-2">
-                            {["2", "4", "5", "7+"].map(s => (
-                              <div
-                                key={s}
-                                onClick={() => { setSeats(s); setActiveDropdown(null); }}
-                                className={`px-4 py-3 rounded-app border flex flex-col items-center gap-0.5 cursor-pointer transition-all ${seats === s ? 'bg-primary text-white border-primary ' : 'border-border dark:border-white/10 text-muted-foreground hover:border-primary/30'}`}
-                              >
-                                <span className="text-xs font-black">{s}</span>
-                                <span className="text-[8px] font-black uppercase tracking-tighter opacity-70">Seats</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      {cat.id === 'fuel_eff' && (
-                        <div className="p-4 min-w-[280px] space-y-4">
-                          <p className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-widest border-b border-border dark:border-white/10 pb-2">{t('vehicles.labels.efficiency_rating')}</p>
-                          <div className="space-y-2">
-                            {[
-                              { label: "Standard", val: "None", desc: "Show all results" },
-                              { label: "High Efficiency", val: "Good", desc: "45+ MPG" },
-                              { label: "Ultra Efficient", val: "Excellent", desc: "60+ MPG" }
-                            ].map((f) => (
-                              <div
-                                key={f.val}
-                                onClick={() => { setFuelEfficiency(f.val); setActiveDropdown(null); }}
-                                className={`p-3 rounded-app border cursor-pointer transition-all flex items-center justify-between group ${fuelEfficiency === f.val ? 'bg-primary border-primary text-white ' : 'border-border dark:border-white/10 bg-card text-muted-foreground hover:bg-muted'}`}
-                              >
-                                <div>
-                                  <p className="text-[10px] font-black uppercase tracking-tight">{f.label}</p>
-                                  <p className={`text-[8px] font-bold uppercase opacity-60 ${fuelEfficiency === f.val ? 'text-white' : 'text-muted-foreground/60'}`}>{f.desc}</p>
-                                </div>
-                                {fuelEfficiency === f.val && <div className="w-1.5 h-1.5 rounded-full bg-white " />}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      {cat.id === 'fuel' && (
-                        <div className="p-4 w-full max-w-[240px] sm:min-w-[240px] space-y-4">
-                          <p className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-widest border-b border-border dark:border-white/10 pb-2">{t('vehicles.labels.propulsion_source')}</p>
-                          <div className="grid grid-cols-1 gap-2">
-                            {["All", "Gasoline", "Diesel", "Electric", "Hybrid"].map(f => (
-                              <div
-                                key={f}
-                                onClick={() => { setSelectedFuel(f); setActiveDropdown(null); }}
-                                className={`px-4 py-3 rounded-app border text-[10px] font-black uppercase tracking-widest cursor-pointer transition-all flex items-center justify-between ${selectedFuel === f ? 'bg-foreground text-background border-foreground ' : 'border-border dark:border-white/10 text-muted-foreground hover:bg-muted'}`}
-                              >
-                                {f}
-                                {selectedFuel === f && <div className="w-1 h-1 rounded-full bg-background" />}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      {cat.id === 'delivery' && (
-                        <div className="p-6 text-center space-y-4">
-                          <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mx-auto mb-2">
-                            <MapPin size={24} className="text-primary" />
-                          </div>
-                          <div>
-                            <h4 className="text-xs font-black text-foreground tracking-tight">Delivery Refinement</h4>
-                            <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mt-1">Configure door-to-door handoff</p>
-                          </div>
-                          <Button onClick={() => { setIsFilterOpen(true); setActiveDropdown(null); }} className="w-full h-11 bg-primary text-white rounded-app text-[9px] font-black uppercase tracking-widest">Open Detailed Settings</Button>
-                        </div>
-                      )}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
               </div>
             ))}
 
@@ -753,9 +531,172 @@ function VehiclesContent() {
         </div>
       </div>
 
-
+      {/* Fixed-position dropdown portal — renders outside scroll container */}
+      <AnimatePresence>
+        {activeDropdown && dropdownPos && (
+          <>
+            <div className="fixed inset-0 z-[998]" onClick={() => { setActiveDropdown(null); setDropdownPos(null); }} />
+            <motion.div
+              ref={dropdownRef}
+              initial={{ opacity: 0, y: 8, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 8, scale: 0.96 }}
+              transition={{ duration: 0.15 }}
+              style={{ top: dropdownPos.top, left: dropdownPos.left }}
+              className="fixed z-[999] bg-card rounded-app border border-border dark:border-white/10 shadow-2xl overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {activeDropdown === 'type' && (
+                <div className="p-2 space-y-1 min-w-[220px]">
+                  <div onClick={() => { setSelectedType("All"); setActiveDropdown(null); }} className="px-3 py-2.5 rounded-app hover:bg-muted cursor-pointer text-xs font-bold text-foreground">{t('vehicles.labels.all_vehicles')}</div>
+                  {carTypes.map(t_obj => (
+                    <div key={t_obj.id} onClick={() => { setSelectedType(t_obj.id); setActiveDropdown(null); }} className={`px-3 py-2.5 rounded-app hover:bg-muted cursor-pointer text-xs font-bold ${selectedType === t_obj.id ? 'text-primary bg-primary/5' : 'text-muted-foreground'}`}>{t_obj.name}</div>
+                  ))}
+                </div>
+              )}
+              {activeDropdown === 'price' && (
+                <div className="w-[350px]">
+                  <div className="p-6">
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mb-6 flex items-center justify-between">
+                      {t('vehicles.labels.price_range')}
+                      <span className="text-primary text-xs tracking-tight">{formatPrice(priceRange[0])} - {priceRange[1] >= 1000 ? `${formatPrice(1000)}+` : formatPrice(priceRange[1])}</span>
+                    </h4>
+                    <div className="px-3">
+                      <div className="relative h-12 flex items-center mb-4" ref={priceTrackRef}>
+                        <div className="absolute left-0 right-0 h-1 bg-muted rounded-full" />
+                        <motion.div className="absolute h-1 bg-primary rounded-full" style={{ left: `${(priceRange[0] / 1000) * 100}%`, right: `${100 - (Math.min(priceRange[1], 1000) / 1000) * 100}%` }} />
+                        <motion.div drag="x" dragConstraints={priceTrackRef} dragElastic={0} dragMomentum={false}
+                          onDrag={(e, info) => { const rect = priceTrackRef.current?.getBoundingClientRect(); if (!rect) return; const pct = Math.min(Math.max((info.point.x - rect.left) / rect.width, 0), 1); const price = Math.round(pct * 1000); if (price < priceRange[1]) setPriceRange([price, priceRange[1]]); }}
+                          className="absolute left-0 w-7 h-7 -ml-3.5 bg-card border-2 border-border dark:border-white/40 rounded-full cursor-grab active:cursor-grabbing z-10 hover:border-primary flex items-center justify-center"
+                          style={{ x: (priceRange[0] / 1000) * (priceTrackRef.current?.offsetWidth || 300) }}>
+                          <div className="w-1.5 h-1.5 bg-muted rounded-full" />
+                        </motion.div>
+                        <motion.div drag="x" dragConstraints={priceTrackRef} dragElastic={0} dragMomentum={false}
+                          onDrag={(e, info) => { const rect = priceTrackRef.current?.getBoundingClientRect(); if (!rect) return; const pct = Math.min(Math.max((info.point.x - rect.left) / rect.width, 0), 1); const price = Math.round(pct * 1000); if (price > priceRange[0]) setPriceRange([priceRange[0], price]); }}
+                          className="absolute left-0 w-7 h-7 -ml-3.5 bg-card border-2 border-border dark:border-white/40 rounded-full cursor-grab active:cursor-grabbing z-10 hover:border-primary flex items-center justify-center"
+                          style={{ x: (Math.min(priceRange[1], 1000) / 1000) * (priceTrackRef.current?.offsetWidth || 300) }}>
+                          <div className="w-1.5 h-1.5 bg-muted rounded-full" />
+                        </motion.div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-4 bg-muted/20 border-t border-border flex items-center gap-4">
+                    <button onClick={() => setPriceRange([0, 1000])} className="h-10 px-6 rounded-app border border-border bg-card text-xs font-black uppercase text-muted-foreground hover:bg-muted">{t('vehicles.labels.reset')}</button>
+                    <Button onClick={() => setActiveDropdown(null)} className="flex-1 h-10 bg-primary text-white rounded-app font-black text-[10px] uppercase tracking-widest">{t('vehicles.labels.apply')}</Button>
+                  </div>
+                </div>
+              )}
+              {activeDropdown === 'make' && (
+                <div className="p-4 space-y-3 w-[280px]">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">{t('vehicles.labels.all_brands')}</span>
+                    <button onClick={() => setSelectedBrand("All")} className="text-[9px] font-black text-primary uppercase">{t('vehicles.labels.reset')}</button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {brands.slice(0, 10).map(b => (
+                      <div key={b.id} onClick={() => { setSelectedBrand(b.name); setActiveDropdown(null); }}
+                        className={`px-3 py-2 rounded-app border text-[10px] font-black uppercase cursor-pointer transition-all ${selectedBrand === b.name ? 'bg-primary text-white border-primary' : 'border-border text-muted-foreground hover:border-primary/30'}`}>
+                        {b.name}
+                      </div>
+                    ))}
+                  </div>
+                  <Button onClick={() => setIsFilterOpen(true)} variant="outline" className="w-full h-10 rounded-app text-[9px] font-black uppercase tracking-widest border-border">{t('vehicles.labels.view_more_brands')}</Button>
+                </div>
+              )}
+              {activeDropdown === 'years' && (
+                <div className="p-6 w-[320px]">
+                  <div className="flex justify-between items-end mb-6">
+                    <div>
+                      <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mb-1">Model Year</h4>
+                      <p className="text-sm font-black text-foreground">{yearRange[0]} – {yearRange[1]}</p>
+                    </div>
+                  </div>
+                  <div className="px-5">
+                    <div className="relative h-12 flex items-center" ref={yearTrackRef}>
+                      <div className="absolute left-0 right-0 h-1 bg-muted rounded-full" />
+                      <motion.div className="absolute h-1 bg-primary rounded-full" style={{ left: `${((yearRange[0]-1950)/(currentYear-1950))*100}%`, right: `${100-((yearRange[1]-1950)/(currentYear-1950))*100}%` }} />
+                      <motion.div drag="x" dragConstraints={yearTrackRef} dragElastic={0} dragMomentum={false}
+                        onDrag={(e, info) => { const rect = yearTrackRef.current?.getBoundingClientRect(); if (!rect) return; const pct = Math.min(Math.max((info.point.x-rect.left)/rect.width,0),1); const year = 1950+Math.round(pct*(currentYear-1950)); if(year<yearRange[1]) setYearRange([year,yearRange[1]]); }}
+                        className="absolute left-0 w-7 h-7 -ml-3.5 bg-card border-2 border-border dark:border-white/40 rounded-full cursor-grab z-10 hover:border-primary flex items-center justify-center"
+                        style={{ x: ((yearRange[0]-1950)/(currentYear-1950))*(yearTrackRef.current?.offsetWidth||280) }}>
+                        <div className="w-1.5 h-1.5 bg-muted rounded-full" />
+                      </motion.div>
+                      <motion.div drag="x" dragConstraints={yearTrackRef} dragElastic={0} dragMomentum={false}
+                        onDrag={(e, info) => { const rect = yearTrackRef.current?.getBoundingClientRect(); if (!rect) return; const pct = Math.min(Math.max((info.point.x-rect.left)/rect.width,0),1); const year = 1950+Math.round(pct*(currentYear-1950)); if(year>yearRange[0]) setYearRange([yearRange[0],year]); }}
+                        className="absolute left-0 w-7 h-7 -ml-3.5 bg-card border-2 border-border dark:border-white/40 rounded-full cursor-grab z-10 hover:border-primary flex items-center justify-center"
+                        style={{ x: ((yearRange[1]-1950)/(currentYear-1950))*(yearTrackRef.current?.offsetWidth||280) }}>
+                        <div className="w-1.5 h-1.5 bg-muted rounded-full" />
+                      </motion.div>
+                    </div>
+                  </div>
+                  <div className="mt-8 flex gap-3">
+                    <button onClick={() => setYearRange([1950, currentYear])} className="flex-1 h-10 rounded-app border border-border bg-card text-[9px] font-black uppercase text-muted-foreground hover:bg-muted">Reset</button>
+                    <Button onClick={() => setActiveDropdown(null)} className="flex-[2] h-10 bg-primary text-white rounded-app text-[9px] font-black uppercase">Apply</Button>
+                  </div>
+                </div>
+              )}
+              {activeDropdown === 'seats' && (
+                <div className="p-4 w-[260px] space-y-4">
+                  <p className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-widest border-b border-border pb-2">{t('vehicles.labels.min_seats')}</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {["2", "4", "5", "7+"].map(s => (
+                      <div key={s} onClick={() => { setSeats(s); setActiveDropdown(null); }}
+                        className={`px-4 py-3 rounded-app border flex flex-col items-center gap-0.5 cursor-pointer transition-all ${seats === s ? 'bg-primary text-white border-primary' : 'border-border text-muted-foreground hover:border-primary/30'}`}>
+                        <span className="text-xs font-black">{s}</span>
+                        <span className="text-[8px] font-black uppercase opacity-70">Seats</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {activeDropdown === 'fuel_eff' && (
+                <div className="p-4 w-[260px] space-y-4">
+                  <p className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-widest border-b border-border pb-2">{t('vehicles.labels.efficiency_rating')}</p>
+                  <div className="space-y-2">
+                    {[{ label: "Standard", val: "None", desc: "Show all results" }, { label: "High Efficiency", val: "Good", desc: "45+ MPG" }, { label: "Ultra Efficient", val: "Excellent", desc: "60+ MPG" }].map(f => (
+                      <div key={f.val} onClick={() => { setFuelEfficiency(f.val); setActiveDropdown(null); }}
+                        className={`p-3 rounded-app border cursor-pointer flex items-center justify-between ${fuelEfficiency === f.val ? 'bg-primary border-primary text-white' : 'border-border bg-card text-muted-foreground hover:bg-muted'}`}>
+                        <div>
+                          <p className="text-[10px] font-black uppercase">{f.label}</p>
+                          <p className={`text-[8px] font-bold uppercase opacity-60`}>{f.desc}</p>
+                        </div>
+                        {fuelEfficiency === f.val && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {activeDropdown === 'fuel' && (
+                <div className="p-4 w-[220px] space-y-4">
+                  <p className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-widest border-b border-border pb-2">{t('vehicles.labels.propulsion_source')}</p>
+                  <div className="space-y-2">
+                    {["All", "Gasoline", "Diesel", "Electric", "Hybrid"].map(f => (
+                      <div key={f} onClick={() => { setSelectedFuel(f); setActiveDropdown(null); }}
+                        className={`px-4 py-3 rounded-app border text-[10px] font-black uppercase cursor-pointer flex items-center justify-between ${selectedFuel === f ? 'bg-foreground text-background border-foreground' : 'border-border text-muted-foreground hover:bg-muted'}`}>
+                        {f}
+                        {selectedFuel === f && <div className="w-1 h-1 rounded-full bg-background" />}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {activeDropdown === 'delivery' && (
+                <div className="p-6 text-center space-y-4 w-[260px]">
+                  <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mx-auto mb-2"><MapPin size={24} className="text-primary" /></div>
+                  <div>
+                    <h4 className="text-xs font-black text-foreground">Delivery Refinement</h4>
+                    <p className="text-[9px] font-bold text-muted-foreground uppercase mt-1">Configure door-to-door handoff</p>
+                  </div>
+                  <Button onClick={() => { setIsFilterOpen(true); setActiveDropdown(null); }} className="w-full h-11 bg-primary text-white rounded-app text-[9px] font-black uppercase">Open Detailed Settings</Button>
+                </div>
+              )}
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* Map / Grid Toggle FAB */}
+
       <div className="hidden lg:flex fixed bottom-10 left-1/2 -translate-x-1/2 z-[60] items-center p-1.5 bg-card/80 backdrop-blur-xl border border-border/40 rounded-full dark:bg-slate-900/90 shadow-2xl">
         <button
           onClick={() => setShowMap(false)}

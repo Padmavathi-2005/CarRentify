@@ -89,7 +89,7 @@ export default function AdminBrandsView() {
  const fetchBrands = async () => {
   try {
    setLoading(true);
-   const response = await fetch(`${API_BASE_URL}/brands`);
+   const response = await fetch(`${API_BASE_URL}/brands?all=true`);
    const data = await response.json();
    setBrands(data);
   } catch (error) {

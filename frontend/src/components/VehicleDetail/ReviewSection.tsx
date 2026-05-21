@@ -10,10 +10,12 @@ import { formatDateDisplay } from "../CustomDateTimePicker";
 interface Review {
  _id: string;
  user: {
- displayName: string;
- firstName: string;
- lastName: string;
- image: string;
+ displayName?: string;
+ firstName?: string;
+ lastName?: string;
+ image?: string;
+ name?: string;
+ profileImage?: string;
  };
  rating: number;
  comment: string;
@@ -26,8 +28,105 @@ interface Review {
  createdAt: string;
 }
 
+const ReviewCard = ({ review, isLatest = false }: { review: Review, isLatest?: boolean }) => {
+  const { settings } = useSettings();
+
+  const formatDate = (dateStr: string) => {
+    return formatDateDisplay(dateStr, settings.defaultDateFormat);
+  };
+  
+  return (
+    <div 
+      className={`transition-all duration-300 ${isLatest ? 'bg-card border border-border dark:border-white/20 rounded-app p-6 md:p-8' : 'pb-8 border-b border-border/50 last:border-0 last:pb-0'}`}
+    >
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        {/* Left Column: Profile, Rating, Comment */}
+        <div className="lg:col-span-7 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className={`rounded-full overflow-hidden bg-muted border border-border shrink-0 ${isLatest ? 'w-12 h-12' : 'w-10 h-10'}`}>
+                {(review.user?.image || review.user?.profileImage) ? (
+                  <img src={review.user.image || review.user.profileImage} className="w-full h-full object-cover" alt="User" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-primary font-black uppercase tracking-widest text-xs">
+                    {review.user?.firstName?.charAt(0) || review.user?.name?.charAt(0) || "U"}
+                  </div>
+                )}
+              </div>
+              <div>
+                <h4 className={`${isLatest ? 'text-sm' : 'text-xs'} font-black text-foreground tracking-tight uppercase`}>
+                  {review.user?.displayName || review.user?.name || `${review.user?.firstName || 'User'} ${review.user?.lastName || ''}`}
+                </h4>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <Clock size={10} className="text-muted-foreground" />
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                    {formatDate(review.createdAt)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex items-center gap-1">
+              {[...Array(5)].map((_, i) => (
+                <Star key={i} size={12} className={i < review.rating ? "text-amber-400 fill-amber-400" : "text-muted/30"} />
+              ))}
+            </div>
+            <p className="text-sm font-bold text-foreground leading-relaxed">
+              "{review.comment || 'No comment provided.'}"
+            </p>
+          </div>
+        </div>
+
+        {/* Right Column: Detailed Ratings */}
+        <div className="lg:col-span-5 bg-muted/20 p-5 rounded-xl border border-border/50">
+          <h5 className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-4">Detailed Ratings</h5>
+          <div className="grid grid-cols-2 gap-y-4 gap-x-2">
+            <div className="flex justify-between items-center pr-2 border-r border-border/50">
+              <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5"><Sparkles size={10}/> Clean</span>
+              <div className="flex items-center gap-1 mr-2">
+                <span className="text-xs font-black text-foreground">{review.vehicleCleanliness || 5}</span><Star size={10} className="text-amber-400 fill-amber-400" /> 
+              </div>
+            </div>
+            <div className="flex justify-between items-center pl-2">
+              <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5"><CheckCircle2 size={10}/> Accur</span>
+              <div className="flex items-center gap-1">
+                <span className="text-xs font-black text-foreground">{review.listingAccuracy || 5}</span><Star size={10} className="text-amber-400 fill-amber-400" /> 
+              </div>
+            </div>
+            <div className="flex justify-between items-center pr-2 border-r border-border/50">
+              <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5"><Key size={10}/> Pick</span>
+              <div className="flex items-center gap-1 mr-2">
+                <span className="text-xs font-black text-foreground">{review.pickupExperience || 5}</span><Star size={10} className="text-amber-400 fill-amber-400" /> 
+              </div>
+            </div>
+            <div className="flex justify-between items-center pl-2">
+              <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5"><Tag size={10}/> Val</span>
+              <div className="flex items-center gap-1">
+                <span className="text-xs font-black text-foreground">{review.valueForMoney || 5}</span><Star size={10} className="text-amber-400 fill-amber-400" /> 
+              </div>
+            </div>
+            <div className="flex justify-between items-center pr-2 border-r border-border/50">
+              <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5"><MessageSquare size={10}/> Host</span>
+              <div className="flex items-center gap-1 mr-2">
+                <span className="text-xs font-black text-foreground">{review.hostCommunication || 5}</span><Star size={10} className="text-amber-400 fill-amber-400" /> 
+              </div>
+            </div>
+            <div className="flex justify-between items-center pl-2">
+              <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5"><MapPin size={10}/> Loc</span>
+              <div className="flex items-center gap-1">
+                <span className="text-xs font-black text-foreground">{review.vehicleLocation || 5}</span><Star size={10} className="text-amber-400 fill-amber-400" /> 
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export const ReviewSection = ({ reviews }: { reviews: Review[] }) => {
- const { settings } = useSettings();
  const [showAllReviews, setShowAllReviews] = useState(false);
 
  if (!reviews || reviews.length === 0) {
@@ -54,14 +153,6 @@ export const ReviewSection = ({ reviews }: { reviews: Review[] }) => {
  </div>
  );
  }
-
- const formatDate = (dateStr: string) => {
- return formatDateDisplay(dateStr, settings.defaultDateFormat);
- };
-
- const formatModalDate = (dateStr: string) => {
- return formatDateDisplay(dateStr, settings.defaultDateFormat);
- };
 
  const averageRating = (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1);
  const latestReview = reviews[0];
@@ -108,101 +199,25 @@ export const ReviewSection = ({ reviews }: { reviews: Review[] }) => {
  ))}
  </div>
 
- <div className="bg-card border border-border dark:border-white/20 rounded-app p-8 space-y-8 ">
- {/* Latest Review Preview */}
- <div className="space-y-6">
- <div className="flex items-center gap-4">
- <div className="w-14 h-14 rounded-full overflow-hidden bg-muted border border-border shrink-0">
- {latestReview.user?.image ? (
- <img src={latestReview.user.image} className="w-full h-full object-cover" alt="User" />
- ) : (
- <div className="w-full h-full flex items-center justify-center text-primary font-black uppercase tracking-widest">
- {latestReview.user?.firstName?.charAt(0) || "U"}
- </div>
- )}
- </div>
- <div>
- <h4 className="text-sm font-black text-foreground tracking-tight uppercase">
- {latestReview.user?.displayName || `${latestReview.user?.firstName || 'User'} ${latestReview.user?.lastName || ''}`}
- </h4>
- <div className="flex items-center gap-2 mt-1">
- <Clock size={12} className="text-muted-foreground" />
- <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
- {formatDate(latestReview.createdAt)}
- </span>
- </div>
- </div>
- </div>
+ <ReviewCard review={latestReview} isLatest={true} />
 
- <div className="space-y-4">
- <div className="flex items-center gap-1">
- {[...Array(5)].map((_, i) => (
- <Star
- key={i}
- size={14}
- className={i < latestReview.rating ? "text-amber-400 fill-amber-400" : "text-muted/30"}
- />
- ))}
- </div>
- <p className="text-sm font-bold text-muted-foreground leading-relaxed italic">
- "{latestReview.comment}"
- </p>
- </div>
- </div>
-
+ {reviews.length > 1 && !showAllReviews && (
  <Button
  onClick={() => setShowAllReviews(true)}
  variant="outline"
- className="h-12 px-8 rounded-app font-black uppercase text-[11px] tracking-widest gap-3 border-2 hover:bg-muted/50 transition-all"
+ className="h-12 px-8 rounded-app font-black uppercase text-[11px] tracking-widest gap-3 border-2 hover:bg-muted/50 transition-all w-full md:w-auto mt-6"
  >
- View Other Reviews
+ View All {reviews.length} Reviews
  </Button>
- </div>
-
- {/* All Reviews Modal */}
- <Modal 
- isOpen={showAllReviews} 
- onClose={() => setShowAllReviews(false)} 
- title={`All Reviews (${reviews.length})`}
- >
- <div className="p-8 max-h-[70vh] overflow-y-auto custom-scrollbar space-y-8">
- {reviews.map((review) => (
- <div key={review._id} className="space-y-4 pb-8 border-b border-border last:border-0 last:pb-0">
- <div className="flex items-center gap-4">
- <div className="w-12 h-12 rounded-full overflow-hidden bg-muted shrink-0">
- {review.user?.image ? (
- <img src={review.user.image} className="w-full h-full object-cover" alt="User" />
- ) : (
- <div className="w-full h-full flex items-center justify-center text-primary font-black uppercase tracking-widest text-xs">
- {review.user?.firstName?.charAt(0) || "U"}
+ )}
+ 
+ {showAllReviews && (
+ <div className="space-y-2 pt-8 border-t border-border/50 mt-6">
+ {reviews.slice(1).map((review) => (
+   <ReviewCard key={review._id} review={review} />
+ ))}
  </div>
  )}
- </div>
- <div>
- <h4 className="text-[11px] font-black text-foreground uppercase tracking-widest">
- {review.user?.displayName || `${review.user?.firstName || 'User'} ${review.user?.lastName || ''}`}
- </h4>
- <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">
- {formatModalDate(review.createdAt)}
- </span>
- </div>
- </div>
- <div className="flex items-center gap-1">
- {[...Array(5)].map((_, i) => (
- <Star
- key={i}
- size={12}
- className={i < review.rating ? "text-amber-400 fill-amber-400" : "text-muted/30"}
- />
- ))}
- </div>
- <p className="text-sm font-bold text-muted-foreground leading-relaxed italic">
- "{review.comment}"
- </p>
- </div>
- ))}
- </div>
- </Modal>
  </div>
  );
 };

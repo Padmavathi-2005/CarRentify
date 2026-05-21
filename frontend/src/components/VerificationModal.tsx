@@ -56,6 +56,11 @@ export default function VerificationModal({
  const [submitting, setSubmitting] = useState(false);
  const [submitted, setSubmitted] = useState(false);
  const [loadingStatus, setLoadingStatus] = useState(true);
+ const [isMounted, setIsMounted] = useState(false);
+
+ useEffect(() => {
+   setIsMounted(true);
+ }, []);
 
  // Skip verification for admins implicitly
  useEffect(() => {
@@ -98,7 +103,20 @@ export default function VerificationModal({
  if (settingsRes.ok) {
  const settings = await settingsRes.json();
  const verificationFields = settings.verification?.fields || settings.fields || [];
- setFields(verificationFields);
+
+  // Explicitly add expiry date field if not present
+
+  if (!verificationFields.find((f: any) => f.id === 'licenseExpiryDate')) {
+    verificationFields.push({
+      id: 'licenseExpiryDate',
+      name: 'License Expiry Date',
+      type: 'date',
+      required: true,
+      description: 'Enter the expiration date printed on your driver\'s license'
+    });
+  }
+
+  setFields(verificationFields);
  }
 
  if (statusRes.ok) {
@@ -180,7 +198,7 @@ export default function VerificationModal({
  const dateFields = fields.filter((f) => f.type === "date");
  for (const df of dateFields) {
  const val = values[df.id];
- if (val) {
+ if (val && df.id !== 'licenseExpiryDate') {
  const birthDate = new Date(val);
  const today = new Date();
  let age = today.getFullYear() - birthDate.getFullYear();
@@ -221,17 +239,12 @@ export default function VerificationModal({
  }
  };
 
- if (!isOpen) return null;
+ if (!isOpen || !isMounted) return null;
 
  const status = externalStatus || myStatus?.status;
 
  return (
- <div className="fixed inset-0 z-[2000] overflow-y-auto custom-scrollbar">
- {/* Backdrop */}
- <div className="fixed inset-0 bg-black/50" />
-
- {/* Modal Wrapper for centering & scrolling */}
- <div className="min-h-full flex items-center justify-center p-4 md:p-8 relative">
+ <div className="fixed inset-0 z-[2000] flex items-start justify-center p-4 md:p-8 lg:p-12 overflow-y-auto bg-black/50 custom-scrollbar">
  <motion.div
  initial={{ opacity: 0, scale: 0.95, y: 20 }}
  animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -274,17 +287,24 @@ export default function VerificationModal({
  </div>
  ) : status === "approved" || status === "rejected" ? (
  <div>
- <div className={`rounded-app p-6 mb-6 flex items-start gap-4 ${status === 'approved' ? 'bg-emerald-50 border border-emerald-100' : 'bg-rose-50 border border-rose-100'}`}>
+ <AnimatePresence>
+ <motion.div 
+ initial={{ opacity: 0, y: -10 }}
+ animate={{ opacity: 1, y: 0 }}
+ transition={{ duration: 0.4 }}
+ className={`rounded-app p-6 mb-6 flex items-start gap-4 ${status === 'approved' ? 'bg-emerald-50 border border-emerald-100' : 'bg-rose-50 border border-rose-100'}`}
+ >
  {status === 'approved' ? <CheckCircle2 className="text-emerald-500 shrink-0 mt-0.5" size={20} /> : <XCircle className="text-rose-500 shrink-0 mt-0.5" size={20} />}
  <div>
  <p className={`text-[11px] font-black uppercase tracking-widest mb-1 ${status === 'approved' ? 'text-emerald-600' : 'text-rose-600'}`}>
- {status === 'approved' ? t('dashboard.verification.verified') : t('dashboard.verification.rejected')}
+ {status === 'approved' ? t('dashboard.verification.verified') : t('dashboard.verification.rejected_reupload')}
  </p>
  <p className={`text-sm font-bold ${status === 'approved' ? 'text-emerald-500/80' : 'text-rose-500/80'}`}>
  {status === 'approved' ? t('dashboard.verification.confirmed_desc') : (myStatus?.adminNote || t('dashboard.verification.rejected'))}
  </p>
  </div>
- </div>
+ </motion.div>
+ </AnimatePresence>
 
  {false && status === 'approved' ? (
  <div className="py-10 text-center">
@@ -365,7 +385,6 @@ export default function VerificationModal({
  </div>
  </motion.div>
  </div>
- </div>
  );
 }
 
@@ -392,6 +411,8 @@ function VerificationForm({
 
  const [openCountryId, setOpenCountryId] = useState<string | null>(null);
  const [selectedCountries, setSelectedCountries] = useState<Record<string, typeof COUNTRIES[0]>>({});
+ const [ageError, setAgeError] = useState<string | null>(null);
+ const [phoneError, setPhoneError] = useState<string | null>(null);
 
  const getCountry = (fieldId: string) => selectedCountries[fieldId] || COUNTRIES[0];
 
@@ -440,16 +461,30 @@ function VerificationForm({
  onUpload={handleImageUpload}
  />
  ) : field.type === "date" ? (
+ <div className="space-y-2">
  <CustomDatePicker
  label=""
  value={values[field.id] || ""}
- maxDate={maxDob}
- defaultViewDate={maxDob}
+ maxDate={field.id === 'licenseExpiryDate' ? undefined : maxDob}
+ minDate={field.id === 'licenseExpiryDate' ? new Date().toISOString().split('T')[0] : undefined}
+ defaultViewDate={field.id === 'licenseExpiryDate' ? new Date().toISOString().split('T')[0] : maxDob}
  inline={true}
- onChange={(val: string) =>
- setValues((p: any) => ({ ...p, [field.id]: val }))
+ onChange={(val: string) => {
+ setValues((p: any) => ({ ...p, [field.id]: val }));
+ if (val && field.id !== 'licenseExpiryDate') {
+ const birthDate = new Date(val);
+ const today = new Date();
+ let age = today.getFullYear() - birthDate.getFullYear();
+ const m = today.getMonth() - birthDate.getMonth();
+ if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
+ 
+ if (age < 21) setAgeError(t('dashboard.verification.age_error') || "Must be at least 21 to drive");
+ else setAgeError(null);
  }
+ }}
  />
+ {ageError && <p className="text-[9px] font-bold text-red-500 uppercase tracking-widest px-1 animate-pulse mt-1">{ageError}</p>}
+ </div>
  ) : field.type === "phone" ? (
  <div className="flex flex-col gap-2">
  <div className="flex gap-3">
@@ -467,20 +502,29 @@ function VerificationForm({
  <div className="flex-1 relative group">
  <input
  type="tel"
+ onKeyDown={(e) => {
+ if (e.key === ' ') e.preventDefault();
+ }}
  placeholder={t('dashboard.verification.phone_placeholder')}
  value={values[field.id] ? (values[field.id].startsWith(getCountry(field.id).code) ? values[field.id].slice(getCountry(field.id).code.length).trim() : values[field.id]) : ""}
  onChange={(e) => {
  const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
  setValues((p: any) => ({ ...p, [field.id]: getCountry(field.id).code + ' ' + digits }));
+ if (digits.length > 0 && digits.length < 10) {
+ setPhoneError(t('checkout.labels.placeholder_mobile') || "Must be 10 digits");
+ } else {
+ setPhoneError(null);
+ }
  }}
- className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-app text-sm font-bold text-slate-900 transition-all hover:border-primary/40 focus:bg-white focus:ring-4 focus:ring-primary/5 focus:border-primary outline-none"
+ className={`w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-app text-sm font-bold text-slate-900 transition-all hover:border-primary/40 focus:bg-white focus:ring-4 focus:ring-primary/5 focus:border-primary outline-none ${phoneError ? 'border-red-500 ring-red-500' : ''}`}
  />
  <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[9px] font-black text-slate-300 pointer-events-none uppercase tracking-widest">
  {t('dashboard.verification.min_digits')}
  </div>
  </div>
  </div>
-
+ {phoneError && <p className="text-[9px] font-bold text-red-500 uppercase tracking-widest px-1 animate-pulse mt-1">{phoneError}</p>}
+ 
  {/* Inline Expanded Country List */}
  <AnimatePresence>
  {openCountryId === field.id && (
@@ -534,7 +578,7 @@ function VerificationForm({
 
  <Button
  onClick={onSubmit}
- disabled={submitting}
+ disabled={submitting || !!ageError || !!phoneError}
  className="w-full h-14 bg-primary hover:bg-secondary hover:text-white text-white font-black uppercase tracking-widest rounded-app border-none text-sm transition-all disabled:opacity-50 mt-4"
  >
  {submitting ? (

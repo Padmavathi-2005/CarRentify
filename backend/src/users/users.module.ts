@@ -7,6 +7,8 @@ import { CarsModule } from '../cars/cars.module';
 import { Booking, BookingSchema } from '../bookings/schemas/booking.schema';
 import { ScheduleModule } from '@nestjs/schedule';
 import { UsersCleanupService } from './users-cleanup.service';
+import { NotificationsModule } from '../notifications/notifications.module';
+import { LicenseCronService } from './license-cron.service';
 
 @Module({
   imports: [
@@ -16,8 +18,9 @@ import { UsersCleanupService } from './users-cleanup.service';
     ]),
     CarsModule, // To populate car details in wishlist
     ScheduleModule.forRoot(),
+    NotificationsModule,
   ],
-  providers: [UsersService, UsersCleanupService],
+  providers: [UsersService, UsersCleanupService, LicenseCronService],
   controllers: [UsersController],
   exports: [UsersService],
 })

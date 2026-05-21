@@ -21,7 +21,8 @@ import {
  Repeat,
   Edit3,
   Upload,
-  ChevronDown
+  ChevronDown,
+  LocateFixed
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,9 +34,11 @@ import Link from "next/link";
 import { authService } from "@/services/authService";
 import { useLocale } from "@/components/LocaleContext";
 import DeleteAccountModal from "@/components/DeleteAccountModal";
+import { useToast } from "@/components/Toast";
 
 export default function ProfileView() {
  const { user, setUser, setShowVerifModal } = useAuth();
+ const { showToast } = useToast();
  const { t } = useLocale();
  const [loading, setLoading] = useState(false);
  const [success, setSuccess] = useState<string | null>(null);
@@ -47,12 +50,16 @@ export default function ProfileView() {
  confirmPassword: ""
  });
  const [passLoading, setPassLoading] = useState(false);
- const [passSuccess, setPassSuccess] = useState<string | null>(null);
  const [passError, setPassError] = useState<string | null>(null);
  
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [verifyingProvider, setVerifyingProvider] = useState<string | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const [formData, setFormData] = useState({
     firstName: user?.firstName || "",
@@ -68,8 +75,9 @@ export default function ProfileView() {
  const [isVerifPreviewOpen, setIsVerifPreviewOpen] = useState(false);
  const [fullImageUrl, setFullImageUrl] = useState<string | null>(null);
  
- const [addressSuggestions, setAddressSuggestions] = useState<any[]>([]);
- const [isSearchingAddress, setIsSearchingAddress] = useState(false);
+  const [addressSuggestions, setAddressSuggestions] = useState<any[]>([]);
+  const [isSearchingAddress, setIsSearchingAddress] = useState(false);
+  const [isLocating, setIsLocating] = useState(false);
  
   const COUNTRIES = [
     { id: 'in', name: 'India', code: '+91', flag: '🇮🇳' },
@@ -93,6 +101,15 @@ export default function ProfileView() {
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
+
+    // Check url for updateLicense
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('updateLicense') === 'true') {
+        setShowVerifModal(true);
+      }
+    }
+
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
@@ -113,24 +130,52 @@ export default function ProfileView() {
  };
  }, [isVerifPreviewOpen]);
 
- const fetchAddressSuggestions = async (query: string) => {
- if (query.length < 3) {
- setAddressSuggestions([]);
- return;
- }
- setIsSearchingAddress(true);
- try {
- const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&q=${encodeURIComponent(query)}&limit=5`);
- if (res.ok) {
- const data = await res.json();
- setAddressSuggestions(data);
- }
- } catch (err) {
- console.error("OSM Fetch error:", err);
- } finally {
- setIsSearchingAddress(false);
- }
- };
+  const fetchAddressSuggestions = async (query: string) => {
+  if (query.length < 3) {
+  setAddressSuggestions([]);
+  return;
+  }
+  setIsSearchingAddress(true);
+  try {
+  const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&q=${encodeURIComponent(query)}&limit=5`);
+  if (res.ok) {
+  const data = await res.json();
+  setAddressSuggestions(data);
+  }
+  } catch (err) {
+  console.error("OSM Fetch error:", err);
+  } finally {
+  setIsSearchingAddress(false);
+  }
+  };
+
+  const handleCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setError("Geolocation is not supported by your browser");
+      return;
+    }
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(async (position) => {
+      try {
+        const { latitude, longitude } = position.coords;
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.display_name) {
+            setFormData(prev => ({ ...prev, address: data.display_name }));
+            setAddressSuggestions([]);
+          }
+        }
+      } catch (err) {
+        setError("Failed to fetch address from current location");
+      } finally {
+        setIsLocating(false);
+      }
+    }, (err) => {
+      setError("Could not get your location. Please check browser permissions.");
+      setIsLocating(false);
+    });
+  };
 
  useEffect(() => {
  if (user) {
@@ -167,7 +212,6 @@ export default function ProfileView() {
  e.preventDefault();
  setPassLoading(true);
  setPassError(null);
- setPassSuccess(null);
 
  // Frontend validation
  if (passData.newPassword.length < 6) {
@@ -183,7 +227,7 @@ export default function ProfileView() {
 
  try {
  await (authService as any).changePassword(passData);
- setPassSuccess(t('dashboard.profile.messages.pass_success'));
+ showToast(t('dashboard.profile.messages.pass_success') || "Password updated successfully", 'success');
  setPassData({ currentPassword: "", newPassword: "", confirmPassword: "" });
  } catch (err: any) {
  setPassError(err.message);
@@ -561,8 +605,23 @@ export default function ProfileView() {
  setFormData({...formData, address: e.target.value});
  fetchAddressSuggestions(e.target.value);
  }}
- className="h-11 pl-12 rounded-app border-border focus:bg-card focus:border-primary transition-all font-bold text-xs" 
+ className="h-11 pl-12 pr-12 rounded-app border-border focus:bg-card focus:border-primary transition-all font-bold text-xs" 
  />
+ 
+ <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+ {isSearchingAddress && (
+ <Loader2 size={14} className="animate-spin text-primary" />
+ )}
+ <button 
+    type="button" 
+    onClick={handleCurrentLocation}
+    disabled={isLocating}
+    className="p-1.5 bg-muted rounded-md text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
+    title="Use current location"
+  >
+    {isLocating ? <Loader2 size={14} className="animate-spin" /> : <LocateFixed size={14} />}
+  </button>
+ </div>
  
  {addressSuggestions.length > 0 && (
  <div className="absolute top-full left-0 right-0 z-[100] mt-2 bg-card rounded-app border border-border p-2 animate-fade-in">
@@ -582,12 +641,6 @@ export default function ProfileView() {
  ))}
  </div>
  )}
- 
- {isSearchingAddress && (
- <div className="absolute right-4 top-1/2 -translate-y-1/2">
- <Loader2 size={14} className="animate-spin text-primary" />
- </div>
- )}
  </div>
  </div>
   <div className="space-y-3 md:col-span-2">
@@ -602,7 +655,7 @@ export default function ProfileView() {
   />
   </div>
     <p className="text-[8px] font-bold text-muted-foreground/60 uppercase tracking-widest ml-1 mt-1">
-      Your public profile: <Link href={`/profile/${formData.slug || user?.slug}`} target="_blank" className="text-primary hover:underline">{typeof window !== 'undefined' ? window.location.origin : ''}/profile/{formData.slug || user?.slug}</Link>
+      Your public profile: <Link href={`/profile/${formData.slug || user?.slug}`} target="_blank" className="text-primary hover:underline">{isMounted ? window.location.origin : ''}/profile/{formData.slug || user?.slug}</Link>
     </p>
   </div>
  </div>
@@ -682,11 +735,6 @@ export default function ProfileView() {
  {passError}
  </div>
  )}
- {passSuccess && (
- <div className="p-3 text-[10px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-500/10 rounded-app border border-emerald-500/20">
- {passSuccess}
- </div>
- )}
 
  <Button 
  type="submit" 
@@ -750,15 +798,6 @@ export default function ProfileView() {
  className="w-full h-full object-cover transition-transform group-hover:scale-105" 
  alt={doc.fieldName} 
  />
- <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-all text-white font-black text-[10px] uppercase tracking-widest gap-3">
- <div onClick={(e) => { e.stopPropagation(); setFullImageUrl(doc.value.startsWith('http') ? doc.value : doc.value); }} className="flex items-center gap-2 hover:text-primary transition-all cursor-zoom-in">
- <Eye size={16} /> {t('dashboard.profile.inspect')}
- </div>
- <div className="w-1/3 h-px bg-white/20" />
- <div onClick={(e) => { e.stopPropagation(); setShowVerifModal(true); }} className="flex items-center gap-2 hover:text-primary transition-all cursor-pointer">
- <Edit3 size={16} /> {t('dashboard.profile.update_proof')}
- </div>
- </div>
  </div>
  ) : (
  <div className="p-4 bg-slate-50 border border-slate-100 rounded-app font-black text-slate-900">

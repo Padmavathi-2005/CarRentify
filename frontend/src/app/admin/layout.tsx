@@ -225,8 +225,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       const handleNewNotif = (newNotif: any) => {
         setNotifications(prev => [newNotif, ...prev]);
         setUnreadCount(prev => prev + 1);
-        // Show immediate feedback via toast
-        showToast(`🔔 ${newNotif.title}: ${newNotif.body}`, 'info');
       };
       socket.on('new_notification', handleNewNotif);
       return () => {

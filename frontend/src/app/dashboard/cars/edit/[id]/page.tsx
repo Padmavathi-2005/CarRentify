@@ -166,8 +166,8 @@ export default function EditCarPage() {
     { id: 1, title: 'Information', icon: LayoutDashboard },
     { id: 2, title: 'Photos', icon: ImageIcon },
     { id: 3, title: 'Specs', icon: Settings },
-    { id: 4, title: 'Address', icon: Navigation },
-    { id: 5, title: 'Pricing', icon: Zap },
+    { id: 4, title: 'Pricing', icon: Zap },
+    { id: 5, title: 'Address', icon: Navigation },
     { id: 6, title: 'SEO', icon: Globe },
   ], []);
 
@@ -193,6 +193,9 @@ export default function EditCarPage() {
  const [state, setState] = useState("Tamil Nadu");
  const [city, setCity] = useState("Madurai");
  const [pickupLocations, setPickupLocations] = useState<any[]>([]);
+ const [customDeliveryEnabled, setCustomDeliveryEnabled] = useState(false);
+ const [customDeliveryMaxDistance, setCustomDeliveryMaxDistance] = useState("5");
+ const [customDeliveryPrice, setCustomDeliveryPrice] = useState("0");
 
  useEffect(() => {
   const fetchData = async () => {
@@ -227,7 +230,7 @@ export default function EditCarPage() {
      setExtras(car.extras || []);
      setMinBookingDays(String(car.minBookingDays || "1"));
      setBookingType(car.bookingType || "Instant");
-     setBrandId(car.brandId?._id || car.brandId || "");
+     setBrandId(car.brand?._id || car.brand || car.brandId?._id || car.brandId || "");
      setModel(car.model || "");
      setVehicleType(car.vehicleType?._id || car.vehicleType || "");
      setTransmission(car.transmission || "");
@@ -248,6 +251,13 @@ export default function EditCarPage() {
      setBatteryCapacity(String(car.batteryCapacity || ""));
      setRange(String(car.range || ""));
      setCustomSpecs(car.customSpecs || {});
+     
+     if (car.customDelivery) {
+       setCustomDeliveryEnabled(car.customDelivery.enabled || false);
+       setCustomDeliveryMaxDistance(String(car.customDelivery.maxDistance || 5));
+       setCustomDeliveryPrice(String(car.customDelivery.price || 0));
+     }
+
      if (car.images && car.images.length > 0) {
       setExistingMainImage(car.images[0]);
       setExistingImages(car.images.slice(1));
@@ -471,7 +481,7 @@ export default function EditCarPage() {
       if (!hasRC) errors.rc = "Mandatory: Registration Certificate (RC) is required for publishing.";
       if (!hasInsurance) errors.insurance = "Mandatory: Insurance Policy document is required for publishing.";
     }
-    if (step === 4) {
+    if (step === 5) {
       if (!address) errors.address = "Vehicle address is required.";
       if (!city) errors.city = "Vehicle city is required.";
     }
@@ -506,7 +516,7 @@ export default function EditCarPage() {
   const handleSubmit = async () => {
     // Final Global Validation
     if (!validateStep(1)) { setCurrentStep(1); setShowAllSteps(false); return; }
-    if (!validateStep(4)) { setCurrentStep(4); setShowAllSteps(false); return; }
+    if (!validateStep(5)) { setCurrentStep(5); setShowAllSteps(false); return; }
     
     if (!pricePerDay || parseFloat(pricePerDay) <= 0) { 
       setFormErrors(prev => ({ ...prev, price: "Daily rate must be more than 0." }));
@@ -641,7 +651,12 @@ export default function EditCarPage() {
 
      amenities: selectedAmenities, seoTitle, seoDescription, seoKeywords, seoImage: finalSeoImage,
      documents: docs,
-     customSpecs: finalCustomSpecs
+     customSpecs: finalCustomSpecs,
+     customDelivery: {
+       enabled: customDeliveryEnabled,
+       maxDistance: parseFloat(customDeliveryMaxDistance) || 5,
+       price: parseFloat(customDeliveryPrice) || 0
+     }
     }),
    });
 
@@ -964,70 +979,6 @@ export default function EditCarPage() {
       )}
 
       {(currentStep === 4 || showAllSteps) && (
-       <section id="location-module" className="bg-white dark:bg-slate-900 rounded-app p-10 border border-slate-100 dark:border-white/10 space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500 ">
-        <div className="flex items-center gap-5 text-slate-400"><div className="w-12 h-12 bg-slate-50 dark:bg-white/5 rounded-app flex items-center justify-center"><Navigation size={24} /></div><h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight">Address</h3></div>
-        <div className="space-y-6">
-         <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] px-1">Location</label>
-         <LocationPicker 
-          lat={latitude} 
-          lng={longitude} 
-          addressValue={address} 
-          onChange={(data) => {
-           setLatitude(data.lat);
-           setLongitude(data.lng);
-           if (data.address) setAddress(data.address);
-           if (data.city) setCity(data.city);
-           if (data.state) setState(data.state);
-           if (data.country) setCountry(data.country);
-          }}
-          onAddLocation={(data) => {
-            addPickupLocation(data, 0);
-          }}
-         />
-         </div>
-         
-         <div ref={pickupListRef} className="pt-10 border-t border-slate-100 dark:border-white/10 space-y-8 empty:hidden">
-           {pickupLocations.length > 0 && (
-            <>
-             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4 text-slate-400">
-               <div className="w-10 h-10 bg-slate-50 dark:bg-white/5 rounded-app flex items-center justify-center">
-                <MapPin size={20} />
-               </div>
-               <div>
-                <h4 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">Additional Pickup Locations</h4>
-                <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase mt-1">Manage your supported delivery points</p>
-               </div>
-              </div>
-             </div>
-             
-             <div className="grid grid-cols-1 gap-4">
-              {pickupLocations.map((loc, idx) => (
-               <div key={idx} className="bg-slate-50/50 dark:bg-white/5 border-2 border-slate-100 dark:border-white/10 rounded-app p-6 space-y-4 animate-in slide-in-from-bottom-2 duration-300 relative group">
-                <button 
-                 type="button"
-                 onClick={() => removePickupLocation(idx)} 
-                 className="absolute top-4 right-4 text-slate-300 hover:text-rose-500 transition-all"
-                >
-                 <X size={18} />
-                </button>
-                <div className="flex items-center gap-6 pr-10">
-                 <div className="w-10 h-10 bg-white dark:bg-slate-950 rounded-full flex items-center justify-center shrink-0 border-2 border-slate-50 dark:border-white/10">
-                  <MapPin size={16} className="text-primary" />
-                 </div>
-                 <div className="flex-1 min-w-0">
-                  <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest px-1 block mb-2">Address</label>
-                  <p className="text-sm font-bold text-slate-700 dark:text-slate-300 truncate">{loc.address}</p>
-                 </div>
-                </div>
-               </div>
-              ))}
-             </div>
-            </>
-            )}
-           </div>
-         </section>
-      )}      {(currentStep === 5 || showAllSteps) && (
        <section id="pricing-module" className="bg-white dark:bg-slate-900 rounded-app p-10 border border-slate-100 dark:border-white/10 space-y-12 animate-in fade-in duration-500 ">
         <div className="flex items-center gap-5 text-slate-400 mb-10"><div className="w-12 h-12 bg-slate-50 dark:bg-white/5 rounded-app flex items-center justify-center"><Zap size={24} /></div><h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight">Pricing</h3></div>
         
@@ -1132,7 +1083,102 @@ export default function EditCarPage() {
        </section>
       )}
 
-      {(currentStep === 6 || showAllSteps) && (
+      {(currentStep === 5 || showAllSteps) && (
+       <section id="location-module" className="bg-white dark:bg-slate-900 rounded-app p-10 border border-slate-100 dark:border-white/10 space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500 ">
+        <div className="flex items-center gap-5 text-slate-400"><div className="w-12 h-12 bg-slate-50 dark:bg-white/5 rounded-app flex items-center justify-center"><Navigation size={24} /></div><h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight">Address</h3></div>
+        <div className="space-y-6">
+         <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] px-1">Location</label>
+         <LocationPicker 
+          lat={latitude} 
+          lng={longitude} 
+          addressValue={address} 
+          onChange={(data) => {
+           setLatitude(data.lat);
+           setLongitude(data.lng);
+           if (data.address) setAddress(data.address);
+           if (data.city) setCity(data.city);
+           if (data.state) setState(data.state);
+           if (data.country) setCountry(data.country);
+          }}
+          onAddLocation={(data) => {
+            addPickupLocation(data, 0);
+          }}
+         />
+         </div>
+         
+         <div ref={pickupListRef} className="pt-10 border-t border-slate-100 dark:border-white/10 space-y-8 empty:hidden">
+           {pickupLocations.length > 0 && (
+            <>
+             <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4 text-slate-400">
+               <div className="w-10 h-10 bg-slate-50 dark:bg-white/5 rounded-app flex items-center justify-center">
+                <MapPin size={20} />
+               </div>
+               <div>
+                <h4 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">Pickup Locations</h4>
+                <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase mt-1">Manage your supported delivery points</p>
+               </div>
+              </div>
+             </div>
+             
+             <div className="grid grid-cols-1 gap-4">
+              {pickupLocations.map((loc, idx) => (
+               <div key={idx} className="bg-slate-50/50 dark:bg-white/5 border-2 border-slate-100 dark:border-white/10 rounded-app p-6 space-y-4 animate-in slide-in-from-bottom-2 duration-300 relative group">
+                <button 
+                 type="button"
+                 onClick={() => removePickupLocation(idx)} 
+                 className="absolute top-4 right-4 text-slate-300 hover:text-rose-500 transition-all"
+                >
+                 <X size={18} />
+                </button>
+                <div className="flex items-center gap-6 pr-10">
+                 <div className="w-10 h-10 bg-white dark:bg-slate-950 rounded-full flex items-center justify-center shrink-0 border-2 border-slate-50 dark:border-white/10">
+                  <MapPin size={16} className="text-primary" />
+                 </div>
+                 <div className="flex-1 min-w-0">
+                  <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest px-1 block mb-2">Address</label>
+                  <p className="text-sm font-bold text-slate-700 dark:text-slate-300 truncate">{loc.address}</p>
+                 </div>
+                </div>
+               </div>
+              ))}
+             </div>
+            </>
+            )}
+            </div>
+
+            <div className="pt-10 border-t border-slate-100 dark:border-white/10 space-y-8">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4 text-slate-400">
+                  <div className="w-10 h-10 bg-slate-50 dark:bg-white/5 rounded-app flex items-center justify-center">
+                    <Globe size={20} />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">Custom Delivery</h4>
+                    <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase mt-1">Allow customers to choose any address within a radius</p>
+                  </div>
+                </div>
+                <Switch checked={customDeliveryEnabled} onCheckedChange={setCustomDeliveryEnabled} />
+              </div>
+              
+              {customDeliveryEnabled && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-slate-50/50 dark:bg-white/5 rounded-app border-2 border-slate-100 dark:border-white/10">
+                  <div className="space-y-2">
+                    <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest px-1">Max Radius (Miles)</label>
+                    <Input type="number" min="1" placeholder="e.g. 5" value={customDeliveryMaxDistance} onChange={(e) => setCustomDeliveryMaxDistance(e.target.value)} className="h-12 bg-white dark:bg-slate-950 border-2 border-slate-100 dark:border-white/10 rounded-app font-bold text-slate-900 dark:text-white" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest px-1">Delivery Fee</label>
+                    <div className="relative flex items-center h-12 bg-white dark:bg-slate-950 rounded-app border-2 border-slate-100 dark:border-white/10 px-5 focus-within:border-primary transition-all">
+                      <span className="text-[10px] font-black text-slate-300 dark:text-slate-700 mr-2">{getCurrencySymbol()}</span>
+                      <input type="number" min="0" step="1" value={customDeliveryPrice} onChange={(e) => setCustomDeliveryPrice(e.target.value)} className="w-full bg-transparent text-sm font-black text-slate-900 dark:text-white outline-none border-none focus:ring-0 p-0" />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+         </section>
+      )}      {(currentStep === 6 || showAllSteps) && (
        <section id="seo-config" className="bg-white dark:bg-slate-900 rounded-app p-10 border border-slate-100 dark:border-white/10 space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
          <div className="flex items-center gap-5 text-slate-400">
            <div className="w-12 h-12 bg-slate-50 dark:bg-white/5 rounded-app flex items-center justify-center">

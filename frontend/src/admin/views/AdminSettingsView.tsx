@@ -413,6 +413,22 @@ const VerificationFieldsManager = ({
  fields: any[];
  onChange: (val: any[]) => void;
 }) => {
+ // Force add licenseExpiryDate if it doesn't exist to ensure it is in the list
+ useEffect(() => {
+   if (fields.length > 0 && !fields.find((f: any) => f.id === 'licenseExpiryDate')) {
+     const newField = {
+       id: 'licenseExpiryDate',
+       name: 'License Expiry Date',
+       type: 'date',
+       required: true,
+       description: 'Enter the expiration date printed on your driver\'s license'
+     };
+     const updated = [...fields];
+     updated.splice(2, 0, newField);
+     onChange(updated);
+   }
+ }, [fields, onChange]);
+
  return (
  <div className="space-y-6">
  <div className="flex items-center justify-between p-6 bg-[var(--admin-bg)] rounded-app border border-[var(--admin-border)]">

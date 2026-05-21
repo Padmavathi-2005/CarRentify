@@ -72,4 +72,27 @@ export class WalletController {
       body.type,
     );
   }
+  @Get('admin/withdrawals')
+  async getWithdrawalRequests(@Req() req: any) {
+    if (req.user.role !== 'admin') {
+      throw new Error('Unauthorized');
+    }
+    return this.walletService.getWithdrawalRequests();
+  }
+
+  @Post('admin/withdrawals/:id/approve')
+  async approveWithdrawal(@Req() req: any, @Param('id') withdrawalId: string) {
+    if (req.user.role !== 'admin') {
+      throw new Error('Unauthorized');
+    }
+    return this.walletService.approveWithdrawal(withdrawalId);
+  }
+
+  @Post('admin/withdrawals/:id/reject')
+  async rejectWithdrawal(@Req() req: any, @Param('id') withdrawalId: string, @Body() body: { reason: string }) {
+    if (req.user.role !== 'admin') {
+      throw new Error('Unauthorized');
+    }
+    return this.walletService.rejectWithdrawal(withdrawalId, body.reason || 'Rejected by admin');
+  }
 }

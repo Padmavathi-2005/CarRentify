@@ -15,6 +15,7 @@ import {
  ThumbsUp,
 } from "lucide-react";
 import { API_BASE_URL } from "@/config/api";
+import { authService } from "@/services/authService";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -91,83 +92,74 @@ export default function PostBookingReviewModal({
  carName = "Your Vehicle",
  hostName = "Your Host",
 }: PostBookingReviewModalProps) {
- const [carRatings, setCarRatings] = useState({
- cleanliness: 0,
- maintenance: 0,
- driveExperience: 0,
- valueForPrice: 0,
- });
+  const [carRatings, setCarRatings] = useState({
+    vehicleCleanliness: 5,
+    listingAccuracy: 5,
+    pickupExperience: 5,
+    valueForMoney: 5,
+  });
 
- const [hostRatings, setHostRatings] = useState({
- communication: 0,
- serviceQuality: 0,
- availability: 0,
- });
+  const [hostRatings, setHostRatings] = useState({
+    hostCommunication: 5,
+    vehicleLocation: 5,
+  });
 
- const [comment, setComment] = useState("");
- const [submitting, setSubmitting] = useState(false);
- const [submitted, setSubmitted] = useState(false);
+  const [comment, setComment] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
- const carCategories = [
- { id: "cleanliness", label: "Cleanliness", icon: Sparkles, desc: "Was the car clean & fresh?" },
- { id: "maintenance", label: "Maintenance", icon: CheckCircle2, desc: "Well maintained & safe to drive?" },
- { id: "driveExperience", label: "Drive Experience", icon: Car, desc: "How was it to drive?" },
- { id: "valueForPrice", label: "Value for Price", icon: Tag, desc: "Was the price fair?" },
- ];
+  const carCategories = [
+    { id: "vehicleCleanliness", label: "Cleanliness", icon: Sparkles, desc: "Was the car clean & fresh?" },
+    { id: "listingAccuracy", label: "Accuracy", icon: CheckCircle2, desc: "Matched the description?" },
+    { id: "pickupExperience", label: "Pickup Experience", icon: Car, desc: "Smooth pickup process?" },
+    { id: "valueForMoney", label: "Value for Money", icon: Tag, desc: "Was the price fair?" },
+  ];
 
- const hostCategories = [
- { id: "communication", label: "Communication", icon: MessageSquare, desc: "Responsive & easy to reach?" },
- { id: "serviceQuality", label: "Service", icon: Key, desc: "Quality of service provided?" },
- { id: "availability", label: "Availability", icon: CheckCircle2, desc: "Was the host available when needed?" },
- ];
+  const hostCategories = [
+    { id: "hostCommunication", label: "Communication", icon: MessageSquare, desc: "Responsive & easy to reach?" },
+    { id: "vehicleLocation", label: "Location", icon: Key, desc: "Convenient vehicle location?" },
+  ];
 
- const allRatings = { ...carRatings, ...hostRatings };
+  const allRatings = { ...carRatings, ...hostRatings };
 
  const handleSubmit = async () => {
- const allRated = Object.values(allRatings).every((v) => v > 0);
- if (!allRated) {
- toast.error("Please rate all categories before submitting");
- return;
- }
- if (!comment.trim()) {
- toast.error("Please write a short comment about your experience");
- return;
- }
+   setSubmitting(true);
+   try {
+     const overallRating =
+       Object.values(allRatings).reduce((a, b) => a + b, 0) /
+       Object.values(allRatings).length;
 
- setSubmitting(true);
- try {
- const overallRating =
- Object.values(allRatings).reduce((a, b) => a + b, 0) /
- Object.values(allRatings).length;
+     const res = await fetch(`${API_BASE_URL}/reviews`, {
+       method: "POST",
+       headers: { 
+         "Content-Type": "application/json",
+         "Authorization": `Bearer ${authService.getToken()}`
+       },
+       body: JSON.stringify({
+         car: carId,
+         user: userId,
+         booking: bookingId,
+         rating: Math.round(overallRating),
+         comment: comment.trim() || "No comment provided.",
+         ...allRatings,
+       }),
+     });
 
- const res = await fetch(`${API_BASE_URL}/reviews`, {
- method: "POST",
- headers: { "Content-Type": "application/json" },
- body: JSON.stringify({
- car: carId,
- user: userId,
- booking: bookingId,
- rating: Math.round(overallRating),
- comment,
- ...allRatings,
- }),
- });
-
- if (res.ok) {
- setSubmitted(true);
- setTimeout(() => {
- onClose();
- setSubmitted(false);
- }, 2200);
- } else {
- const data = await res.json().catch(() => ({}));
- toast.error(data?.message || "Failed to submit review");
- }
- } catch {
- toast.error("Connection error. Please try again.");
- } finally {
- setSubmitting(false);
- }
+     if (res.ok) {
+       setSubmitted(true);
+       setTimeout(() => {
+         onClose();
+         setSubmitted(false);
+       }, 2200);
+     } else {
+       const data = await res.json().catch(() => ({}));
+       toast.error(data?.message || "Failed to submit review");
+     }
+   } catch {
+     toast.error("Connection error. Please try again.");
+   } finally {
+     setSubmitting(false);
+   }
  };
 
  if (!isOpen) return null;

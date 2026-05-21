@@ -57,7 +57,7 @@ export default function VendorCarsPage() {
  if (token) headers['Authorization'] = `Bearer ${token}`;
 
  const [fleetRes, bookingsRes] = await Promise.all([
- fetch(`${API_BASE_URL}/cars`, { headers }),
+ fetch(`${API_BASE_URL}/cars/vendor/me`, { headers }),
  fetch(`${API_BASE_URL}/bookings/vendor-bookings`, { headers })
  ]);
 
@@ -122,7 +122,9 @@ export default function VendorCarsPage() {
  car.name?.toLowerCase().includes(query) ||
  car.model?.toLowerCase().includes(query) ||
  car.licensePlate?.toLowerCase().includes(query) ||
- (typeof car.brand === 'object' ? car.brand?.name : car.brand)?.toLowerCase().includes(query)
+ (typeof car.brand === 'object' ? car.brand?.name : car.brand)?.toLowerCase().includes(query) ||
+ (typeof car.vehicleType === 'object' ? car.vehicleType?.name : car.vehicleType)?.toLowerCase().includes(query) ||
+ car.pricePerDay?.toString().includes(query)
  );
 
  const totalItems = filteredCars.length;
@@ -134,7 +136,7 @@ export default function VendorCarsPage() {
  <div className="space-y-6 animate-fade-in text-slate-900">
   <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
   <div className="space-y-1">
-  <h1 className="text-xl md:text-3xl font-extrabold text-slate-900 tracking-tight leading-tight">Hello, {user?.firstName || 'User'}! This is {t('dashboard.fleet.title')} ({filteredCars.length})</h1>
+  <h1 className="text-xl md:text-3xl font-extrabold text-slate-900 tracking-tight leading-tight">My Cars ({filteredCars.length})</h1>
   <p className="text-xs md:text-sm text-slate-500 font-medium tracking-wide">{t('dashboard.fleet.subtitle')}</p>
   </div>
 

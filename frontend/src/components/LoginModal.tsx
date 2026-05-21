@@ -45,6 +45,18 @@ export default function LoginModal() {
 
  const handleLogin = async (e: React.FormEvent) => {
  e.preventDefault();
+ 
+ const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+ if (!emailRegex.test(email)) {
+ setError('Please enter a valid email address');
+ return;
+ }
+
+ if (password.length < 6) {
+ setError('Password must be at least 6 characters long');
+ return;
+ }
+
  setLoading(true);
  setError('');
  
@@ -133,6 +145,13 @@ export default function LoginModal() {
 
  const handleForgotRequest = async (e: React.FormEvent) => {
  e.preventDefault();
+ 
+ const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+ if (!emailRegex.test(forgotEmail)) {
+ setForgotStatus({ type: 'error', msg: 'Please enter a valid email address' });
+ return;
+ }
+
  setLoading(true);
  setForgotStatus(null);
  try {

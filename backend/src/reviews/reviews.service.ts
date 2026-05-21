@@ -14,6 +14,7 @@ export class ReviewsService {
       ...reviewData,
       user: new Types.ObjectId(reviewData.user),
       car: new Types.ObjectId(reviewData.car),
+      booking: reviewData.booking ? new Types.ObjectId(reviewData.booking) : undefined,
     });
     return await newReview.save();
   }
@@ -67,6 +68,12 @@ export class ReviewsService {
       .populate('user', 'name profileImage') // Get reviewer details
       .populate('car', 'name images') // Get car details
       .sort({ createdAt: -1 })
+      .exec();
+  }
+
+  async findByBooking(bookingId: string): Promise<Review | null> {
+    return await this.reviewModel
+      .findOne({ booking: new Types.ObjectId(bookingId) })
       .exec();
   }
 }

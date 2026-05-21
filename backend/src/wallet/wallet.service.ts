@@ -291,4 +291,56 @@ export class WalletService {
 
     return { transaction, newBalance: wallet.balance };
   }
+
+  async getWithdrawalRequests() {
+    return this.transactionModel
+      .find({ type: TransactionType.DEBIT, source: TransactionSource.WITHDRAWAL })
+      .populate({ path: 'user', select: 'firstName lastName email phoneNumber' })
+      .sort({ createdAt: -1 })
+      .exec();
+  }
+
+  async approveWithdrawal(withdrawalId: string) {
+    const transaction = await this.transactionModel.findById(withdrawalId);
+    if (!transaction) throw new NotFoundException('Withdrawal request not found');
+    if (transaction.status !== TransactionStatus.PENDING) {
+      throw new Error('Withdrawal request is not pending');
+    }
+
+    transaction.status = TransactionStatus.SUCCESS;
+    await transaction.save();
+
+    return transaction;
+  }
+
+  async rejectWithdrawal(withdrawalId: string, reason: string) {
+    const transaction = await this.transactionModel.findById(withdrawalId);
+    if (!transaction) throw new NotFoundException('Withdrawal request not found');
+    if (transaction.status !== TransactionStatus.PENDING) {
+      throw new Error('Withdrawal request is not pending');
+    }
+
+    transaction.status = TransactionStatus.FAILED;
+    transaction.description = transaction.description ? `${transaction.description} - Rejected: ${reason}` : `Rejected: ${reason}`;
+    await transaction.save();
+
+    const wallet = await this.walletModel.findById(transaction.wallet);
+    if (wallet) {
+      wallet.balance += transaction.amount;
+      await wallet.save();
+      
+      await this.transactionModel.create({
+        user: transaction.user,
+        wallet: wallet._id,
+        amount: transaction.amount,
+        type: TransactionType.CREDIT,
+        status: TransactionStatus.SUCCESS,
+        source: TransactionSource.REFUND,
+        description: `Refund for rejected withdrawal: ${reason}`,
+        currency: wallet.currency,
+      });
+    }
+
+    return transaction;
+  }
 }

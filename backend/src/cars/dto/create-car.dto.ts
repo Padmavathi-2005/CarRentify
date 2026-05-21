@@ -57,4 +57,9 @@ export class CreateCarDto {
     price: number;
   }[];
   customSpecs?: Record<string, any>;
+  customDelivery?: {
+    enabled: boolean;
+    maxDistance: number;
+    price: number;
+  };
 }

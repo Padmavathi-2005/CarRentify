@@ -162,6 +162,13 @@ export class Car {
     category?: string;
   }[];
 
+  @Prop({ type: Object, default: { enabled: false, maxDistance: 5, price: 0 } })
+  customDelivery: {
+    enabled: boolean;
+    maxDistance: number;
+    price: number;
+  };
+
   @Prop({ default: true })
   requireSecurityDeposit: boolean;
 

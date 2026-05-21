@@ -374,6 +374,7 @@
       "subtitle": "KYC Compliance Protocol",
       "verified": "Verified",
       "rejected": "Action Required",
+      "rejected_reupload": "Upload documents again, the admin rejected this",
       "confirmed_desc": "Your identity has been verified. You now have full access to premium rentals.",
       "under_review": "Verification Pending",
       "under_review_desc": "Our security team is currently reviewing your identity documents. This usually takes less than 24 hours.",

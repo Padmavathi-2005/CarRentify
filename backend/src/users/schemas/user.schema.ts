@@ -91,6 +91,18 @@ export class User {
   @Prop({ default: 0 })
   walletBalance: number;
 
+  @Prop()
+  licenseImage: string;
+
+  @Prop()
+  licenseBackImage: string;
+
+  @Prop()
+  licenseExpiryDate: Date;
+
+  @Prop({ default: false })
+  licenseExpiryNotified: boolean;
+
   // Granular verification status managed by admin
   @Prop({ enum: ['not_submitted', 'pending', 'approved', 'rejected'], default: 'not_submitted' })
   verificationStatus: string;

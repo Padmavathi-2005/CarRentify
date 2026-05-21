@@ -5,6 +5,7 @@ export const walletService = {
     const token = localStorage.getItem("token");
     try {
       const response = await fetch(`${API_BASE_URL}/wallet/balance`, {
+        cache: 'no-store',
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -24,6 +25,7 @@ export const walletService = {
     const token = localStorage.getItem("token");
     try {
       const response = await fetch(`${API_BASE_URL}/wallet/transactions`, {
+        cache: 'no-store',
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -126,6 +128,7 @@ export const walletService = {
     const token = localStorage.getItem("token");
     try {
       const response = await fetch(`${API_BASE_URL}/wallet/payout-method`, {
+        cache: 'no-store',
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -174,6 +177,7 @@ export const walletService = {
   async getStats() {
     const token = localStorage.getItem("token");
     const response = await fetch(`${API_BASE_URL}/wallet/stats`, {
+      cache: 'no-store',
       headers: {
         Authorization: `Bearer ${token}`,
       },

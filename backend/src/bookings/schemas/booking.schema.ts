@@ -177,6 +177,16 @@ export class Booking {
     default: 'not_started'
   })
   tripStatus: string;
+
+  @Prop({ type: Object })
+  deliveryDetails?: {
+    type: 'host' | 'predefined' | 'custom';
+    address: string;
+    latitude?: number;
+    longitude?: number;
+    fee: number;
+    distance?: number;
+  };
 }
 
 export const BookingSchema = SchemaFactory.createForClass(Booking);
