@@ -210,13 +210,19 @@ function DashboardContent() {
          
          <div className="flex items-center gap-4 pt-4 border-t border-slate-50">
           <div className="space-y-1">
-           <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Return Date</p>
-           <p className="text-xs font-black text-slate-900">{formatDate(trip.endDate)}</p>
+           <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Return Date</p>
+           <p className={`text-xs font-black ${new Date(trip.endDate).getTime() < Date.now() ? 'text-rose-600' : 'text-slate-900'}`}>{formatDate(trip.endDate)}</p>
           </div>
           <div className="w-px h-8 bg-slate-100" />
-          <div className="space-y-1">
-           <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Status</p>
-           <p className="text-xs font-black text-primary uppercase tracking-widest animate-pulse">In Progress</p>
+          <div className="space-y-1 flex flex-col justify-center">
+           <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Status</p>
+           <div>
+             {new Date(trip.endDate).getTime() < Date.now() ? (
+               <span className="inline-flex items-center px-2 py-0.5 rounded-sm bg-rose-50 text-rose-600 border border-rose-100 text-[9px] font-black uppercase tracking-widest shadow-sm animate-pulse">Overdue</span>
+             ) : (
+               <span className="inline-flex items-center px-2 py-0.5 rounded-sm bg-primary/5 text-primary border border-primary/10 text-[9px] font-black uppercase tracking-widest shadow-sm">In Progress</span>
+             )}
+           </div>
           </div>
          </div>
         </div>

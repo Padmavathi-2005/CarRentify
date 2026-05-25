@@ -12,14 +12,109 @@ const getLocalISODate = (date: Date) => {
 };
 
 export const formatTimeDisplay = (time: string) => {
-   if (!time) return "";
-   if (time.includes('AM') || time.includes('PM')) return time;
+   if (!time) return "--:--";
+   const [h, m] = time.split(':');
+   let hour = parseInt(h);
+   const ampm = hour >= 12 ? 'PM' : 'AM';
+   hour = hour % 12;
+   hour = hour ? hour : 12;
+   return `${hour.toString().padStart(2, '0')}:${m} ${ampm}`;
+};
 
-   const [hours, minutes] = time.split(':');
-   const h = parseInt(hours);
-   const ampm = h >= 12 ? 'PM' : 'AM';
-   const h12 = h % 12 || 12;
-   return `${h12.toString().padStart(2, '0')}:${minutes} ${ampm}`;
+export const CustomTimePicker = ({
+   label,
+   value,
+   onChange,
+   inline = false
+}: {
+   label?: string;
+   value: string;
+   onChange: (time: string) => void;
+   inline?: boolean;
+}) => {
+   const [isOpen, setIsOpen] = useState(false);
+   const containerRef = useRef<HTMLDivElement>(null);
+   const { settings } = useSettings();
+
+   const times = Array.from({ length: 48 }).map((_, i) => {
+      const h = Math.floor(i / 2).toString().padStart(2, '0');
+      const m = (i % 2 === 0 ? "00" : "30");
+      return `${h}:${m}`;
+   });
+
+   useEffect(() => {
+      if (inline) return;
+      const handleClickOutside = (event: MouseEvent) => {
+         if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+            setIsOpen(false);
+         }
+      };
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+   }, [inline]);
+
+   const dropdownContent = (
+      <div className={`${inline ? 'w-full' : 'w-full mt-2 z-[99] relative'} bg-card rounded-app border border-border p-2 shadow-xl`}>
+         <style>{`
+            .premium-time-scrollbar::-webkit-scrollbar { width: 3px; }
+            .premium-time-scrollbar::-webkit-scrollbar-track { background: transparent; }
+            .premium-time-scrollbar::-webkit-scrollbar-thumb { background-color: var(--primary); border-radius: 10px; }
+         `}</style>
+         <div className="max-h-60 overflow-y-auto premium-time-scrollbar pr-1 grid grid-cols-3 gap-1">
+            {times.map(time => {
+               const [hStr, m] = time.split(':');
+               const h = parseInt(hStr);
+               const ampm = h >= 12 ? 'PM' : 'AM';
+               const displayH = (h % 12 || 12).toString().padStart(2, '0');
+               const isSelected = time === value;
+
+               return (
+                  <button
+                     key={time}
+                     onClick={() => {
+                        onChange(time);
+                        if (!inline) setIsOpen(false);
+                     }}
+                     className={`py-2 px-1 text-xs font-bold rounded-md transition-all flex flex-col items-center justify-center gap-0.5
+                        ${isSelected ? 'bg-primary text-white shadow-md' : 'text-foreground hover:bg-muted'}`}
+                  >
+                     <span>{displayH}:{m}</span>
+                     <span className={`text-[9px] font-black uppercase ${isSelected ? 'text-white/80' : 'text-muted-foreground'}`}>{ampm}</span>
+                  </button>
+               );
+            })}
+         </div>
+      </div>
+   );
+
+   if (inline) return dropdownContent;
+
+   return (
+      <div className="relative w-full" ref={containerRef}>
+         {label && <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1 mb-2 block">{label}</label>}
+         <button
+            onClick={() => setIsOpen(!isOpen)}
+            className="w-full h-12 px-4 bg-slate-50 border-none rounded-app flex items-center justify-between hover:bg-slate-100 transition-colors"
+         >
+            <div className="flex items-center gap-3">
+               <Clock className="w-4 h-4 text-primary" />
+               <span className="text-sm font-bold text-slate-700">{formatTimeDisplay(value)}</span>
+            </div>
+            <ChevronRight className={`w-4 h-4 text-slate-400 transition-transform ${isOpen ? 'rotate-90' : ''}`} />
+         </button>
+         <AnimatePresence>
+            {isOpen && (
+               <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+               >
+                  {dropdownContent}
+               </motion.div>
+            )}
+         </AnimatePresence>
+      </div>
+   );
 };
 
 export const formatDateDisplay = (dateStr: string, format: string = 'DD/MM/YYYY') => {
@@ -201,6 +296,8 @@ interface CustomDatePickerProps {
    maxDate?: string;
    defaultViewDate?: string;
    inline?: boolean;
+   bookedSlots?: any[];
+   currentBookingDates?: { start: string, end: string };
 }
 
 export const CustomDatePicker = ({
@@ -214,7 +311,9 @@ export const CustomDatePicker = ({
    minDate,
    maxDate,
    defaultViewDate,
-   inline = false
+   inline = false,
+   bookedSlots = [],
+   currentBookingDates
 }: CustomDatePickerProps) => {
    const { t } = useLocale();
    const [isOpen, setIsOpen] = useState(false);
@@ -339,16 +438,70 @@ export const CustomDatePicker = ({
                            const date = new Date(viewDate.getFullYear(), viewDate.getMonth(), day);
                            const isSelected = value && getLocalISODate(date) === value;
                            const localIso = getLocalISODate(date);
+                           
+                           let isBooked = false;
+                           if (bookedSlots.length > 0) {
+                              const checkDate = new Date(date);
+                              checkDate.setHours(0, 0, 0, 0);
+                              
+                              for (const slot of bookedSlots) {
+                                 const startParts = slot.startDate.includes('-') ? slot.startDate.split('-') : slot.startDate.split('/');
+                                 const endParts = slot.endDate.includes('-') ? slot.endDate.split('-') : slot.endDate.split('/');
+                                 
+                                 const sDate = slot.startDate.includes('-') ? new Date(startParts[0], startParts[1] - 1, startParts[2]) : new Date(startParts[2], startParts[1] - 1, startParts[0]);
+                                 const eDate = slot.endDate.includes('-') ? new Date(endParts[0], endParts[1] - 1, endParts[2]) : new Date(endParts[2], endParts[1] - 1, endParts[0]);
+                                 
+                                 sDate.setHours(0, 0, 0, 0);
+                                 eDate.setHours(23, 59, 59, 999);
+                                 
+                                 if (checkDate >= sDate && checkDate <= eDate) {
+                                    isBooked = true;
+                                    break;
+                                 }
+                              }
+                           }
+                           
+                           const isBookedAndNotMin = isBooked && localIso !== minDate;
                            const isDisabled = !!((maxDate && localIso > maxDate) || (minDate && localIso < minDate));
+
+                           let isCurrentBookingStart = false;
+                           let isCurrentBookingEnd = false;
+                           let isCurrentBookingMiddle = false;
+
+                           if (currentBookingDates) {
+                              isCurrentBookingStart = localIso === currentBookingDates.start;
+                              isCurrentBookingEnd = localIso === currentBookingDates.end;
+                              if (localIso > currentBookingDates.start && localIso < currentBookingDates.end) {
+                                 isCurrentBookingMiddle = true;
+                              }
+                           }
+
+                           let baseStyle = 'text-foreground/80 hover:bg-muted hover:scale-110';
+                           if (isSelected) {
+                              baseStyle = 'bg-primary text-white scale-[1.02] shadow-md shadow-primary/30 z-10';
+                           } else if (isCurrentBookingStart || isCurrentBookingEnd) {
+                              baseStyle = 'bg-indigo-100 text-indigo-700 ring-2 ring-indigo-500 font-black z-0';
+                           } else if (isCurrentBookingMiddle) {
+                              baseStyle = 'bg-indigo-50 text-indigo-600 font-bold z-0';
+                           } else if (isBookedAndNotMin) {
+                              baseStyle = 'bg-rose-50 text-rose-400 line-through cursor-not-allowed border border-rose-100 z-0';
+                           } else if (isDisabled) {
+                              baseStyle = 'opacity-20 cursor-not-allowed text-muted-foreground z-0';
+                           }
+
+                           let tooltipTitle = "";
+                           if (isCurrentBookingStart) tooltipTitle = "Scheduled Pickup Date";
+                           else if (isCurrentBookingEnd) tooltipTitle = "Scheduled Return Date";
+                           else if (isCurrentBookingMiddle) tooltipTitle = "Current Trip";
+                           else if (isBookedAndNotMin) tooltipTitle = "Already Booked";
 
                            return (
                               <button
                                  key={day}
-                                 disabled={isDisabled}
-                                 onClick={() => !isDisabled && handleDateClick(date)}
-                                 className={`h-9 w-9 rounded-app text-xs font-bold transition-all flex items-center justify-center
- ${isSelected ? 'bg-primary text-white scale-[1.02]' : isDisabled ? 'opacity-20 cursor-not-allowed text-muted-foreground' : 'text-foreground/80 hover:bg-muted'}
- `}
+                                 disabled={isDisabled || isBookedAndNotMin}
+                                 onClick={() => !(isDisabled || isBookedAndNotMin) && handleDateClick(date)}
+                                 className={`h-9 w-9 rounded-app text-xs transition-all flex items-center justify-center relative ${baseStyle}`}
+                                 title={tooltipTitle}
                               >
                                  {day}
                               </button>

@@ -143,69 +143,88 @@ function ExtraChargesContent() {
  );
  }
 
- const car = booking.carId;
- const travelled = (booking.checkOutMileage || booking.returnMileage || 0) - (booking.checkInMileage || booking.hostMileage || 0);
- const paidDays = Math.max(1, Math.ceil((new Date(booking.endDate).getTime() - new Date(booking.startDate).getTime()) / (1000 * 3600 * 24)));
- const dailyLimit = car.distanceIncluded || car.mileageAllowance || 200;
- const totalAllowed = dailyLimit * paidDays;
- const extraMiles = Math.max(0, travelled - totalAllowed);
- const liveSettlementAmount = extraMiles * (car.extraDistanceFee || car.extraMileageCharge || 0.5);
+  const car = booking.carId;
+  const travelled = (booking.checkOutMileage || booking.returnMileage || 0) - (booking.checkInMileage || booking.hostMileage || 0);
+  const paidDays = Math.max(1, Math.ceil((new Date(booking.endDate).getTime() - new Date(booking.startDate).getTime()) / (1000 * 3600 * 24)));
+  const dailyLimit = car.distanceIncluded || car.mileageAllowance || 200;
+  const totalAllowed = dailyLimit * paidDays;
+  const extraMiles = Math.max(0, travelled - totalAllowed);
+  const extraMilesCharge = extraMiles * (car.extraDistanceFee || car.extraMileageCharge || 0.5);
+  
+  // Use the backend's official settlement amount
+  const liveSettlementAmount = booking.settlementAmount || 0;
+  
+  // Calculate remaining charges (overdue penalty + extensions)
+  const otherCharges = Math.max(0, liveSettlementAmount - extraMilesCharge);
 
- return (
- <div className="min-h-screen bg-[#F8FAFC] font-sans selection:bg-primary selection:text-white">
- <Header />
- 
- <main className="max-w-7xl mx-auto px-6 pt-24 pb-20">
- <div className="flex items-center gap-6 mb-8">
- <Link href="/dashboard/bookings" className="group flex items-center gap-2 text-[10px] font-black text-slate-400 tracking-widest hover:text-primary transition-all shrink-0">
- <ChevronLeft size={14} className="group-hover:-translate-x-1 transition-transform" /> Dashboard
- </Link>
- <div className="w-px h-6 bg-slate-200" />
- <h1 className="text-3xl font-black text-slate-900 tracking-tighter">Extra Usage Settlement</h1>
- </div>
+  return (
+    <div className="min-h-screen bg-[#F8FAFC] font-sans selection:bg-primary selection:text-white">
+      <Header />
+      
+      <main className="max-w-7xl mx-auto px-6 pt-24 pb-20">
+        <div className="flex items-center gap-6 mb-8">
+          <Link href="/dashboard/bookings" className="group flex items-center gap-2 text-[10px] font-black text-slate-400 tracking-widest hover:text-primary transition-all shrink-0">
+            <ChevronLeft size={14} className="group-hover:-translate-x-1 transition-transform" /> Dashboard
+          </Link>
+          <div className="w-px h-6 bg-slate-200" />
+          <h1 className="text-3xl font-black text-slate-900 tracking-tighter">Extra Usage Settlement</h1>
+        </div>
 
- <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
- {/* Left Column: Settlement Details */}
- <div className="lg:col-span-7 space-y-6">
- <section className="bg-white p-8 rounded-app border border-slate-100 relative overflow-hidden">
- <div className="absolute top-0 left-0 w-1.5 h-full bg-primary" />
- <div className="flex items-center gap-4 mb-8">
- <div className="w-12 h-12 rounded-app bg-primary/10 flex items-center justify-center text-primary">
- <Gauge size={24} />
- </div>
- <div>
- <h2 className="text-lg font-black text-slate-900 tracking-tight leading-none mb-1">Distance Audit Breakdown</h2>
- <p className="text-[10px] font-bold text-slate-400 tracking-widest">Analysis of your trip mileage</p>
- </div>
- </div>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* Left Column: Settlement Details */}
+          <div className="lg:col-span-7 space-y-6">
+            <section className="bg-white p-8 rounded-app border border-slate-100 relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-1.5 h-full bg-primary" />
+              <div className="flex items-center gap-4 mb-8">
+                <div className="w-12 h-12 rounded-app bg-primary/10 flex items-center justify-center text-primary">
+                  <Gauge size={24} />
+                </div>
+                <div>
+                  <h2 className="text-lg font-black text-slate-900 tracking-tight leading-none mb-1">Settlement Breakdown</h2>
+                  <p className="text-[10px] font-bold text-slate-400 tracking-widest">Analysis of your trip overages</p>
+                </div>
+              </div>
 
- <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
- <div className="p-4 bg-slate-50 rounded-app border border-slate-100">
- <p className="text-[10px] font-bold text-slate-500 mb-1">Total Travelled</p>
- <p className="text-xl font-black text-slate-900">{travelled.toLocaleString()} <span className="text-[10px] text-slate-400">KM</span></p>
- </div>
- <div className="p-4 bg-slate-50 rounded-app border border-slate-100">
- <p className="text-[10px] font-bold text-slate-500 mb-1">Allowance ({paidDays}d)</p>
- <p className="text-xl font-black text-slate-900">{totalAllowed.toLocaleString()} <span className="text-[10px] text-slate-400">KM</span></p>
- </div>
- <div className="p-4 bg-primary/5 rounded-app border border-primary/20">
- <p className="text-[10px] font-bold text-primary mb-1">Overage</p>
- <p className="text-xl font-black text-primary">{extraMiles.toLocaleString()} <span className="text-[10px]">KM</span></p>
- </div>
- </div>
+              <div className="space-y-4 mb-8">
+                {extraMiles > 0 && (
+                  <div className="flex justify-between items-center p-4 bg-slate-50 rounded-app border border-slate-100">
+                    <div>
+                      <p className="text-sm font-black text-slate-900">Mileage Overage ({extraMiles} KM)</p>
+                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">Allowed: {totalAllowed} KM | Travelled: {travelled} KM</p>
+                    </div>
+                    <p className="text-lg font-black text-slate-900">${extraMilesCharge.toFixed(2)}</p>
+                  </div>
+                )}
 
- <div className="space-y-4">
- <div className="flex items-center gap-2 px-1">
- <Info size={12} className="text-primary" />
- <p className="text-[11px] font-bold text-slate-900">Charge Assessment Policy</p>
- </div>
- <div className="bg-slate-50 p-6 rounded-app border border-slate-100">
- <p className="text-sm font-medium text-slate-600 leading-relaxed italic">
- "Your journey exceeded the agreed mileage allowance of {dailyLimit}KM per day. As per our policy, extra usage is charged at ${car.extraDistanceFee || car.extraMileageCharge || 0.50} per additional KM."
- </p>
- </div>
- </div>
- </section>
+                {otherCharges > 0 && (
+                  <div className="flex justify-between items-center p-4 bg-slate-50 rounded-app border border-slate-100">
+                    <div>
+                      <p className="text-sm font-black text-slate-900">Trip Extension & Overdue Penalties</p>
+                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">Extra Days added to booking</p>
+                    </div>
+                    <p className="text-lg font-black text-slate-900">${otherCharges.toFixed(2)}</p>
+                  </div>
+                )}
+                
+                {liveSettlementAmount === 0 && (
+                   <div className="p-4 bg-emerald-50 rounded-app border border-emerald-100 text-emerald-700 text-sm font-bold">
+                     No extra charges found.
+                   </div>
+                )}
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 px-1">
+                  <Info size={12} className="text-primary" />
+                  <p className="text-[11px] font-bold text-slate-900">Charge Assessment Policy</p>
+                </div>
+                <div className="bg-slate-50 p-6 rounded-app border border-slate-100">
+                  <p className="text-sm font-medium text-slate-600 leading-relaxed italic">
+                    "Settlement charges include excess mileage beyond the allowance (${car.extraDistanceFee || car.extraMileageCharge || 0.50} per additional KM), late return penalties (1 extra day per 24hrs overdue), and any unpaid trip extensions."
+                  </p>
+                </div>
+              </div>
+            </section>
 
  <section className="bg-white p-8 rounded-app border border-slate-100 ">
  <div className="flex items-center gap-3 mb-8">
@@ -264,10 +283,19 @@ function ExtraChargesContent() {
  </div>
 
  <div className="space-y-4 mb-4 relative z-10">
- <div className="flex justify-between items-center text-[13px] font-bold text-slate-600 group/row hover:bg-slate-50 p-2 -mx-2 rounded-app transition-all">
- <span>Overage Charge ({extraMiles} KM)</span>
- <span className="text-slate-900">${liveSettlementAmount.toFixed(2)}</span>
- </div>
+ {extraMiles > 0 && (
+   <div className="flex justify-between items-center text-[13px] font-bold text-slate-600 group/row hover:bg-slate-50 p-2 -mx-2 rounded-app transition-all">
+     <span>Mileage Overage ({extraMiles} KM)</span>
+     <span className="text-slate-900">${extraMilesCharge.toFixed(2)}</span>
+   </div>
+ )}
+ 
+ {otherCharges > 0 && (
+   <div className="flex justify-between items-center text-[13px] font-bold text-slate-600 group/row hover:bg-slate-50 p-2 -mx-2 rounded-app transition-all">
+     <span>Overdue & Extensions</span>
+     <span className="text-slate-900">${otherCharges.toFixed(2)}</span>
+   </div>
+ )}
  
  <div className="pt-6 border-t border-slate-100 flex justify-between items-end">
  <div>

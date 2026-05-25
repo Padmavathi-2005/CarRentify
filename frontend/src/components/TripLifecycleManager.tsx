@@ -158,6 +158,23 @@ export default function TripLifecycleManager({ booking, type, onComplete, onCanc
     setIsSubmitting(true);
     try {
       let payload = { ...formData };
+
+      // Upload signature if it's a new base64 string
+      if (payload.signature && payload.signature.startsWith('data:image')) {
+        const sigRes = await fetch(`${API_BASE_URL}/media/upload`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${authService.getToken()}`
+          },
+          body: JSON.stringify({ fileName: `signature_${Date.now()}.png`, base64: payload.signature, folder: 'signatures' }),
+        });
+        if (sigRes.ok) {
+          const sigData = await sigRes.json();
+          payload.signature = sigData.url || sigData.path;
+        }
+      }
+
       if (type === 'check-out' && payload.extraCharges_hasIssue) {
         payload.extraCharges = {
           hasIssue: true,
@@ -207,6 +224,12 @@ export default function TripLifecycleManager({ booking, type, onComplete, onCanc
       }
     }
     if (!formData.signature) return false;
+
+    if (type === 'check-out' && formData.extraCharges_hasIssue) {
+      if (!formData.extraCharges_issueDetails || formData.extraCharges_issueDetails.trim() === '') return false;
+      if (!formData.extraCharges_chargeAmount || formData.extraCharges_chargeAmount <= 0) return false;
+    }
+
     return true;
   };
 
@@ -411,9 +434,50 @@ export default function TripLifecycleManager({ booking, type, onComplete, onCanc
             </section>
           );
         })}
-
         {type === 'check-out' && (
           <section className="space-y-4 pt-4 border-t border-slate-50">
+            {(() => {
+               const scheduledEndStr = `${booking.endDate?.split('T')[0]}T${booking.returnTime || '00:00'}`;
+               const scheduledEnd = new Date(scheduledEndStr);
+               const actualEnd = new Date();
+               const gracePeriodMs = 1 * 60 * 60 * 1000;
+               
+               if (actualEnd.getTime() > scheduledEnd.getTime() + gracePeriodMs) {
+                  const delayMs = actualEnd.getTime() - scheduledEnd.getTime();
+                  const overdueDays = Math.ceil(delayMs / (24 * 60 * 60 * 1000));
+                  const price = typeof booking.carId === 'object' ? booking.carId.pricePerDay : 0;
+                  const overdueCharge = overdueDays * price;
+
+                  return (
+                     <div className="flex flex-col p-4 bg-amber-50 border border-amber-200 rounded-app space-y-3 mb-6">
+                        <div className="flex items-start gap-3">
+                           <AlertCircle className="text-amber-500 shrink-0 mt-0.5" size={16} />
+                           <div>
+                              <h3 className="text-xs font-black text-amber-700 uppercase tracking-widest">Trip is Overdue</h3>
+                              <p className="text-[10px] text-amber-600/80 font-bold tracking-tight">
+                                 The vehicle is being returned past the scheduled return time ({scheduledEnd.toLocaleString()}).
+                              </p>
+                           </div>
+                        </div>
+                        <div className="bg-white/60 p-3 rounded-lg border border-amber-100 flex flex-col gap-2">
+                           <div className="flex justify-between text-[10px] font-bold text-amber-900">
+                              <span className="uppercase tracking-widest">Late Duration</span>
+                              <span>+{overdueDays} Day{overdueDays !== 1 ? 's' : ''}</span>
+                           </div>
+                           <div className="flex justify-between text-[10px] font-bold text-amber-900 border-t border-amber-100/50 pt-2">
+                              <span className="uppercase tracking-widest">Automatic Penalty Charge</span>
+                              <span className="font-black">${overdueCharge.toFixed(2)}</span>
+                           </div>
+                        </div>
+                        <p className="text-[8px] font-bold text-amber-500 uppercase tracking-widest leading-relaxed">
+                           This amount will be automatically added to the final settlement upon finalizing this checkout registry.
+                        </p>
+                     </div>
+                  );
+               }
+               return null;
+            })()}
+
             <div className="flex items-center justify-between p-4 bg-rose-50 border border-rose-100 rounded-app">
               <div>
                 <h3 className="text-xs font-black text-rose-600 uppercase tracking-widest">Report Issue / Extra Charge</h3>
@@ -443,9 +507,16 @@ export default function TripLifecycleManager({ booking, type, onComplete, onCanc
                   <input 
                     type="number"
                     disabled={isReadOnly}
-                    min="0"
+                    min="0.01"
+                    step="0.01"
                     value={formData['extraCharges_chargeAmount'] || ""}
-                    onChange={(e) => handleFieldChange('extraCharges_chargeAmount', Number(e.target.value))}
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      if (val >= 0) handleFieldChange('extraCharges_chargeAmount', val);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === '-' || e.key === 'e') e.preventDefault();
+                    }}
                     className="w-full h-10 bg-white border border-slate-100 rounded-app px-3 text-xs font-bold outline-none focus:border-primary/20"
                     placeholder="Enter estimated or exact repair amount..."
                   />

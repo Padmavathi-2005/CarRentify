@@ -25,6 +25,8 @@ import { Button } from "@/components/ui/button";
 import { walletService } from "@/services/walletService";
 import { useAuth } from "@/components/AuthContext";
 import { useLocale } from "@/components/LocaleContext";
+import { jsPDF } from 'jspdf';
+import { toPng } from 'html-to-image';
 
 export default function WalletPage() {
  const { user } = useAuth();
@@ -51,6 +53,7 @@ export default function WalletPage() {
  const [viewingInvoice, setViewingInvoice] = useState<any>(null);
  const [isAddingBankInWithdraw, setIsAddingBankInWithdraw] = useState(false);
  const [isViewingAll, setIsViewingAll] = useState(false);
+ const [isPdfGenerating, setIsPdfGenerating] = useState(false);
 
  useEffect(() => {
  if (isAddingFunds || isWithdrawing || isManagingPayout || viewingInvoice || isViewingAll) {
@@ -157,6 +160,42 @@ export default function WalletPage() {
  window.history.replaceState({}, '', '/dashboard/wallet');
  }
  };
+
+  const handleDownloadPDF = async (elementId: string, filename: string) => {
+    const element = document.getElementById(elementId);
+    if (!element) return;
+    
+    setIsPdfGenerating(true);
+    try {
+      const imgData = await toPng(element, { 
+        cacheBust: true, 
+        pixelRatio: 2,
+        backgroundColor: '#ffffff',
+        filter: (node) => {
+          if (node.classList && node.classList.contains('print:hidden')) {
+            return false;
+          }
+          return true;
+        }
+      });
+      
+      const width = element.offsetWidth;
+      const height = element.offsetHeight;
+
+      const pdf = new jsPDF({
+        orientation: width > height ? 'landscape' : 'portrait',
+        unit: 'px',
+        format: [width, height]
+      });
+      
+      pdf.addImage(imgData, 'PNG', 0, 0, width, height);
+      pdf.save(filename);
+    } catch (err) {
+      console.error('Error generating PDF:', err);
+    } finally {
+      setIsPdfGenerating(false);
+    }
+  };
 
  const handleAddFunds = async (e: React.FormEvent) => {
  e.preventDefault();
@@ -851,15 +890,21 @@ export default function WalletPage() {
   )}
 
  {/* Invoice Modal */}
- {viewingInvoice && (
+{viewingInvoice && (
  <div 
    className="fixed inset-0 z-[9999] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm transition-all duration-300"
    onClick={() => setViewingInvoice(null)}
  >
    <div 
-     className="bg-white dark:bg-slate-900 rounded-app w-full max-w-lg overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300 max-h-[90vh] flex flex-col border border-slate-100 dark:border-white/10"
+     id="wallet-invoice-print-area"
+     className="bg-white dark:bg-slate-900 rounded-app w-full max-w-lg overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300 max-h-[90vh] flex flex-col border border-slate-100 dark:border-white/10 relative"
      onClick={(e) => e.stopPropagation()}
    >
+     {isPdfGenerating && (
+       <div className="absolute inset-0 bg-white/80 z-50 flex items-center justify-center print:hidden">
+         <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+       </div>
+     )}
  <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 shrink-0">
  <div className="flex items-center gap-4">
  <div className="w-12 h-12 rounded-app bg-primary flex items-center justify-center text-white">
@@ -870,14 +915,15 @@ export default function WalletPage() {
  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">#{viewingInvoice._id?.slice(-8).toUpperCase()}</p>
  </div>
  </div>
- <div className="flex items-center gap-2">
+ <div className="flex items-center gap-2 print:hidden">
  <Button 
- onClick={() => window.print()}
+ onClick={() => handleDownloadPDF('wallet-invoice-print-area', `Wallet-Invoice-${viewingInvoice._id?.slice(-8).toUpperCase()}.pdf`)}
  variant="outline" 
+ disabled={isPdfGenerating}
  className="h-10 px-6 rounded-app border-slate-200 text-slate-600 hover:bg-slate-50 text-[10px] font-black uppercase tracking-widest flex items-center gap-2"
  >
  <Download size={14} />
- Download PDF
+ {isPdfGenerating ? 'GENERATING...' : 'Download PDF'}
  </Button>
  <Button 
  onClick={() => setViewingInvoice(null)}

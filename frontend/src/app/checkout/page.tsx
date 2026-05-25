@@ -39,12 +39,14 @@ import { API_BASE_URL, getImageUrl } from "@/config/api";
 import { authService } from "@/services/authService";
 import { CustomDatePicker, PremiumRangePicker, PremiumTimeRangePicker } from "@/components/CustomDateTimePicker";
 import VerificationModal from "@/components/VerificationModal";
+import { useToast } from "@/components/Toast";
 
 function CheckoutContent() {
  const searchParams = useSearchParams();
  const router = useRouter();
  const { user, setUserType } = useAuth();
  const { t, formatPrice } = useLocale();
+ const { showToast } = useToast();
  
  const carId = searchParams.get("carId");
  const [car, setCar] = useState<any>(null);
@@ -418,7 +420,7 @@ function CheckoutContent() {
  
  if (!sessionRes.ok) {
  const errorData = await sessionRes.json();
- alert(`Payment Error: ${errorData.message || 'Could not initialize gateway'}`);
+ showToast(`Payment Error: ${errorData.message || 'Could not initialize gateway'}`, 'error');
  setIsProcessing(false);
  return;
  }
@@ -429,13 +431,13 @@ function CheckoutContent() {
  window.location.href = sessionData.url;
  return;
  } else {
- alert("Payment URL not provided by gateway.");
+ showToast("Payment URL not provided by gateway.", 'error');
  setIsProcessing(false);
  return;
  }
  } catch (pErr) {
  console.error("Payment Bridge Error:", pErr);
- alert("A network error occurred while connecting to the payment gateway.");
+ showToast("A network error occurred while connecting to the payment gateway.", 'error');
  setIsProcessing(false);
  return;
  }
@@ -448,11 +450,11 @@ function CheckoutContent() {
  router.push(`/dashboard/bookings/${bookingId}/agreement?promptSign=true`);
  }, 5000);
  } else {
- alert(data.message || "Failed to process booking.");
+ showToast(data.message || "Failed to process booking.", 'error');
  }
  } catch (err) {
  console.error("Booking error:", err);
- alert("Something went wrong while processing your reservation.");
+ showToast("Something went wrong while processing your reservation.", 'error');
  } finally {
  if (!['stripe', 'paypal'].includes(paymentMethod.toLowerCase()) || car?.bookingType !== 'Instant') {
  setIsProcessing(false);

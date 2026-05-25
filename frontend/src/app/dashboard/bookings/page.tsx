@@ -48,9 +48,11 @@ import { useLocale } from "@/components/LocaleContext";
 import { cn } from "@/lib/utils";
 import TripLifecycleManager from "@/components/TripLifecycleManager";
 import SignaturePad from "@/components/SignaturePad";
+import { CustomDatePicker, CustomTimePicker } from "@/components/CustomDateTimePicker";
 import PostBookingReviewModal from "@/components/VehicleDetail/PostBookingReviewModal";
 import { useSearchParams, useRouter } from "next/navigation";
 import { authService } from "@/services/authService";
+import { useToast } from "@/components/Toast";
 
 interface Booking {
   _id: string;
@@ -106,6 +108,7 @@ function MyBookingsContent() {
   const { user, userType, setUserType } = useAuth();
   const { t, formatPrice, formatCurrency } = useLocale();
   const router = useRouter();
+  const { showToast } = useToast();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -162,6 +165,36 @@ function MyBookingsContent() {
   const [existingReview, setExistingReview] = useState<any>(null);
   const [loadingReview, setLoadingReview] = useState(false);
   const [isPdfGenerating, setIsPdfGenerating] = useState(false);
+
+  // Overdue and Extension State
+  const [showDelayModal, setShowDelayModal] = useState(false);
+  const [delayReason, setDelayReason] = useState("");
+  const [showExtendModal, setShowExtendModal] = useState(false);
+  const [extendEndDate, setExtendEndDate] = useState("");
+  const [extendReturnTime, setExtendReturnTime] = useState("");
+  const [bookedSlots, setBookedSlots] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (showExtendModal && selectedBooking) {
+      // Initialize with current booking values
+      if (selectedBooking.endDate) {
+        setExtendEndDate(selectedBooking.endDate.split('T')[0]);
+      }
+      if (selectedBooking.returnTime) {
+        setExtendReturnTime(selectedBooking.returnTime);
+      }
+
+      const carId = selectedBooking.carId?._id || selectedBooking.carId;
+      if (!carId) return;
+      
+      fetch(`${API_BASE_URL}/bookings/availability/${carId}?t=${Date.now()}`)
+        .then(res => res.json())
+        .then(data => {
+          setBookedSlots(data);
+        })
+        .catch(err => console.error("Error fetching booked slots:", err));
+    }
+  }, [showExtendModal, selectedBooking]);
 
   const handleDownloadPDF = async (elementId: string, filename: string) => {
     const element = document.getElementById(elementId);
@@ -271,7 +304,7 @@ function MyBookingsContent() {
         });
 
         if (!res.ok) throw new Error("PayPal capture failed");
-        alert(typeParam === 'settlement' ? t('bookings.messages.settle_success') : t('bookings.messages.booking_payment_success'));
+        showToast(typeParam === 'settlement' ? t('bookings.messages.settle_success') : t('bookings.messages.booking_payment_success'), 'success');
       } else if (sessionIdParam && bookingIdParam) {
         const res = await fetch(`${API_BASE_URL}/payments/finalize-stripe/${sessionIdParam}`, {
           method: 'POST',
@@ -283,14 +316,14 @@ function MyBookingsContent() {
         });
 
         if (!res.ok) throw new Error("Stripe finalization failed");
-        alert(typeParam === 'settlement' ? t('bookings.messages.settle_confirmed_concluded') : t('bookings.messages.payment_successful'));
+        showToast(typeParam === 'settlement' ? t('bookings.messages.settle_confirmed_concluded') : t('bookings.messages.payment_successful'), 'success');
       }
 
       await fetchBookings();
       window.history.replaceState({}, '', '/dashboard/bookings');
     } catch (err) {
       console.error("Payment finalization error:", err);
-      alert(t('bookings.messages.payment_verify_fail'));
+      showToast(t('bookings.messages.payment_verify_fail') || "Payment verification failed", 'error');
     } finally {
       setIsFinalizing(false);
     }
@@ -581,6 +614,65 @@ function MyBookingsContent() {
         alert(t('bookings.messages.dispute_submitted') || "Your dispute has been recorded. The host and support have been notified.");
         fetchBookings();
         setSelectedBooking(updated);
+      }
+    } catch (err) { console.error(err); }
+    finally { setIsSubmittingAction(false); }
+  };
+
+  const handleRequestDelay = async (id: string) => {
+    if (!delayReason.trim()) {
+      showToast("Please provide a reason for the delay.", 'error');
+      return;
+    }
+    setIsSubmittingAction(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/bookings/${id}/request-delay`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${authService.getToken()}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ reason: delayReason })
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        showToast("Delay requested. The host has been notified.", 'success');
+        fetchBookings();
+        setSelectedBooking(updated);
+        setShowDelayModal(false);
+        setDelayReason("");
+      } else {
+        const data = await res.json();
+        showToast(data.message || "Failed to request delay", 'error');
+      }
+    } catch (err) { console.error(err); }
+    finally { setIsSubmittingAction(false); }
+  };
+
+  const handleExtendTrip = async (id: string) => {
+    if (!extendEndDate || !extendReturnTime) {
+      showToast("Please select the new end date and time.", 'error');
+      return;
+    }
+    setIsSubmittingAction(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/bookings/${id}/extend`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${authService.getToken()}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ endDate: extendEndDate, returnTime: extendReturnTime })
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        showToast("Trip successfully extended!", 'success');
+        fetchBookings();
+        setSelectedBooking(updated);
+        setShowExtendModal(false);
+      } else {
+        const errData = await res.json();
+        showToast(errData.message || "Failed to extend trip.", 'error');
       }
     } catch (err) { console.error(err); }
     finally { setIsSubmittingAction(false); }
@@ -2308,16 +2400,25 @@ function MyBookingsContent() {
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Document post-trip condition and mileage to conclude</p>
                                   </div>
                                 </div>
-                                <Button
-                                  onClick={() => {
-                                    setLifecycleType('check-out');
-                                    setLifecycleReadOnly(false);
-                                    setIsLifecycleModalOpen(true);
-                                  }}
-                                  className="w-full h-14 bg-primary hover:bg-primary-hover text-white font-black text-[11px] uppercase tracking-[0.2em] rounded-app border-none shadow-xl shadow-primary/10 group"
-                                >
-                                  Begin Return Check-Out <ArrowRight size={16} className="ml-2 group-hover:translate-x-1 transition-transform" />
-                                </Button>
+                                <div className="flex gap-4">
+                                  <Button
+                                    onClick={() => {
+                                      setLifecycleType('check-out');
+                                      setLifecycleReadOnly(false);
+                                      setIsLifecycleModalOpen(true);
+                                    }}
+                                    className="flex-1 h-14 bg-primary hover:bg-primary-hover text-white font-black text-[10px] uppercase tracking-[0.1em] rounded-app border-none shadow-xl shadow-primary/10 group"
+                                  >
+                                    Begin Return Check-Out <ArrowRight size={16} className="ml-2 group-hover:translate-x-1 transition-transform" />
+                                  </Button>
+                                  <Button
+                                    onClick={() => setShowExtendModal(true)}
+                                    variant="outline"
+                                    className="flex-1 h-14 bg-white hover:bg-indigo-50 text-indigo-600 border-indigo-200 font-black text-[10px] uppercase tracking-[0.1em] rounded-app"
+                                  >
+                                    <Calendar size={16} className="mr-2" /> Extend Trip
+                                  </Button>
+                                </div>
                               </div>
                             );
                           } else if (isHost && (b.tripStatus === 'host_submitted_check_out' || (b.returnConditionImage && !b.customerAcceptedReturn))) {
@@ -2550,16 +2651,45 @@ function MyBookingsContent() {
                               </div>
                             );
                           } else if (!isHost && (!b.returnConditionImage && (!b.checkOutPhotos || b.checkOutPhotos.length === 0))) {
+                            const scheduledEnd = new Date(`${b.endDate}T${b.returnTime || '00:00'}:00`).getTime();
+                            const msUntilEnd = scheduledEnd - Date.now();
+                            const isNearEnd = msUntilEnd <= 60 * 60 * 1000 && msUntilEnd > - (60 * 60 * 1000); // within 1 hr before or after
                             return (
-                              <div className="bg-primary/5 p-6 rounded-app border border-primary/10 flex items-center gap-4">
-                                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary"><Car size={18} /></div>
-                                <div>
-                                  <p className="text-[10px] font-black text-primary uppercase tracking-widest">Journey Active</p>
-                                  <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest leading-relaxed">
-                                    You are currently enjoying your premium drive.
-                                    Return protocol will activate once the host receives the vehicle.
-                                  </p>
+                              <div className={`p-6 rounded-app border flex flex-col gap-4 ${isNearEnd ? 'bg-rose-50 border-rose-100' : 'bg-primary/5 border-primary/10'}`}>
+                                <div className="flex items-center gap-4">
+                                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isNearEnd ? 'bg-rose-100 text-rose-600' : 'bg-primary/10 text-primary'}`}>
+                                    {isNearEnd ? <AlertCircle size={18} /> : <Car size={18} />}
+                                  </div>
+                                  <div>
+                                    <p className={`text-[10px] font-black uppercase tracking-widest ${isNearEnd ? 'text-rose-600' : 'text-primary'}`}>
+                                      {isNearEnd ? 'Return Approaching' : 'Journey Active'}
+                                    </p>
+                                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest leading-relaxed">
+                                      {isNearEnd 
+                                        ? "Your trip ends soon! Return the vehicle on time to avoid extra day charges." 
+                                        : "You are currently enjoying your premium drive. Return protocol will activate once the host receives the vehicle."}
+                                    </p>
+                                  </div>
                                 </div>
+                                {(isNearEnd || b.delayRequested) && (
+                                  <div className="flex gap-4 mt-2">
+                                    <Button
+                                      disabled={b.delayRequested}
+                                      onClick={() => setShowDelayModal(true)}
+                                      className={`flex-1 h-12 text-[10px] font-black uppercase tracking-widest border-none ${b.delayRequested ? 'bg-amber-100 text-amber-600' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'}`}
+                                      variant="outline"
+                                    >
+                                      {b.delayRequested ? "Delay Requested" : "Request Delay"}
+                                    </Button>
+                                    <Button
+                                      onClick={() => setShowExtendModal(true)}
+                                      variant="outline"
+                                      className="flex-1 h-12 bg-white hover:bg-indigo-50 text-indigo-600 border-indigo-200 font-black text-[10px] uppercase tracking-widest rounded-app"
+                                    >
+                                      <Calendar size={16} className="mr-2" /> Extend Trip
+                                    </Button>
+                                  </div>
+                                )}
                               </div>
                             );
                           }
@@ -2700,6 +2830,128 @@ function MyBookingsContent() {
             className="w-full h-12 bg-primary hover:bg-primary-hover text-white rounded-app text-[11px] font-black uppercase tracking-widest disabled:opacity-50 transition-all"
           >
             {isSubmittingAction ? "Processing..." : "Confirm & Sign"}
+          </Button>
+        </div>
+      </Modal>
+
+      {/* Delay Request Modal */}
+      <Modal isOpen={showDelayModal} onClose={() => setShowDelayModal(false)} title="Request Delay" maxWidth="max-w-md">
+        <div className="p-6 space-y-6">
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-slate-700">Please provide a valid reason for the delay. Your host will receive this message directly.</p>
+            <textarea
+              className="w-full h-32 p-4 bg-slate-50 border border-slate-200 rounded-app text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
+              placeholder="E.g., Stuck in traffic, will be 30 mins late..."
+              value={delayReason}
+              onChange={(e) => setDelayReason(e.target.value)}
+            />
+          </div>
+          <Button
+            disabled={isSubmittingAction || !delayReason.trim()}
+            onClick={() => handleRequestDelay(selectedBooking?._id || "")}
+            className="w-full h-12 bg-primary hover:bg-primary-hover text-white rounded-app text-[11px] font-black uppercase tracking-widest disabled:opacity-50 transition-all"
+          >
+            {isSubmittingAction ? "Processing..." : "Submit Delay Request"}
+          </Button>
+        </div>
+      </Modal>
+
+      {/* Extend Trip Modal */}
+      <Modal isOpen={showExtendModal} onClose={() => setShowExtendModal(false)} title="Extend Trip" maxWidth="max-w-md">
+        <div className="p-6 space-y-6">
+          <div className="bg-indigo-50 p-4 border border-indigo-100 rounded-app space-y-1">
+            <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest flex items-center gap-2"><Info size={14} /> Journey Extension</p>
+            <p className="text-xs text-slate-600 leading-relaxed">Extending the trip will update the return time and automatically recalculate the final settlement based on the daily rate.</p>
+          </div>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <CustomDatePicker 
+                label="New End Date"
+                value={extendEndDate}
+                minDate={(() => {
+                  if (!selectedBooking?.endDate) return undefined;
+                  const todayStr = new Date().toISOString().split('T')[0];
+                  const endDateStr = selectedBooking.endDate.split('T')[0];
+                  return endDateStr < todayStr ? todayStr : endDateStr;
+                })()} // Cannot decrease below original return date OR today (if overdue)
+                onChange={(val) => setExtendEndDate(val)}
+                align="center"
+                inline={true}
+                bookedSlots={bookedSlots}
+                currentBookingDates={{
+                  start: selectedBooking?.startDate?.split('T')[0] || "",
+                  end: selectedBooking?.endDate?.split('T')[0] || ""
+                }}
+              />
+            </div>
+            <div className="space-y-2 relative">
+              <CustomTimePicker
+                label="New Return Time"
+                value={extendReturnTime}
+                onChange={(val) => setExtendReturnTime(val)}
+              />
+            </div>
+
+            {/* Dynamic Breakdown Section */}
+            {selectedBooking && (
+              <div className="bg-muted/30 border border-border p-4 rounded-app space-y-4 mt-6">
+                {(() => {
+                  const originalEndStr = `${selectedBooking.endDate?.split('T')[0]}T${selectedBooking.returnTime || '00:00'}`;
+                  const originalEnd = new Date(originalEndStr);
+                  
+                  let newEndStr = "";
+                  let newEnd: Date | null = null;
+                  let extraDays = 0;
+                  let extraCharge = 0;
+                  const carPrice = typeof selectedBooking.carId === 'object' ? selectedBooking.carId.pricePerDay || 0 : 0;
+
+                  if (extendEndDate && extendReturnTime) {
+                    newEndStr = `${extendEndDate}T${extendReturnTime}`;
+                    newEnd = new Date(newEndStr);
+                    const delayMs = newEnd.getTime() - originalEnd.getTime();
+                    extraDays = delayMs > 0 ? Math.ceil(delayMs / (24 * 60 * 60 * 1000)) : 0;
+                    extraCharge = extraDays * carPrice;
+                  }
+
+                  return (
+                    <>
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="font-bold text-slate-500 uppercase tracking-widest text-[9px]">Original Return</span>
+                        <span className="font-bold text-slate-700">{originalEnd.toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric' })}</span>
+                      </div>
+                      
+                      {newEnd && (
+                        <>
+                          <div className="h-px bg-border w-full" />
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="font-bold text-indigo-500 uppercase tracking-widest text-[9px]">New Return</span>
+                            <span className="font-bold text-indigo-700">{newEnd.toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric' })}</span>
+                          </div>
+                          
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="font-bold text-slate-500 uppercase tracking-widest text-[9px]">Extra Days</span>
+                            <span className="font-black text-slate-700">+{extraDays} Day{extraDays !== 1 ? 's' : ''}</span>
+                          </div>
+
+                          <div className="flex justify-between items-center pt-2 border-t border-border">
+                            <span className="font-black text-slate-700 uppercase tracking-widest text-[10px]">Extension Charge</span>
+                            <span className="font-black text-primary text-sm">{formatPrice ? formatPrice(extraCharge) : `$${extraCharge.toFixed(2)}`}</span>
+                          </div>
+                        </>
+                      )}
+                    </>
+                  );
+                })()}
+              </div>
+            )}
+            
+          </div>
+          <Button
+            disabled={isSubmittingAction || !extendEndDate || !extendReturnTime}
+            onClick={() => handleExtendTrip(selectedBooking?._id || "")}
+            className="w-full h-12 bg-primary hover:bg-primary-hover text-white rounded-app text-[11px] font-black uppercase tracking-widest disabled:opacity-50 transition-all shadow-xl shadow-primary/20"
+          >
+            {isSubmittingAction ? "Processing..." : "Confirm Extension"}
           </Button>
         </div>
       </Modal>

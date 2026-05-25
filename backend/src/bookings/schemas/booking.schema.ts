@@ -123,6 +123,12 @@ export class Booking {
   lateReturnResponse?: string;
 
   @Prop({ default: false })
+  delayRequested: boolean;
+
+  @Prop()
+  delayReason?: string;
+
+  @Prop({ default: false })
   nextBookingHandled: boolean;
 
   @Prop()
@@ -136,6 +142,9 @@ export class Booking {
 
   @Prop()
   settlementAmount?: number;
+
+  @Prop({ default: 0 })
+  extensionCharge?: number;
 
   @Prop({ default: false })
   isSettled: boolean;

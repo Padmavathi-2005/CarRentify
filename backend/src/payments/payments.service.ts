@@ -81,7 +81,9 @@ export class PaymentsService {
     }
     const rawAmount = isSettlement ? calculatedSettlement : ((booking.baseAmount || booking.totalPrice) - (booking.couponDiscount || 0));
     
-    // Always convert to USD for gateway if that's the "Default Currency"
+    const defaultCurrency = (settings as any)?.defaultCurrency || 'USD';
+    
+    // Always convert to default currency for gateway
     const amountToPay = rawAmount / rate;
 
     if (amountToPay <= 0) throw new BadRequestException('Nothing to pay for this transaction.');
@@ -96,7 +98,7 @@ export class PaymentsService {
         if (isSettlement) {
           line_items.push({
             price_data: {
-              currency: 'usd',
+              currency: defaultCurrency.toLowerCase(),
               product_data: {
                 name: `Extra Usage Settlement: ${car.name}`,
                 description: `Overage fees and additional charges for booking #${bookingId.slice(-6).toUpperCase()}`,
@@ -108,10 +110,10 @@ export class PaymentsService {
         } else {
           line_items.push({
             price_data: {
-              currency: 'usd',
+              currency: defaultCurrency.toLowerCase(),
               product_data: {
                 name: `Car Rental: ${car.name}`,
-                description: `From ${booking.startDate} to ${booking.endDate}${booking.couponDiscount ? ` (Includes ${((booking.couponDiscount || 0) / rate).toFixed(2)} USD Promo Discount)` : ''}`,
+                description: `From ${booking.startDate} to ${booking.endDate}${booking.couponDiscount ? ` (Includes ${((booking.couponDiscount || 0) / rate).toFixed(2)} ${defaultCurrency.toUpperCase()} Promo Discount)` : ''}`,
                 images: car.images && car.images.length > 0 
                   ? [encodeURI(car.images[0].startsWith('http') ? car.images[0] : `${siteUrl}${car.images[0].startsWith('/') ? '' : '/'}${car.images[0]}`)] 
                   : [],
@@ -122,16 +124,16 @@ export class PaymentsService {
           });
 
           if (booking.protectionCost && booking.protectionCost > 0) {
-             line_items.push({ price_data: { currency: 'usd', product_data: { name: 'Coverage & Protection' }, unit_amount: Math.round(((booking.protectionCost || 0) / rate) * 100) }, quantity: 1 });
+             line_items.push({ price_data: { currency: defaultCurrency.toLowerCase(), product_data: { name: 'Coverage & Protection' }, unit_amount: Math.round(((booking.protectionCost || 0) / rate) * 100) }, quantity: 1 });
           }
           if (booking.platformFee && booking.platformFee > 0) {
-             line_items.push({ price_data: { currency: 'usd', product_data: { name: 'Platform Service Fee' }, unit_amount: Math.round(((booking.platformFee || 0) / rate) * 100) }, quantity: 1 });
+             line_items.push({ price_data: { currency: defaultCurrency.toLowerCase(), product_data: { name: 'Platform Service Fee' }, unit_amount: Math.round(((booking.platformFee || 0) / rate) * 100) }, quantity: 1 });
           }
           if (booking.taxesTotal && booking.taxesTotal > 0) {
-             line_items.push({ price_data: { currency: 'usd', product_data: { name: 'Taxes & Surcharges' }, unit_amount: Math.round(((booking.taxesTotal || 0) / rate) * 100) }, quantity: 1 });
+             line_items.push({ price_data: { currency: defaultCurrency.toLowerCase(), product_data: { name: 'Taxes & Surcharges' }, unit_amount: Math.round(((booking.taxesTotal || 0) / rate) * 100) }, quantity: 1 });
           }
           if (booking.securityDeposit && booking.securityDeposit > 0) {
-             line_items.push({ price_data: { currency: 'usd', product_data: { name: 'Security Deposit (Refundable upon safe return)' }, unit_amount: Math.round(((booking.securityDeposit || 0) / rate) * 100) }, quantity: 1 });
+             line_items.push({ price_data: { currency: defaultCurrency.toLowerCase(), product_data: { name: 'Security Deposit (Refundable upon safe return)' }, unit_amount: Math.round(((booking.securityDeposit || 0) / rate) * 100) }, quantity: 1 });
           }
         }
 
@@ -175,7 +177,7 @@ export class PaymentsService {
             intent: 'CAPTURE',
             purchase_units: [{
               amount: {
-                currency_code: 'USD',
+                currency_code: defaultCurrency.toUpperCase(),
                 value: paypalTotal.toFixed(2),
               },
               description: isSettlement ? `Extra Usage Settlement: ${car.name}` : `Car Rental: ${car.name}`,

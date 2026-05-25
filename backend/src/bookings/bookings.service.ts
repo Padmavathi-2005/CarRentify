@@ -751,6 +751,79 @@ export class BookingsService {
     return this.bookingModel.findById(booking._id).populate('carId');
   }
 
+  async requestDelay(bookingId: string, customerId: string, reason: string) {
+    const booking = await this.bookingModel.findById(bookingId).populate('carId customerId');
+    if (!booking) throw new NotFoundException('Booking not found');
+    if (booking.customerId._id.toString() !== customerId && booking.customerId.toString() !== customerId) throw new BadRequestException('Unauthorized');
+
+    booking.delayRequested = true;
+    booking.delayReason = reason;
+    await booking.save();
+
+    const vendor = await this.userModel.findById(booking.vendorId);
+    const car: any = booking.carId;
+    const customer: any = booking.customerId;
+
+    // Send a message via chat service if possible, or just a notification
+    await this.sendCommunication(vendor, 'Trip Delay Requested', `Customer ${customer?.firstName || 'User'} has requested a delay for ${car?.name || 'the vehicle'}. Reason: "${reason}". Please coordinate with them or extend the trip.`, 'warning', { type: 'booking', bookingId: booking._id.toString(), userType: 'host' });
+
+    // Assuming there's a chat system, we could auto-send a message, but notification suffices if chat is separate.
+    return booking;
+  }
+
+  async extendTrip(bookingId: string, vendorId: string, newEndDate: string, newReturnTime: string) {
+    const booking = await this.bookingModel.findById(bookingId).populate('carId');
+    if (!booking) throw new NotFoundException('Booking not found');
+    if (booking.vendorId.toString() !== vendorId) throw new BadRequestException('Unauthorized');
+
+    // Overlap validation
+    const requestedEnd = new Date(`${newEndDate}T${newReturnTime}:00`);
+    const currentEnd = new Date(`${booking.endDate}T${booking.returnTime || '00:00'}:00`);
+    if (requestedEnd <= currentEnd) {
+       throw new BadRequestException('New end date/time must be after the current end date/time.');
+    }
+
+    const existingBookings = await this.bookingModel.find({
+        carId: booking.carId,
+        status: { $in: [BookingStatus.CONFIRMED, BookingStatus.ACTIVE] },
+        _id: { $ne: booking._id }
+    });
+
+    for (const eb of existingBookings) {
+      const ebStart = new Date(`${eb.startDate}T${eb.pickupTime || '00:00'}:00`);
+      const ebEnd = new Date(`${eb.endDate}T${eb.returnTime || '00:00'}:00`);
+      
+      const bufferMs = 60 * 60 * 1000;
+      const isOverlapping = (currentEnd.getTime() < ebEnd.getTime() + bufferMs) && 
+                           (requestedEnd.getTime() + bufferMs > ebStart.getTime());
+
+      if (isOverlapping) {
+         throw new BadRequestException('Cannot extend: The car is already booked during the requested extension period.');
+      }
+    }
+
+    // Calculate extra days
+    const diffTime = requestedEnd.getTime() - currentEnd.getTime();
+    const extraDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const car: any = booking.carId;
+    
+    const extraCharge = extraDays * (car.pricePerDay || 0);
+
+    booking.endDate = newEndDate;
+    booking.returnTime = newReturnTime;
+    booking.extensionCharge = (booking.extensionCharge || 0) + extraCharge;
+    // We intentionally do not add this to totalPrice or baseAmount so that the original payment intent 
+    // matches the captured amount. The extensionCharge will be paid at settlement.
+    booking.delayRequested = false; // Resolved
+    
+    await booking.save();
+
+    const customer = await this.userModel.findById(booking.customerId);
+    await this.sendCommunication(customer, 'Trip Extended', `Your trip for ${car?.name} has been extended to ${newEndDate} at ${newReturnTime}. Extra charges have been applied.`, 'success', { type: 'booking', bookingId: booking._id.toString(), userType: 'renter' });
+
+    return booking;
+  }
+
   async verifyReturnHost(bookingId: string, vendorId: string, mileage: number, conditionImage: string) {
     const booking = await this.bookingModel.findById(bookingId);
     if (!booking) throw new NotFoundException('Booking not found');
@@ -767,7 +840,24 @@ export class BookingsService {
     const includedDist = (car?.distanceIncluded || 200) * diffDays;
     const travelled = mileage - (booking.checkInMileage || booking.hostMileage || 0);
     const extraMiles = Math.max(0, travelled - includedDist);
-    const settlement = extraMiles * (car?.extraDistanceFee || 0.5);
+    let settlement = extraMiles * (car?.extraDistanceFee || 0.5);
+
+    // Overdue Calculation
+    const scheduledEnd = new Date(`${booking.endDate}T${booking.returnTime || '00:00'}:00`);
+    const actualEnd = new Date();
+    const gracePeriodMs = 60 * 60 * 1000; // 1 hour
+
+    if (actualEnd.getTime() > scheduledEnd.getTime() + gracePeriodMs) {
+       const delayMs = actualEnd.getTime() - scheduledEnd.getTime();
+       const extraDays = Math.ceil(delayMs / (24 * 60 * 60 * 1000));
+       const overdueCharge = extraDays * (car?.pricePerDay || 0);
+       settlement += overdueCharge;
+    }
+
+    // Add unpaid extension charges if any
+    if (booking.extensionCharge) {
+       settlement += booking.extensionCharge;
+    }
 
     booking.returnMileage = mileage;
     booking.returnConditionImage = conditionImage;

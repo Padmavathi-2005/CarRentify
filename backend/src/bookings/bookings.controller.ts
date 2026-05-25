@@ -77,6 +77,19 @@ export class BookingsController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Post(':id/request-delay')
+  async requestDelay(@Param('id') id: string, @Body() body: any, @Request() req: any) {
+    return this.bookingsService.requestDelay(id, req.user.userId, body.reason);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/extend')
+  async extendTrip(@Param('id') id: string, @Body() body: any, @Request() req: any) {
+    return this.bookingsService.extendTrip(id, req.user.userId, body.endDate, body.returnTime);
+  }
+
+
+  @UseGuards(JwtAuthGuard)
   @Patch(':id/reject')
   async reject(@Param('id') id: string, @Request() req: any) {
     return this.bookingsService.reject(id, req.user.userId);
