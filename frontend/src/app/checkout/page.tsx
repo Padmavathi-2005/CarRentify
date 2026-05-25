@@ -445,7 +445,7 @@ function CheckoutContent() {
  setUserType('renter');
  setShowSuccess(true);
  setTimeout(() => {
- router.push(`/dashboard/bookings?success=true&bookingId=${bookingId}`);
+ router.push(`/dashboard/bookings/${bookingId}/agreement?promptSign=true`);
  }, 5000);
  } else {
  alert(data.message || "Failed to process booking.");

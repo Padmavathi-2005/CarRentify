@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Wallet, WalletDocument } from './schemas/wallet.schema';
@@ -155,10 +155,48 @@ export class WalletService {
     
     if (captureData.status === 'COMPLETED') {
       const amount = parseFloat(captureData.purchase_units[0].payments.captures[0].amount.value);
-      await this.addFunds(userId, amount, `PayPal Wallet Deposit: ${orderId}`, TransactionSource.USER, orderId);
+      // Check if already captured
+      const existingTx = await this.transactionModel.findOne({ referenceId: orderId });
+      if (existingTx) return { success: true, message: 'Already captured' };
+      
+      await this.addFunds(userId, amount, `PayPal Wallet Deposit`, TransactionSource.USER, orderId);
       return { success: true };
     } else {
       throw new Error('PayPal payment capture failed or is pending.');
+    }
+  }
+
+  async captureStripeSession(userId: string, sessionId: string) {
+    try {
+      const stripe = await this.getStripeInstance();
+      const session = await stripe.checkout.sessions.retrieve(sessionId);
+      
+      const fs = require('fs');
+      fs.appendFileSync('stripe_debug.log', `[${new Date().toISOString()}] Retrieved Session: ${session.id} | Status: ${session.status} | Payment_Status: ${session.payment_status} | Metadata: ${JSON.stringify(session.metadata)}\n`);
+
+      const isSuccess = session.payment_status === 'paid' || session.status === 'complete' || session.status === 'open';
+      const isWalletDeposit = session.metadata?.type === 'wallet_deposit';
+
+      if (isSuccess && isWalletDeposit) {
+        const existingTx = await this.transactionModel.findOne({ referenceId: sessionId });
+        if (existingTx) {
+          return { success: true, message: 'Already captured' };
+        }
+
+        const amount = parseFloat(session.metadata?.amount || '0');
+        if (isNaN(amount) || amount <= 0) {
+          throw new BadRequestException('Invalid amount in Stripe session metadata.');
+        }
+        
+        await this.addFunds(userId, amount, `Stripe Wallet Deposit`, TransactionSource.USER, sessionId);
+        return { success: true };
+      } else {
+        throw new BadRequestException(`Stripe payment not completed or invalid. Status: ${session.payment_status}, Type: ${session.metadata?.type}`);
+      }
+    } catch (err: any) {
+      const fs = require('fs');
+      fs.appendFileSync('stripe_debug.log', `[${new Date().toISOString()}] Error in captureStripeSession: ${err.message}\n`);
+      throw err;
     }
   }
 

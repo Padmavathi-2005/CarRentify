@@ -227,7 +227,6 @@ export default function EditCarPage() {
      setPriceTiers(car.priceTiers || []);
      setExtras(car.extras || []);
      setMinBookingDays(String(car.minBookingDays || "1"));
-     setBookingType(car.bookingType || "Instant");
      setBrandId(car.brand?._id || car.brand || car.brandId?._id || car.brandId || "");
      setModel(car.model || "");
      setVehicleType(car.vehicleType?._id || car.vehicleType || "");
@@ -1130,7 +1129,6 @@ export default function EditCarPage() {
               ))}
              </div>
 
-             <div className="pt-10 border-t border-slate-100 dark:border-white/10 space-y-8 mt-10">
              </>
             )}
            </div>

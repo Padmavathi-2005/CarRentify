@@ -89,24 +89,49 @@ export default function WalletPage() {
  };
 
  useEffect(() => {
- fetchData();
- 
- // Handle payment success from URL params
- const searchParams = new URLSearchParams(window.location.search);
- if (searchParams.get('success') === 'true') {
- const gateway = searchParams.get('gateway');
- const token = searchParams.get('token'); // PayPal Order ID
- const sessionId = searchParams.get('session_id'); // Stripe Session ID
- 
- if (gateway === 'paypal' && token) {
- handlePayPalCapture(token);
- } else if (sessionId) {
- // Stripe is usually handled by webhook, but we can verify here if needed
- alert("Funds added successfully via Stripe!");
- window.history.replaceState({}, '', '/dashboard/wallet');
- }
- }
+  fetchData();
+  
+  // Handle payment success from URL params
+  const searchParams = new URLSearchParams(window.location.search);
+  if (searchParams.get('success') === 'true') {
+    const gateway = searchParams.get('gateway');
+    const token = searchParams.get('token'); // PayPal Order ID
+    const sessionId = searchParams.get('session_id'); // Stripe Session ID
+    
+    if (gateway === 'paypal' && token) {
+      handlePayPalCapture(token);
+    } else if (sessionId) {
+      handleStripeCapture(sessionId);
+    }
+  }
  }, []);
+
+ const handleStripeCapture = async (sessionId: string) => {
+   setLoading(true);
+   try {
+     const token = localStorage.getItem("token");
+     const res = await fetch(`${API_BASE_URL}/wallet/capture-stripe/${sessionId}`, {
+       method: 'POST',
+       headers: { 
+         'Authorization': `Bearer ${token}`
+       }
+     });
+     
+     if (res.ok) {
+       alert("Funds added successfully via Stripe!");
+       await fetchData(); // Fetch fresh balance
+     } else {
+       const errorData = await res.json().catch(() => ({}));
+       console.error("Stripe capture failed:", errorData);
+       alert("Failed to confirm Stripe payment.");
+     }
+   } catch (err) {
+     console.error("Stripe capture error:", err);
+   } finally {
+     setLoading(false);
+     window.history.replaceState({}, '', '/dashboard/wallet');
+   }
+ };
 
  const handlePayPalCapture = async (orderId: string) => {
  setLoading(true);
@@ -115,8 +140,7 @@ export default function WalletPage() {
  const res = await fetch(`${API_BASE_URL}/wallet/capture-paypal/${orderId}`, {
  method: 'POST',
  headers: { 
- 'Authorization': `Bearer ${token}`,
- 'Content-Type': 'application/json'
+ 'Authorization': `Bearer ${token}`
  }
  });
  

@@ -81,7 +81,7 @@ export default function VehicleFullPreview({ carId, isModal = false }: VehicleFu
  .then(data => { if (Array.isArray(data)) setAllAmenities(data.map((a: any) => a.name)); })
  .catch(err => console.error("Amenities fetch error:", err));
 
- fetch(`${API_BASE_URL}/bookings/availability/${carId}`)
+ fetch(`${API_BASE_URL}/bookings/availability/${carId}?t=${Date.now()}`)
  .then(res => res.json())
  .then(data => {
  if (Array.isArray(data)) {
@@ -249,7 +249,7 @@ export default function VehicleFullPreview({ carId, isModal = false }: VehicleFu
  })()}
 
  <Button className="w-full h-16 bg-primary hover:bg-primary-hover text-white rounded-app font-black text-xs uppercase tracking-widest transition-all scale-100 hover:scale-[1.02]">
- Proceed to Reserve
+ {car.bookingType === 'Instant' ? 'Instant Booking' : 'Request Booking'}
  </Button>
  </div>
  </div>

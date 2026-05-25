@@ -269,7 +269,7 @@ const Header = ({
 
  return (
  <>
- <nav className="fixed top-0 inset-x-0 z-50 bg-white border-b border-border/50 font-sans transition-colors duration-300">
+ <nav className="fixed top-0 inset-x-0 z-[100] bg-white border-b border-border/50 font-sans transition-colors duration-300">
  <div className="max-w-7xl mx-auto px-4 lg:px-6 h-16 lg:h-20 flex items-center justify-between">
  <div className="flex items-center gap-4 lg:gap-12">
  <Link href="/" className="inline-block">

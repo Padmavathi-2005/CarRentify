@@ -50,7 +50,28 @@ export class SettingsService implements OnModuleInit {
     protection: { plans: [] },
     taxes: { taxes: { items: [] } },
     cancellation: { rules: [], defaultRefundPercentage: 0, isCancellationEnabled: true },
-    verification: { fields: [] },
+    verification: { 
+      fields: [
+        { id: 'driving_license_front', name: 'Driver License (Front)', type: 'image', required: true, description: 'Upload the front of your driver license' },
+        { id: 'driving_license_back', name: 'Driver License (Back)', type: 'image', required: true, description: 'Upload the back of your driver license' },
+        { id: 'driverLicense', name: 'Driver License Number', type: 'text', required: true, description: 'Enter your driver license number' },
+        { id: 'licenseExpiryDate', name: 'License Expiry Date', type: 'date', required: true, description: 'Enter the expiration date printed on your driver\'s license' }
+      ],
+      checkInFields: [
+        { id: 'photos', name: 'Car Condition Photos', type: 'images', required: true, description: 'Upload exterior and interior photos (Minimum 2)' },
+        { id: 'damagePhotos', name: 'Damage Photos', type: 'images', required: false, description: 'Upload photos of any existing damage (optional)' },
+        { id: 'mileage', name: 'Odometer Reading (KM)', type: 'number', required: true, description: 'Current mileage on the car' },
+        { id: 'fuelLevel', name: 'Fuel Level (%)', type: 'number', required: true, description: 'Fuel level from 0 to 100' },
+        { id: 'notes', name: 'General Notes', type: 'text', required: false, description: 'Any visible damages or issues?' }
+      ],
+      checkOutFields: [
+        { id: 'photos', name: 'Car Condition Photos', type: 'images', required: true, description: 'Upload exterior and interior photos (Minimum 2)' },
+        { id: 'damagePhotos', name: 'Damage Photos', type: 'images', required: false, description: 'Upload photos of any existing damage (optional)' },
+        { id: 'mileage', name: 'Odometer Reading (KM)', type: 'number', required: true, description: 'Current mileage on the car' },
+        { id: 'fuelLevel', name: 'Fuel Level (%)', type: 'number', required: true, description: 'Fuel level from 0 to 100' },
+        { id: 'notes', name: 'General Notes', type: 'text', required: false, description: 'Any visible damages or issues?' }
+      ]
+    },
     frontend: {
       heroTranslations: {
         en: { 

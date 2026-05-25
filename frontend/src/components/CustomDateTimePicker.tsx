@@ -939,17 +939,17 @@ export const PremiumRangePicker = ({
                         className={`h-8 w-8 lg:h-9 lg:w-9 rounded-app text-xs font-bold transition-all flex items-center justify-center relative
  ${selected ? 'bg-primary text-white z-10' : ''}
  ${inRange ? 'bg-primary/30 text-primary dark:text-white' :
+                                    isPast ? 'opacity-20 cursor-not-allowed text-muted-foreground' :
                               isFullyBooked ? 'bg-rose-500/10 text-rose-500 border border-rose-500/20 cursor-not-allowed opacity-40' :
                                  isPartiallyBooked ? 'bg-rose-500/5 text-rose-400 border border-dashed border-rose-500/20 cursor-pointer' :
-                                    isPast ? 'opacity-20 cursor-not-allowed text-muted-foreground' :
                                        'text-foreground/70 hover:bg-muted'}
  `}
                      >
                         {day}
-                        {isPartiallyBooked && !selected && !inRange && (
+                        {isPartiallyBooked && !isPast && !selected && !inRange && (
                            <div className="absolute inset-0 bg-rose-500/5 rounded-app border border-dashed border-rose-500/20 -z-10" />
                         )}
-                        {isPartiallyBooked && !selected && (
+                        {isPartiallyBooked && !isPast && !selected && (
                            <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-rose-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(251,113,133,0.6)]" />
                         )}
                         {selected && (

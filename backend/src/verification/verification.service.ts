@@ -130,6 +130,7 @@ export class VerificationService {
 
     const licenseFrontDoc = submission.documents.find((d: any) => d.fieldId === 'driving_license_front' || d.fieldId === 'licenseImage');
     const licenseBackDoc = submission.documents.find((d: any) => d.fieldId === 'driving_license_back');
+    const driverLicenseDoc = submission.documents.find((d: any) => d.fieldId === 'driverLicense');
     const licenseExpDoc = submission.documents.find((d: any) => d.fieldId === 'licenseExpiryDate');
 
     if (licenseFrontDoc?.value) {
@@ -137,6 +138,9 @@ export class VerificationService {
     }
     if (licenseBackDoc?.value) {
       updatePayload.licenseBackImage = licenseBackDoc.value;
+    }
+    if (driverLicenseDoc?.value) {
+      updatePayload.driverLicense = driverLicenseDoc.value;
     }
     if (licenseExpDoc?.value) {
       updatePayload.licenseExpiryDate = new Date(licenseExpDoc.value);

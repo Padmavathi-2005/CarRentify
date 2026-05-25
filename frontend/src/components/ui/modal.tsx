@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -29,7 +30,12 @@ export default function Modal({
   noPadding = false,
   noHeader = false
 }: ModalProps) {
-  // Lock body scroll when modal is open
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
@@ -41,10 +47,10 @@ export default function Modal({
     };
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
-  return (
-    <div className="fixed inset-0 z-[1000] flex items-start justify-center p-4 md:p-8 lg:p-12 overflow-y-auto bg-slate-900/60 animate-in fade-in duration-300 custom-scrollbar">
+  return createPortal(
+    <div className="fixed inset-0 z-[1000] flex items-start justify-center p-4 md:p-8 lg:p-12 overflow-y-auto bg-slate-900/60 animate-in fade-in duration-300 custom-scrollbar" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}>
       {/* Backdrop click area */}
       <div
         className="fixed inset-0 cursor-pointer"
@@ -53,7 +59,7 @@ export default function Modal({
 
       {/* Modal Container */}
       <div className={cn(
-        `relative bg-white w-[95vw] md:w-full ${maxWidth} rounded-app border border-slate-100 animate-in zoom-in-95 slide-in-from-bottom-4 duration-500 overflow-hidden`,
+        `relative my-auto bg-white w-[95vw] md:w-full ${maxWidth} rounded-app border border-slate-100 animate-in zoom-in-95 slide-in-from-bottom-4 duration-500 overflow-hidden shrink-0`,
         className
       )}>
         <div className={cn(
@@ -90,6 +96,7 @@ export default function Modal({
           {children}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

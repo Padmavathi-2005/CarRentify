@@ -1073,8 +1073,6 @@ export default function AdminNewCarPage() {
                         </div>
                       ))}
                     </div>
-
-                    </div>
                   </>
                 )}
               </div>

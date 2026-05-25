@@ -86,7 +86,7 @@ export default function StaticPageView() {
       <Header />
       
       {/* Simple Professional Header Hub */}
-      <section className="bg-white border-b border-slate-50 pt-40 pb-16">
+      <section className="bg-white border-b border-slate-50 pt-28 pb-8">
          <div className="max-w-4xl mx-auto px-6">
             <motion.h1 
                initial={{ opacity: 0, y: 10 }}
@@ -99,12 +99,12 @@ export default function StaticPageView() {
       </section>
 
       {/* Clean Content Stage */}
-      <main className="max-w-4xl mx-auto px-6 pb-32 pt-12">
+      <main className="max-w-4xl mx-auto px-6 pb-32 pt-8">
          <div className="bg-white p-8 md:p-12 rounded-app border border-slate-100 shadow-sm relative group">
             {/* Localized Article Content */}
             <article className="prose prose-slate max-w-none prose-headings:font-black prose-headings:tracking-tighter prose-p:font-medium prose-p:text-slate-600 prose-p:leading-[1.8] prose-p:text-lg">
                <div 
-                 className="whitespace-pre-wrap localized-body"
+                 className="localized-body"
                  dangerouslySetInnerHTML={{ __html: localizedContent.content }} 
                />
                
@@ -122,9 +122,9 @@ export default function StaticPageView() {
       <Footer />
 
       <style jsx global>{`
-         .localized-body h1 { font-size: 2.25rem; font-weight: 900; margin-bottom: 2rem; color: #0f172a; }
-         .localized-body h2 { font-size: 1.5rem; font-weight: 900; margin-top: 3rem; margin-bottom: 1.5rem; color: #0f172a; }
-         .localized-body p { margin-bottom: 1.5rem; }
+         .localized-body h1 { font-size: 2.25rem; font-weight: 900; margin-bottom: 1rem; color: #0f172a; }
+         .localized-body h2 { font-size: 1.5rem; font-weight: 900; margin-top: 2rem; margin-bottom: 0.5rem; color: #0f172a; }
+         .localized-body p { margin-top: 0; margin-bottom: 1rem; }
          .localized-body ul { margin-bottom: 2rem; list-style-type: none; padding: 0; }
          .localized-body li { padding: 1rem 0; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; gap: 0.75rem; font-weight: 600; color: #475569; }
          .localized-body li:before { content: "•"; color: #3f147b; font-weight: 900; font-size: 1.5rem; }

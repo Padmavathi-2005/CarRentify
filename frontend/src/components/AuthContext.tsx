@@ -26,6 +26,7 @@ interface User {
  slug?: string;
  createdAt?: string;
  walletBalance?: number;
+ signature?: string;
 }
 
 export type UserType = "host" | "renter";

@@ -83,6 +83,7 @@ const ColorPickerBox = ({ label, value, onChange }: { label: string, value: stri
  ))}
  </div>
 
+
  <div className="pt-4 border-t border-[var(--admin-border)]">
  <div className="flex items-center justify-between mb-4">
  <span className="text-[10px] font-bold text-[var(--admin-text-muted)] uppercase">Custom</span>
@@ -413,21 +414,39 @@ const VerificationFieldsManager = ({
  fields: any[];
  onChange: (val: any[]) => void;
 }) => {
- // Force add licenseExpiryDate if it doesn't exist to ensure it is in the list
- useEffect(() => {
-   if (fields.length > 0 && !fields.find((f: any) => f.id === 'licenseExpiryDate')) {
-     const newField = {
-       id: 'licenseExpiryDate',
-       name: 'License Expiry Date',
-       type: 'date',
-       required: true,
-       description: 'Enter the expiration date printed on your driver\'s license'
-     };
-     const updated = [...fields];
-     updated.splice(2, 0, newField);
-     onChange(updated);
-   }
- }, [fields, onChange]);
+  // Force add licenseExpiryDate and driverLicense if they don't exist to ensure they are in the list
+  useEffect(() => {
+    if (fields.length > 0) {
+      let updated = [...fields];
+      let changed = false;
+
+      if (!updated.find((f: any) => f.id === 'driverLicense')) {
+        updated.splice(2, 0, {
+          id: 'driverLicense',
+          name: 'Driver License Number',
+          type: 'text',
+          required: true,
+          description: 'Enter your driver license number'
+        });
+        changed = true;
+      }
+
+      if (!updated.find((f: any) => f.id === 'licenseExpiryDate')) {
+        updated.splice(3, 0, {
+          id: 'licenseExpiryDate',
+          name: 'License Expiry Date',
+          type: 'date',
+          required: true,
+          description: 'Enter the expiration date printed on your driver\'s license'
+        });
+        changed = true;
+      }
+
+      if (changed) {
+        onChange(updated);
+      }
+    }
+  }, [fields, onChange]);
 
  return (
  <div className="space-y-6">
@@ -529,6 +548,135 @@ const VerificationFieldsManager = ({
  <div className="py-20 border-2 border-dashed border-[var(--admin-border)] rounded-app flex flex-col items-center justify-center text-[var(--admin-text-muted)]">
  <ShieldCheck size={48} className="mb-4 opacity-10" />
  <p className="text-[10px] font-black uppercase tracking-widest">No verification fields defined</p>
+ </div>
+ )}
+ </div>
+ </div>
+ );
+};
+
+const HandoverFieldsManager = ({
+ fields,
+ onChange,
+}: {
+ fields: any[];
+ onChange: (val: any[]) => void;
+}) => {
+ return (
+ <div className="space-y-6">
+ <div className="flex items-center justify-between p-6 bg-[var(--admin-bg)] rounded-app border border-[var(--admin-border)]">
+ <div>
+ <h4 className="text-xs font-black uppercase tracking-[0.2em] text-[var(--admin-text-main)] mb-1">Check-In / Out Fields</h4>
+ <p className="text-[10px] text-[var(--admin-text-muted)] font-bold uppercase tracking-widest">Define what fields hosts and renters must complete during trip handover</p>
+ </div>
+ <Button 
+ onClick={() => {
+ const newId = `handover_${Date.now()}`;
+ const newField = { id: newId, name: 'New Field', type: 'text', required: true, description: '' };
+ onChange([...fields, newField]);
+ setTimeout(() => {
+   document.getElementById(`handover_card_${newId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+ }, 100);
+ }}
+ className="h-10 px-6 rounded-app bg-primary text-[10px] font-black uppercase tracking-widest text-white "
+ >
+ + Add Custom Field
+ </Button>
+ </div>
+
+ <div className="grid grid-cols-1 gap-4">
+ {fields.map((field, idx) => {
+ const isCore = ['photos', 'damagePhotos', 'mileage', 'fuelLevel'].includes(field.id);
+ return (
+ <div key={field.id} id={`handover_card_${field.id}`} className="bg-[var(--admin-card-bg)] p-6 rounded-app border border-[var(--admin-border)] space-y-4">
+ <div className="flex items-center justify-between">
+ <div className="flex items-center gap-3">
+ <div className="w-8 h-8 rounded-app bg-primary/10 flex items-center justify-center text-primary">
+ {field.type === 'images' ? <ImageIcon size={16} /> : <Edit2 size={16} />}
+ </div>
+ <Input 
+ value={field.name}
+ disabled={isCore}
+ onChange={(e) => {
+ const updated = [...fields];
+ updated[idx].name = e.target.value;
+ onChange(updated);
+ }}
+ className="h-8 bg-transparent border-none font-black text-sm p-0 focus-visible:ring-0 w-80 disabled:opacity-50"
+ placeholder="Field Name (e.g. Cleanliness)"
+ />
+ {isCore && <span className="text-[9px] font-bold uppercase tracking-widest text-blue-500 bg-blue-50 px-2 py-1 rounded">Core Field</span>}
+ </div>
+ {!isCore && (
+ <button 
+ onClick={() => {
+ const updated = fields.filter((_, i) => i !== idx);
+ onChange(updated);
+ }}
+ className="text-[var(--admin-text-muted)] hover:text-red-500 transition-colors"
+ >
+ <X size={18} />
+ </button>
+ )}
+ </div>
+
+ <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2 border-t border-[var(--admin-border)]">
+ <div className="space-y-2">
+ <label className="text-[9px] font-black uppercase tracking-widest text-[var(--admin-text-muted)]">Field Type</label>
+ <EliteSelect 
+ value={field.type}
+ disabled={isCore}
+ onChange={(val) => {
+ const updated = [...fields];
+ updated[idx].type = val;
+ onChange(updated);
+ }}
+ options={[
+ { value: 'images', label: 'Multiple Images Upload' },
+ { value: 'image', label: 'Single Image Upload' },
+ { value: 'document', label: 'Document Upload (PDF, File)' },
+ { value: 'text', label: 'Text Input' },
+ { value: 'number', label: 'Number Input' },
+ { value: 'boolean', label: 'Yes/No Toggle' }
+ ]}
+ variant="minimal"
+ />
+ </div>
+ <div className="space-y-2">
+ <label className="text-[9px] font-black uppercase tracking-widest text-[var(--admin-text-muted)]">Required</label>
+ <div className="h-8 flex items-center">
+ <Switch 
+ checked={field.required}
+ disabled={isCore}
+ onCheckedChange={(val) => {
+ const updated = [...fields];
+ updated[idx].required = val;
+ onChange(updated);
+ }}
+ />
+ </div>
+ </div>
+ <div className="space-y-2">
+ <label className="text-[9px] font-black uppercase tracking-widest text-[var(--admin-text-muted)]">Instruction/Help Text</label>
+ <Input 
+ value={field.description}
+ onChange={(e) => {
+ const updated = [...fields];
+ updated[idx].description = e.target.value;
+ onChange(updated);
+ }}
+ className="h-8 bg-[var(--admin-bg)] border-none text-[10px] font-bold rounded-app"
+ placeholder="Explain what to input..."
+ />
+ </div>
+ </div>
+ </div>
+ );
+ })}
+ {fields.length === 0 && (
+ <div className="py-20 border-2 border-dashed border-[var(--admin-border)] rounded-app flex flex-col items-center justify-center text-[var(--admin-text-muted)]">
+ <ShieldCheck size={48} className="mb-4 opacity-10" />
+ <p className="text-[10px] font-black uppercase tracking-widest">No handover fields defined</p>
  </div>
  )}
  </div>
@@ -2133,6 +2281,7 @@ export default function AdminSettingsView() {
  const [uploading, setUploading] = useState<string | null>(null);
  const [currentSection, setCurrentSection] = useState("hero");
  const [currentFooterSection, setCurrentFooterSection] = useState("social");
+ const [currentVerificationSection, setCurrentVerificationSection] = useState("identity");
  const token = authService.getAdminToken();
 
  useEffect(() => {
@@ -2411,6 +2560,19 @@ export default function AdminSettingsView() {
  {/* Global Control Bar */}
  <div className="min-h-14 border-b border-[var(--admin-border)] px-4 md:px-6 py-2 flex flex-wrap items-center justify-between bg-[var(--admin-bg)]/20 backdrop-blur-sm sticky top-0 z-30 gap-3 md:gap-4">
  <div className="flex-none">
+ {activeTab === 'verification' && (
+ <EliteSelect 
+ value={currentVerificationSection}
+ onChange={(val) => setCurrentVerificationSection(val)}
+ variant="primary"
+ className="w-full md:w-[250px]"
+ options={[
+ { value: 'identity', label: 'User Verification' },
+ { value: 'checkIn', label: 'Trip Check-In (Pickup)' },
+ { value: 'checkOut', label: 'Trip Check-Out (Return)' }
+ ]}
+ />
+ )}
  {activeTab === 'frontend' && (
  <EliteSelect 
  value={currentSection}
@@ -2708,24 +2870,6 @@ export default function AdminSettingsView() {
  </div>
  </div>
 
- <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-[var(--admin-border)]">
- <div className="space-y-2">
- <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--admin-text-muted)] px-1">{t.settings.general.supportEmail}</label>
- <Input
- value={formData.email || ""}
- onChange={(e) => handleFieldChange('email', e.target.value)}
- className="h-10 rounded-app bg-[var(--admin-bg)] border border-[var(--admin-border)] font-bold text-[var(--admin-text-main)] px-4 text-sm"
- />
- </div>
- <div className="space-y-2">
- <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--admin-text-muted)] px-1">{t.settings.general.supportPhone}</label>
- <Input
- value={formData.phone || ""}
- onChange={(e) => handleFieldChange('phone', e.target.value)}
- className="h-10 rounded-app bg-[var(--admin-bg)] border border-[var(--admin-border)] font-bold text-[var(--admin-text-main)] px-4 text-sm"
- />
- </div>
- </div>
  </TabsContent>
 
  <TabsContent value="smtp" className="mt-0 p-4 md:p-6 space-y-6 outline-none">
@@ -3853,7 +3997,7 @@ export default function AdminSettingsView() {
  <span className="text-xs font-bold uppercase tracking-widest text-[var(--admin-text-muted)]">No quick links added</span>
  </div>
  )}
- </div>
+</div>
  </motion.div>
  )}
 
@@ -3879,6 +4023,32 @@ export default function AdminSettingsView() {
  }}
  className="h-12 rounded-app bg-[var(--admin-bg)] border border-[var(--admin-border)] focus:border-primary transition-all font-bold text-[var(--admin-text-main)] px-6 text-sm"
  />
+ </div>
+ <div className="space-y-2 max-w-xl">
+ <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--admin-text-muted)] px-1">Headquarters Location</label>
+ <Input
+ value={formData.hqLoc || ""}
+ onChange={(e) => handleFieldChange('hqLoc', e.target.value)}
+ className="h-12 rounded-app bg-[var(--admin-bg)] border border-[var(--admin-border)] focus:border-primary transition-all font-bold text-[var(--admin-text-main)] px-6 text-sm"
+ />
+ </div>
+ <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-xl">
+ <div className="space-y-2">
+ <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--admin-text-muted)] px-1">Support Email</label>
+ <Input
+ value={formData.email || ""}
+ onChange={(e) => handleFieldChange('email', e.target.value)}
+ className="h-12 rounded-app bg-[var(--admin-bg)] border border-[var(--admin-border)] focus:border-primary transition-all font-bold text-[var(--admin-text-main)] px-6 text-sm"
+ />
+ </div>
+ <div className="space-y-2">
+ <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--admin-text-muted)] px-1">Support Phone</label>
+ <Input
+ value={formData.phone || ""}
+ onChange={(e) => handleFieldChange('phone', e.target.value)}
+ className="h-12 rounded-app bg-[var(--admin-bg)] border border-[var(--admin-border)] focus:border-primary transition-all font-bold text-[var(--admin-text-main)] px-6 text-sm"
+ />
+ </div>
  </div>
  </motion.div>
  )}
@@ -3936,10 +4106,31 @@ export default function AdminSettingsView() {
  />
  </TabsContent>
  <TabsContent value="verification" className="mt-0 p-4 md:p-6 outline-none pb-20">
+ {currentVerificationSection === 'identity' && (
  <VerificationFieldsManager 
- fields={(formData as any).verification?.fields || (formData as any).fields || []}
- onChange={(val) => handleFieldChange("verification", { fields: val })}
+ fields={((formData as any).verification?.fields?.length > 0) ? (formData as any).verification.fields : [
+    { id: 'driving_license_front', name: 'Driver License (Front)', type: 'image', required: true, description: 'Upload the front of your driver license' },
+    { id: 'driving_license_back', name: 'Driver License (Back)', type: 'image', required: true, description: 'Upload the back of your driver license' },
+    { id: 'driverLicense', name: 'Driver License Number', type: 'text', required: true, description: 'Enter your driver license number' },
+    { id: 'licenseExpiryDate', name: 'License Expiry Date', type: 'date', required: true, description: 'Enter the expiration date printed on your driver\'s license' },
+    { id: 'selfie', name: 'Selfie Photo', type: 'image', required: true, description: 'Upload a clear selfie photo of your face' },
+    { id: 'dob', name: 'Date of Birth', type: 'date', required: true, description: 'Enter your date of birth' }
+  ]}
+ onChange={(val) => handleFieldChange("verification", { ...((formData as any).verification || {}), fields: val })}
  />
+ )}
+ {currentVerificationSection === 'checkIn' && (
+ <HandoverFieldsManager 
+ fields={((formData as any).verification?.checkInFields?.length > 0) ? (formData as any).verification.checkInFields : [ { id: 'photos', name: 'Car Condition Photos', type: 'images', required: true, description: 'Upload exterior and interior photos (Minimum 2)' }, { id: 'damagePhotos', name: 'Damage Photos', type: 'images', required: false, description: 'Upload photos of any existing damage (optional)' }, { id: 'mileage', name: 'Odometer Reading (KM)', type: 'number', required: true, description: 'Current mileage on the car' }, { id: 'fuelLevel', name: 'Fuel Level (%)', type: 'number', required: true, description: 'Fuel level from 0 to 100' }, { id: 'notes', name: 'General Notes', type: 'text', required: false, description: 'Any visible damages or issues?' } ]}
+ onChange={(val) => handleFieldChange("verification", { ...((formData as any).verification || {}), checkInFields: val })}
+ />
+ )}
+ {currentVerificationSection === 'checkOut' && (
+ <HandoverFieldsManager 
+ fields={((formData as any).verification?.checkOutFields?.length > 0) ? (formData as any).verification.checkOutFields : [ { id: 'photos', name: 'Car Condition Photos', type: 'images', required: true, description: 'Upload exterior and interior photos (Minimum 2)' }, { id: 'damagePhotos', name: 'Damage Photos', type: 'images', required: false, description: 'Upload photos of any existing damage (optional)' }, { id: 'mileage', name: 'Odometer Reading (KM)', type: 'number', required: true, description: 'Current mileage on the car' }, { id: 'fuelLevel', name: 'Fuel Level (%)', type: 'number', required: true, description: 'Fuel level from 0 to 100' }, { id: 'notes', name: 'General Notes', type: 'text', required: false, description: 'Any visible damages or issues?' } ]}
+ onChange={(val) => handleFieldChange("verification", { ...((formData as any).verification || {}), checkOutFields: val })}
+ />
+ )}
  </TabsContent>
  <TabsContent value="payments" className="mt-0 p-4 md:p-6 outline-none">
  <PaymentSettingsManager backendUrl={backendUrl} />

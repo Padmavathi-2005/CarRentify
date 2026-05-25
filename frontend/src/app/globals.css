@@ -367,3 +367,20 @@ strong,
 b {
   font-weight: 600;
 }
+/* Leaflet Map Popup Overrides */
+.premium-popup .leaflet-popup-content-wrapper {
+  padding: 0 !important;
+  border-radius: var(--app-radius);
+  overflow: hidden;
+}
+.premium-popup .leaflet-popup-content {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: auto !important;
+}
+
+
+.premium-popup .leaflet-popup-close-button { display: none !important; }
+.leaflet-popup-content { width: 100% !important; margin: 0 !important; }
+.leaflet-popup-content-wrapper { padding: 0 !important; overflow: hidden !important; border-radius: 12px !important; }
+

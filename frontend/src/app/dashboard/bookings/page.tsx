@@ -27,6 +27,7 @@ import {
   Printer,
   Download,
   Upload,
+  UploadCloud,
   FileImage,
   Repeat,
   History,
@@ -46,6 +47,7 @@ import Modal from "@/components/ui/modal";
 import { useLocale } from "@/components/LocaleContext";
 import { cn } from "@/lib/utils";
 import TripLifecycleManager from "@/components/TripLifecycleManager";
+import SignaturePad from "@/components/SignaturePad";
 import PostBookingReviewModal from "@/components/VehicleDetail/PostBookingReviewModal";
 import { useSearchParams, useRouter } from "next/navigation";
 import { authService } from "@/services/authService";
@@ -138,11 +140,24 @@ function MyBookingsContent() {
   const [showInvoice, setShowInvoice] = useState(false);
   const [showSettlementInvoice, setShowSettlementInvoice] = useState(false);
   const [isEvidenceExpanded, setIsEvidenceExpanded] = useState(false);
+  
+  // Renter Signature State
+  const [signatureModal, setSignatureModal] = useState<{ isOpen: boolean; type: 'check-in' | 'check-out' | null; bookingId: string | null }>({ isOpen: false, type: null, bookingId: null });
+  const [renterSignature, setRenterSignature] = useState<string | null>(null);
+
   const [isCheckInAuditExpanded, setIsCheckInAuditExpanded] = useState(false);
   const [isCheckOutAuditExpanded, setIsCheckOutAuditExpanded] = useState(false);
   const [isReviewExpanded, setIsReviewExpanded] = useState(false);
   const [isDocumentAccepted, setIsDocumentAccepted] = useState(false);
   const [isSettlementDetailExpanded, setIsSettlementDetailExpanded] = useState(false);
+
+  // Claim State
+  const [showClaimModal, setShowClaimModal] = useState(false);
+  const [claimDescription, setClaimDescription] = useState("");
+  const [claimDate, setClaimDate] = useState("");
+  const [claimImage, setClaimImage] = useState("");
+  const [isSubmittingClaim, setIsSubmittingClaim] = useState(false);
+  const [isUploadingClaimPhoto, setIsUploadingClaimPhoto] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [existingReview, setExistingReview] = useState<any>(null);
   const [loadingReview, setLoadingReview] = useState(false);
@@ -158,7 +173,6 @@ function MyBookingsContent() {
         cacheBust: true, 
         pixelRatio: 2,
         backgroundColor: '#ffffff',
-        // Filter out any element that shouldn't be printed
         filter: (node) => {
           if (node.classList && node.classList.contains('print:hidden')) {
             return false;
@@ -167,7 +181,6 @@ function MyBookingsContent() {
         }
       });
       
-      // Dimensions will be based on element's offsetWidth/Height
       const width = element.offsetWidth;
       const height = element.offsetHeight;
 
@@ -185,12 +198,10 @@ function MyBookingsContent() {
       setIsPdfGenerating(false);
     }
   };
-  // Inline quick-review state: { [bookingId]: { rating, comment, submitted, submitting, review } }
   const [quickReviews, setQuickReviews] = useState<Record<string, any>>({});
   const [filterStatus, setFilterStatus] = useState("All");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
-  // Lifecycle state
   const [isLifecycleModalOpen, setIsLifecycleModalOpen] = useState(false);
   const [lifecycleType, setLifecycleType] = useState<'check-in' | 'check-out'>('check-in');
   const [lifecycleReadOnly, setLifecycleReadOnly] = useState(false);
@@ -212,7 +223,6 @@ function MyBookingsContent() {
     fetchCancellationSettings();
   }, [user?._id, user?.id, userType]);
 
-  // Sync selected booking when bookings list updates
   useEffect(() => {
     if (selectedBooking) {
       const updated = bookings.find(b => b._id === (selectedBooking as any)._id);
@@ -230,7 +240,6 @@ function MyBookingsContent() {
           openDetails(b);
         }
       } else if (carIdParam) {
-        // Find latest active or confirmed booking for this car
         const b = bookings.find(x => (x.carId?._id || x.carId) === carIdParam && (x.status === 'Active' || x.status === 'Confirmed' || x.status === 'Pending'));
         if (b) {
           openDetails(b);
@@ -264,7 +273,6 @@ function MyBookingsContent() {
         if (!res.ok) throw new Error("PayPal capture failed");
         alert(typeParam === 'settlement' ? t('bookings.messages.settle_success') : t('bookings.messages.booking_payment_success'));
       } else if (sessionIdParam && bookingIdParam) {
-        // Secure Stripe Finalization (Works for both settlement and regular bookings)
         const res = await fetch(`${API_BASE_URL}/payments/finalize-stripe/${sessionIdParam}`, {
           method: 'POST',
           headers: {
@@ -452,19 +460,29 @@ function MyBookingsContent() {
     finally { setIsSubmittingAction(false); }
   };
 
-  const handleAcceptConditionCustomer = async (id: string) => {
-    if (!window.confirm(t('bookings.messages.accept_trip_confirm'))) return;
+  const handleAcceptTripAction = async (id: string, type: 'check-in' | 'check-out') => {
+    if (!renterSignature) {
+      alert("Please provide your signature.");
+      return;
+    }
     setIsSubmittingAction(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/bookings/${id}/accept-condition`, {
+      const endpoint = type === 'check-in' ? 'accept-condition' : 'accept-return';
+      const res = await fetch(`${API_BASE_URL}/bookings/${id}/${endpoint}`, {
         method: 'PATCH',
-        headers: { 'Authorization': `Bearer ${authService.getToken()}` }
+        headers: { 
+          'Authorization': `Bearer ${authService.getToken()}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ signature: renterSignature })
       });
       if (res.ok) {
         const updated = await res.json();
-        alert(t('bookings.messages.trip_started'));
+        alert(t('bookings.messages.success'));
         fetchBookings();
         setSelectedBooking(updated);
+        setSignatureModal({ isOpen: false, type: null, bookingId: null });
+        setRenterSignature(null);
       }
     } catch (err) { console.error(err); }
     finally { setIsSubmittingAction(false); }
@@ -544,24 +562,6 @@ function MyBookingsContent() {
     finally { setIsSubmittingAction(false); }
   };
 
-  const handleAcceptReturnCustomer = async (id: string) => {
-    if (!window.confirm(t('bookings.messages.accept_settle_confirm'))) return;
-    setIsSubmittingAction(true);
-    try {
-      const res = await fetch(`${API_BASE_URL}/bookings/${id}/accept-return`, {
-        method: 'PATCH',
-        headers: { 'Authorization': `Bearer ${authService.getToken()}` }
-      });
-      if (res.ok) {
-        const updated = await res.json();
-        alert(t('bookings.messages.trip_concluded'));
-        fetchBookings();
-        setSelectedBooking(updated);
-      }
-    } catch (err) { console.error(err); }
-    finally { setIsSubmittingAction(false); }
-  };
-
   const handleRejectReturn = async (id: string) => {
     const reason = window.prompt(t('bookings.messages.reject_settle_prompt') || "Please provide the reason for disputing the settlement/condition:");
     if (!reason) return;
@@ -629,13 +629,11 @@ function MyBookingsContent() {
     setShowSettlementInvoice(false);
     setRefundPreview(null);
     setExistingReview(null);
-    // Fetch existing review if completed
     if (booking.status?.toLowerCase() === 'completed') {
       fetchExistingReview(booking._id);
     }
     setShowCancelPolicy(false);
     setIsDocumentAccepted(false);
-    // Set initial action states based on current phase
     const b = booking as any;
     if (booking.status === 'Confirmed') {
       setActionMileage(b.checkInMileage || b.hostMileage || 0);
@@ -672,6 +670,71 @@ function MyBookingsContent() {
     }
   };
 
+  const handleClaimImageUpload = async (file: File) => {
+    setIsUploadingClaimPhoto(true);
+    try {
+      const base64 = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result as string);
+      });
+
+      const res = await fetch(`${API_BASE_URL}/media/upload`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authService.getToken()}`
+        },
+        body: JSON.stringify({ fileName: file.name, base64 }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setClaimImage(data.url || data.path || "");
+      }
+    } catch (err) {
+      console.error("Upload error:", err);
+    } finally {
+      setIsUploadingClaimPhoto(false);
+    }
+  };
+
+  const handleSubmitClaim = async () => {
+    if (!claimDescription || !claimDate) {
+      alert("Please fill in all required fields (Date and Description)");
+      return;
+    }
+    
+    setIsSubmittingClaim(true);
+    try {
+      const token = authService.getToken();
+      const res = await fetch(`${API_BASE_URL}/bookings/${(selectedBooking as any)?._id}/claim`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          description: claimDescription,
+          dateOfIncident: claimDate,
+          photos: claimImage ? [claimImage] : []
+        })
+      });
+      if (res.ok) {
+        alert("Claim submitted successfully");
+        setShowClaimModal(false);
+        fetchBookings();
+      } else {
+        alert("Failed to submit claim");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error submitting claim");
+    } finally {
+      setIsSubmittingClaim(false);
+    }
+  };
+
   const filteredBookings = bookings.filter(b => {
     const matchesSearch = (b.carId?.name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
       b._id.toLowerCase().includes(searchQuery.toLowerCase());
@@ -685,7 +748,6 @@ function MyBookingsContent() {
     currentPage * ITEMS_PER_PAGE
   );
 
-  // Reset to page 1 when search changes
   const handleSearch = (val: string) => {
     setSearchQuery(val);
     setCurrentPage(1);
@@ -805,7 +867,6 @@ function MyBookingsContent() {
                 className="bg-white p-4 sm:p-6 rounded-app border border-slate-100 hover:border-primary/20 transition-all cursor-pointer group flex flex-col sm:flex-row items-start gap-4 sm:gap-8"
                 onClick={() => openDetails(booking)}
               >
-                {/* Image Node */}
                 <div className="w-full md:w-48 h-32 rounded-app overflow-hidden bg-slate-50 border border-slate-100 shrink-0 relative">
                   <img
                     src={getImageUrl(booking.carId?.image || (booking.carId?.images && booking.carId.images[0]))}
@@ -820,7 +881,6 @@ function MyBookingsContent() {
                   </div>
                 </div>
 
-                {/* Info Node */}
                 <div className="flex-1 space-y-4 w-full">
                   <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
                     <div>
@@ -872,7 +932,6 @@ function MyBookingsContent() {
             ))}
           </div>
 
-          {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex items-center justify-between pt-6">
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
@@ -944,7 +1003,6 @@ function MyBookingsContent() {
       >
         {selectedBooking && (
           <div className="p-0 flex flex-col overflow-hidden relative">
-            {/* Custom Integrated Header - STICKY */}
             <div className="sticky top-0 p-4 lg:p-6 border-b border-slate-50 flex items-center justify-between bg-white z-30 shadow-sm">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-app bg-primary/10 flex items-center justify-center text-primary">
@@ -965,9 +1023,7 @@ function MyBookingsContent() {
               </button>
             </div>
 
-            {/* Modal Inner Content Area */}
             <div className="flex flex-col md:flex-row items-stretch">
-              {/* Left: Visual Sidebar */}
               <div className="w-full md:w-[320px] bg-slate-50 p-6 lg:p-8 space-y-8 border-r border-slate-100 shrink-0">
                 <div className="aspect-square rounded-app overflow-hidden border border-slate-200 relative bg-white">
                   <img src={getImageUrl(selectedBooking.carId?.image || (selectedBooking.carId?.images && selectedBooking.carId.images[0]) || "")} className="w-full h-full object-contain p-2" onError={(e) => (e.target as HTMLImageElement).src = PLACEHOLDER_IMAGE} />
@@ -1003,7 +1059,7 @@ function MyBookingsContent() {
 
                 <div className="pt-6 border-t border-slate-200 space-y-3">
                   <button
-                    onClick={() => { setShowInvoice(!showInvoice); setShowSettlementInvoice(false); }}
+                    onClick={() => { setShowInvoice(!showInvoice); setShowSettlementInvoice(false); setShowClaimModal(false); }}
                     className={`w-full h-12 rounded-app border border-slate-200 text-slate-600 hover:bg-slate-100 font-black text-[9px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${showInvoice ? 'bg-slate-100' : 'bg-white'}`}
                   >
                     {showInvoice ? <ChevronLeft size={16} /> : <FileText size={16} />}
@@ -1012,20 +1068,27 @@ function MyBookingsContent() {
 
                   {((selectedBooking.settlementAmount || 0) > 0) && (
                     <button
-                      onClick={() => { setShowSettlementInvoice(!showSettlementInvoice); setShowInvoice(false); }}
+                      onClick={() => { setShowSettlementInvoice(!showSettlementInvoice); setShowInvoice(false); setShowClaimModal(false); }}
                       className={`w-full h-12 rounded-app border border-primary/20 text-primary hover:bg-primary/5 font-black text-[9px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${showSettlementInvoice ? 'bg-primary/10' : 'bg-white'}`}
                     >
                       {showSettlementInvoice ? <ChevronLeft size={16} /> : <Zap size={16} />}
                       {showSettlementInvoice ? "Back to Tracking" : "View Settlement"}
                     </button>
                   )}
+
+                  {((selectedBooking as any).protectionCost > 0 || (selectedBooking as any).protectionPlanId) && (
+                    <button
+                      onClick={() => { setShowClaimModal(!showClaimModal); setShowInvoice(false); setShowSettlementInvoice(false); }}
+                      className={`w-full h-12 rounded-app border border-rose-200 text-rose-500 hover:bg-rose-50 font-black text-[9px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${showClaimModal ? 'bg-rose-50' : 'bg-white'}`}
+                    >
+                      {showClaimModal ? <ChevronLeft size={16} /> : <ShieldCheck size={16} />}
+                      {showClaimModal ? "Back to Tracking" : "File a Claim"}
+                    </button>
+                  )}
                 </div>
               </div>
 
-              {/* Right: Detailed Content */}
               <div className="flex-1 p-6 lg:p-8 space-y-8">
-
-                {/* ── Review Prompt Banner (Completed + not yet reviewed) ── */}
                 {selectedBooking.status?.toLowerCase() === 'completed' && userType === 'renter' && !existingReview && !loadingReview && (
                   <motion.div
                     initial={{ opacity: 0, y: -8 }}
@@ -1045,14 +1108,97 @@ function MyBookingsContent() {
                   </motion.div>
                 )}
 
-                {showInvoice ? (
+                {showClaimModal ? (
+                  <motion.div
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="bg-white p-4 md:p-8 rounded-app border border-slate-100 space-y-6"
+                  >
+                    <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
+                      <div className="w-10 h-10 rounded-app bg-rose-50 flex items-center justify-center text-rose-500">
+                        <ShieldCheck size={20} />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-black text-slate-900 tracking-tight uppercase">File a Claim</h3>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Protection Plan Incident Report</p>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      {(selectedBooking as any)?.claimDetails ? (
+                        <div className="p-6 bg-slate-50 rounded-app border border-slate-100 space-y-4 text-center">
+                          <div className="w-16 h-16 bg-white border border-slate-200 rounded-full flex items-center justify-center text-primary mx-auto">
+                            <ShieldCheck size={28} />
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-black text-slate-900 uppercase">Claim Submitted</h4>
+                            <p className="text-xs font-bold text-slate-500">Your claim has been recorded and is currently being processed. Status: {(selectedBooking as any).claimDetails.status}</p>
+                          </div>
+                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pt-2 border-t border-slate-200">
+                            Incident Date: {new Date((selectedBooking as any).claimDetails.dateOfIncident).toLocaleDateString()}
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <div>
+                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Date of Incident</label>
+                            <input 
+                              type="date"
+                              value={claimDate}
+                              onChange={(e) => setClaimDate(e.target.value)}
+                              className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-app text-sm font-bold text-slate-900 focus:ring-4 focus:ring-primary/10 transition-all outline-none"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Incident Description</label>
+                            <textarea
+                              value={claimDescription}
+                              onChange={(e) => setClaimDescription(e.target.value)}
+                              rows={4}
+                              placeholder="Describe what happened in detail..."
+                              className="w-full p-4 bg-slate-50 border border-slate-100 rounded-app text-sm font-bold text-slate-900 focus:ring-4 focus:ring-primary/10 transition-all outline-none custom-scrollbar resize-none"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Photographic Evidence</label>
+                            {claimImage ? (
+                              <div className="relative w-full h-40 bg-slate-100 rounded-app overflow-hidden border border-slate-200">
+                                  <img src={getImageUrl(claimImage)} className="w-full h-full object-cover" />
+                                  <button onClick={() => setClaimImage("")} className="absolute top-2 right-2 w-8 h-8 bg-white/90 rounded-full flex items-center justify-center text-rose-500 hover:bg-rose-50 shadow-sm transition-all"><X size={14} /></button>
+                              </div>
+                            ) : (
+                              <div className="relative w-full h-32 bg-slate-50 border-2 border-dashed border-slate-200 rounded-app flex flex-col items-center justify-center hover:bg-slate-100 hover:border-primary/30 transition-all group">
+                                <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => { if (e.target.files?.[0]) handleClaimImageUpload(e.target.files[0]); }} />
+                                {isUploadingClaimPhoto ? (
+                                    <div className="w-6 h-6 border-2 border-primary/20 border-t-primary rounded-full animate-spin mb-2" />
+                                ) : (
+                                    <UploadCloud size={24} className="text-slate-400 group-hover:text-primary transition-colors mb-2" />
+                                )}
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{isUploadingClaimPhoto ? 'Uploading...' : 'Click to Upload Proof'}</p>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="pt-4 flex justify-end gap-3">
+                            <button onClick={() => setShowClaimModal(false)} className="h-10 px-6 bg-slate-100 text-slate-600 rounded-app text-[9px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all">Cancel</button>
+                            <button onClick={handleSubmitClaim} disabled={isSubmittingClaim} className="h-10 px-6 bg-primary text-white rounded-app text-[9px] font-black uppercase tracking-widest hover:bg-primary-hover transition-all disabled:opacity-50 flex items-center gap-2">
+                              {isSubmittingClaim ? <span className="w-3 h-3 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : <ShieldCheck size={14} />}
+                              Submit Claim
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </motion.div>
+                ) : showInvoice ? (
                   <motion.div
                     id="invoice-print-area"
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     className="bg-white p-4 md:p-12 rounded-app border border-slate-100 space-y-10 print:p-0 print:border-none"
                   >
-                    {/* Invoice Header */}
                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-6">
                       <div className="space-y-4">
                         <div className="flex items-center gap-2">
@@ -1062,7 +1208,7 @@ function MyBookingsContent() {
                         <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-loose">
                           Premium Fleet Management<br />
                           Global Logistics Division<br />
-                          support@carrental.sangvish.com
+                          support@carrental.com
                         </div>
                       </div>
                       <div className="text-left sm:text-right space-y-1">
@@ -1074,7 +1220,6 @@ function MyBookingsContent() {
 
                     <div className="h-px bg-slate-100" />
 
-                    {/* Parties */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-10">
                       <div className="space-y-3">
                         <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Billed To</h4>
@@ -1094,9 +1239,7 @@ function MyBookingsContent() {
                       </div>
                     </div>
 
-                    {/* Line Items - Responsive Grid */}
                     <div className="space-y-6">
-                      {/* Header - Visible only on Desktop */}
                       <div className="hidden md:grid md:grid-cols-12 border-b-2 border-slate-900 pb-4 gap-4">
                         <div className="md:col-span-6 text-[10px] font-black uppercase tracking-[0.2em]">Description</div>
                         <div className="md:col-span-2 text-[10px] font-black uppercase tracking-[0.2em] flex justify-end">Quantity</div>
@@ -1104,9 +1247,7 @@ function MyBookingsContent() {
                         <div className="md:col-span-2 text-[10px] font-black uppercase tracking-[0.2em] flex justify-end">Amount</div>
                       </div>
 
-                      {/* Rows */}
                       <div className="divide-y divide-slate-100">
-                        {/* Vehicle Rental Row */}
                         <div className="py-6 grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
                           <div className="md:col-span-6">
                             <p className="text-sm font-black text-slate-900 uppercase">Vehicle Rental</p>
@@ -1126,7 +1267,6 @@ function MyBookingsContent() {
                           </div>
                         </div>
 
-                        {/* Service Fee */}
                         {(selectedBooking as any).platformFee !== undefined && (
                           <div className="py-4 grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
                             <div className="md:col-span-6 text-sm text-slate-500">Service Fee</div>
@@ -1139,7 +1279,6 @@ function MyBookingsContent() {
                           </div>
                         )}
 
-                        {/* Protection Plan */}
                         {(selectedBooking as any).protectionCost !== undefined && (
                           <div className="py-4 grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
                             <div className="md:col-span-6 text-sm text-slate-500">Protection Plan</div>
@@ -1152,7 +1291,6 @@ function MyBookingsContent() {
                           </div>
                         )}
 
-                        {/* Settlement Overage */}
                         {(selectedBooking as any).settlementAmount !== undefined && (selectedBooking as any).settlementAmount > 0 && (
                           <div className="py-4 grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
                             <div className="md:col-span-6 text-sm text-slate-500 font-bold text-primary">Distance Settlement</div>
@@ -1168,7 +1306,6 @@ function MyBookingsContent() {
                     </div>
 
                     <div className="grid grid-cols-1 md:flex md:justify-between md:items-start pt-10 gap-10 md:gap-12 relative z-10">
-                      {/* Totals Section */}
                       <div className="w-full md:w-[320px] space-y-4 relative z-20">
                         <div className="flex justify-between items-center text-slate-400 px-2">
                           <span className="text-[10px] font-black uppercase tracking-widest">Subtotal</span>
@@ -1193,140 +1330,6 @@ function MyBookingsContent() {
                         </div>
                       </div>
 
-                      {/* Payment Info Section */}
-                      <div className="w-full md:max-w-[280px] space-y-6 relative z-10">
-                        <div className="p-5 bg-slate-50 rounded-app border border-slate-100">
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Payment Method</p>
-                          <p className="text-[11px] font-black text-slate-900 uppercase leading-relaxed">Wallet Liquidity /<br />Settlement Funds</p>
-                        </div>
-                        <p className="text-[9px] font-bold text-slate-300 leading-relaxed uppercase tracking-[0.15em]">
-                          This is a system generated document. All transactions are final and subject to CarRental's Terms of Logistics.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="h-px bg-slate-100" />
-
-                    {/* Parties */}
-                    <div className="grid grid-cols-2 gap-10">
-                      <div className="space-y-3">
-                        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Billed To</h4>
-                        <div className="space-y-1">
-                          <p className="text-sm font-black text-slate-900 uppercase">{selectedBooking.customerId?.firstName} {selectedBooking.customerId?.lastName}</p>
-                          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{selectedBooking.customerId?.email}</p>
-                          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{selectedBooking.customerId?.phoneNumber}</p>
-                        </div>
-                      </div>
-                      <div className="space-y-3">
-                        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Provider</h4>
-                        <div className="space-y-1">
-                          <p className="text-sm font-black text-slate-900 uppercase">{selectedBooking.vendorId?.firstName} {selectedBooking.vendorId?.lastName}</p>
-                          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{selectedBooking.carId?.name}</p>
-                          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{selectedBooking.carId?.location?.city}, {selectedBooking.carId?.location?.state}</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Line Items */}
-                    <div className="space-y-6">
-                      {/* Header - Visible only on Desktop */}
-                      <div className="hidden md:grid md:grid-cols-12 border-b-2 border-slate-900 pb-4 gap-4">
-                        <div className="md:col-span-6 text-[10px] font-black uppercase tracking-[0.2em]">Description</div>
-                        <div className="md:col-span-2 text-[10px] font-black uppercase tracking-[0.2em] text-right">Quantity</div>
-                        <div className="md:col-span-2 text-[10px] font-black uppercase tracking-[0.2em] text-right">Unit Price</div>
-                        <div className="md:col-span-2 text-[10px] font-black uppercase tracking-[0.2em] text-right">Amount</div>
-                      </div>
-
-                      {/* Rows */}
-                      <div className="divide-y divide-slate-100">
-                        {/* Vehicle Rental Row */}
-                        <div className="py-6 grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-                          <div className="md:col-span-6">
-                            <p className="text-sm font-black text-slate-900 uppercase">Vehicle Rental</p>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Journey: {selectedBooking.startDate} to {selectedBooking.endDate}</p>
-                          </div>
-                          <div className="md:col-span-2 flex justify-between md:justify-end items-center">
-                            <span className="md:hidden text-[9px] font-black text-slate-400 uppercase tracking-widest">Quantity</span>
-                            <span className="text-sm font-bold text-slate-600">1 Trip</span>
-                          </div>
-                          <div className="md:col-span-2 flex justify-between md:justify-end items-center">
-                            <span className="md:hidden text-[9px] font-black text-slate-400 uppercase tracking-widest">Unit Price</span>
-                            <span className="text-sm font-bold text-slate-600">{formatCurrency(((selectedBooking as any).baseAmount || (selectedBooking.totalPrice || 0) * 0.8 || 0), selectedBooking.carId?.currency)}</span>
-                          </div>
-                          <div className="md:col-span-2 flex justify-between md:justify-end items-center">
-                            <span className="md:hidden text-[9px] font-black text-slate-400 uppercase tracking-widest">Amount</span>
-                            <span className="text-sm font-black text-slate-900">{formatCurrency(((selectedBooking as any).baseAmount || (selectedBooking.totalPrice || 0) * 0.8 || 0), selectedBooking.carId?.currency)}</span>
-                          </div>
-                        </div>
-
-                        {/* Service Fee */}
-                        {(selectedBooking as any).platformFee !== undefined && (
-                          <div className="py-4 grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-                            <div className="md:col-span-6 text-sm text-slate-500">Service Fee</div>
-                            <div className="md:col-span-2 text-right hidden md:block text-sm text-slate-400">---</div>
-                            <div className="md:col-span-2 text-right hidden md:block text-sm text-slate-400">---</div>
-                            <div className="md:col-span-2 flex justify-between md:justify-end items-center">
-                              <span className="md:hidden text-[9px] font-black text-slate-400 uppercase tracking-widest">Amount</span>
-                              <span className="text-sm font-bold text-slate-900">{formatCurrency(((selectedBooking as any).platformFee || 0), selectedBooking.carId?.currency)}</span>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Protection Plan */}
-                        {(selectedBooking as any).protectionCost !== undefined && (
-                          <div className="py-4 grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-                            <div className="md:col-span-6 text-sm text-slate-500">Protection Plan</div>
-                            <div className="md:col-span-2 text-right hidden md:block text-sm text-slate-400">---</div>
-                            <div className="md:col-span-2 text-right hidden md:block text-sm text-slate-400">---</div>
-                            <div className="md:col-span-2 flex justify-between md:justify-end items-center">
-                              <span className="md:hidden text-[9px] font-black text-slate-400 uppercase tracking-widest">Amount</span>
-                              <span className="text-sm font-bold text-slate-900">{formatCurrency(((selectedBooking as any).protectionCost || 0), selectedBooking.carId?.currency)}</span>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Settlement Overage */}
-                        {(selectedBooking as any).settlementAmount !== undefined && (selectedBooking as any).settlementAmount > 0 && (
-                          <div className="py-4 grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-                            <div className="md:col-span-6 text-sm text-slate-500 font-bold text-primary">Distance Settlement</div>
-                            <div className="md:col-span-2 text-right hidden md:block text-sm text-slate-400">---</div>
-                            <div className="md:col-span-2 text-right hidden md:block text-sm text-slate-400">---</div>
-                            <div className="md:col-span-2 flex justify-between md:justify-end items-center">
-                              <span className="md:hidden text-[9px] font-black text-slate-400 uppercase tracking-widest">Amount</span>
-                              <span className="text-sm font-black text-primary">{formatCurrency(((selectedBooking as any).settlementAmount || 0), selectedBooking.carId?.currency)}</span>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:flex md:justify-between md:items-start pt-10 gap-10 md:gap-12 relative z-10">
-                      {/* Totals Section */}
-                      <div className="w-full md:w-[320px] space-y-4 relative z-20">
-                        <div className="flex justify-between items-center text-slate-400 px-2">
-                          <span className="text-[10px] font-black uppercase tracking-widest">Subtotal</span>
-                          <span className="text-sm font-bold">{formatCurrency(((selectedBooking as any).baseAmount || (selectedBooking.totalPrice || 0) * 0.8 || 0), selectedBooking.carId?.currency)}</span>
-                        </div>
-                        <div className="flex justify-between items-center text-slate-400 px-2">
-                          <span className="text-[10px] font-black uppercase tracking-widest">Taxes & Logistics</span>
-                          <span className="text-sm font-bold">{formatCurrency(((selectedBooking as any).taxesTotal || 0), selectedBooking.carId?.currency)}</span>
-                        </div>
-                        {(selectedBooking as any).securityDeposit !== undefined && (
-                          <div className="flex justify-between items-center text-slate-500 pt-2 px-2">
-                            <span className="text-[10px] font-black uppercase tracking-widest">Security Deposit</span>
-                            <span className="text-sm font-black">{formatCurrency(((selectedBooking as any).securityDeposit || 0), selectedBooking.carId?.currency)}</span>
-                          </div>
-                        )}
-                        <div className="h-px bg-slate-900 my-4" />
-                        <div className="bg-slate-900 p-6 rounded-app text-white shadow-xl shadow-slate-900/10">
-                          <div className="flex justify-between items-center">
-                            <span className="text-[10px] font-black uppercase tracking-[0.2em]">Total Amount</span>
-                            <span className="text-xl font-black">{formatCurrency(((selectedBooking.totalPrice || 0) + ((selectedBooking as any).settlementAmount || 0)), selectedBooking.carId?.currency)}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Payment Info Section */}
                       <div className="w-full md:max-w-[280px] space-y-6 relative z-10">
                         <div className="p-5 bg-slate-50 rounded-app border border-slate-100">
                           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Payment Method</p>
@@ -1368,7 +1371,6 @@ function MyBookingsContent() {
                     animate={{ opacity: 1, x: 0 }}
                     className="bg-white p-4 md:p-12 rounded-app border border-slate-100 space-y-10 print:p-0 print:border-none"
                   >
-                    {/* Settlement Invoice Header */}
                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-6">
                       <div className="space-y-4">
                         <div className="flex items-center gap-2">
@@ -1396,9 +1398,7 @@ function MyBookingsContent() {
                       </div>
                     </div>
 
-                    {/* Settlement Items - Responsive Grid */}
                     <div className="space-y-6">
-                      {/* Header - Visible only on Desktop */}
                       <div className="hidden md:grid md:grid-cols-12 border-b-2 border-slate-900 pb-4 gap-4">
                         <div className="md:col-span-6 text-[10px] font-black uppercase tracking-[0.2em]">Item Description</div>
                         <div className="md:col-span-2 text-[10px] font-black uppercase tracking-[0.2em] flex justify-end">Metric</div>
@@ -1444,7 +1444,6 @@ function MyBookingsContent() {
                     </div>
 
                     <div className="grid grid-cols-1 md:flex md:justify-between md:items-start pt-10 gap-10 md:gap-12 relative z-10">
-                      {/* Totals Section */}
                       <div className="w-full md:w-[320px] space-y-4 relative z-20">
                         <div className="flex justify-between items-center text-slate-400 px-2">
                           <span className="text-[10px] font-black uppercase tracking-widest">Overage Fee</span>
@@ -1459,7 +1458,6 @@ function MyBookingsContent() {
                         </div>
                       </div>
 
-                      {/* Audit Section */}
                       <div className="w-full md:max-w-[280px] space-y-4 relative z-10">
                         <div className="p-5 bg-slate-50 rounded-app border border-slate-100">
                           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Audit Reference</p>
@@ -1478,7 +1476,7 @@ function MyBookingsContent() {
                       </button>
                       {userType !== 'host' && !selectedBooking.isSettled && (
                         <Button
-                          onClick={() => handleAcceptReturnCustomer(selectedBooking._id)}
+                          onClick={() => setSignatureModal({ isOpen: true, type: 'check-out', bookingId: selectedBooking._id })}
                           disabled={isSubmittingAction}
                           className="h-14 px-10 bg-primary hover:bg-primary-hover text-white rounded-app text-[11px] font-black uppercase tracking-widest border-none flex items-center gap-2 transition-all"
                         >
@@ -1502,7 +1500,6 @@ function MyBookingsContent() {
                   </motion.div>
                 ) : (
                   <div className="space-y-10">
-                    {/* User Info Block */}
                     <div className="flex items-center justify-between bg-slate-50 p-6 rounded-app border border-slate-100">
                       <div className="flex items-center gap-4">
                         <div className="w-12 h-12 rounded-app bg-primary/20 flex items-center justify-center text-primary font-black text-xs">
@@ -1542,7 +1539,6 @@ function MyBookingsContent() {
                       </div>
                     </div>
 
-                    {/* Vehicle Section */}
                     <div className="space-y-4">
                       <div className="flex items-center gap-2">
                         <div className="w-1.5 h-4 bg-primary rounded-full" />
@@ -1635,7 +1631,6 @@ function MyBookingsContent() {
                       <div className="relative">
                         <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-slate-100" />
                         <div className="space-y-8">
-                          {/* Step 1: Booking Created */}
                           <div className="relative flex items-start gap-6">
                             <div className="w-8 h-8 rounded-full bg-emerald-500 border-4 border-white flex items-center justify-center text-white relative z-10 shrink-0 mt-0.5">
                               <CheckCircle2 size={12} />
@@ -1646,7 +1641,6 @@ function MyBookingsContent() {
                             </div>
                           </div>
 
-                          {/* Step 2: Handover Process (Pickup Stage) */}
                           <div className="relative flex items-start gap-6">
                             <div className={`w-8 h-8 rounded-full border-4 border-white flex items-center justify-center text-white relative z-10 shrink-0 mt-0.5 ${selectedBooking.status === 'Active' || selectedBooking.status === 'Completed' ? 'bg-emerald-500' : (selectedBooking.status === 'Confirmed' ? 'bg-primary' : 'bg-slate-200')}`}>
                               <Car size={12} />
@@ -1659,7 +1653,6 @@ function MyBookingsContent() {
                                 </p>
                               </div>
 
-                              {/* Pre-Trip Handover Audit Card embedded right here */}
                               {((selectedBooking.checkInPhotos && selectedBooking.checkInPhotos.length > 0) || selectedBooking.hostConditionImage) && (
                                 <div className="bg-white rounded-app border border-slate-100 shadow-sm overflow-hidden">
                                   <div
@@ -1741,7 +1734,6 @@ function MyBookingsContent() {
                             </div>
                           </div>
 
-                          {/* Step 3: Return & Settlement (Return Stage) */}
                           <div className="relative flex items-start gap-6">
                             <div className={`w-8 h-8 rounded-full border-4 border-white flex items-center justify-center text-white relative z-10 shrink-0 mt-0.5 ${selectedBooking.status === 'Completed' ? 'bg-emerald-500' : (selectedBooking.status === 'Active' ? 'bg-amber-500' : 'bg-slate-200')}`}>
                               <History size={12} />
@@ -1754,7 +1746,6 @@ function MyBookingsContent() {
                                 </p>
                               </div>
 
-                              {/* Post-Trip Return Audit Card embedded right here */}
                               {((selectedBooking.checkOutPhotos && selectedBooking.checkOutPhotos.length > 0) || selectedBooking.returnConditionImage) && (
                                 <div className="bg-white rounded-app border border-slate-100 shadow-sm overflow-hidden">
                                   <div
@@ -1839,7 +1830,6 @@ function MyBookingsContent() {
                       </div>
                     </div>
 
-                    {/* Operational Phase Actions */}
                     <div className="pt-4 border-t border-slate-100">
                       {(() => {
                         const status = selectedBooking.status;
@@ -1863,7 +1853,6 @@ function MyBookingsContent() {
                                     <Button onClick={() => setShowReviewModal(true)} className="flex-1 h-12 bg-primary hover:bg-primary-hover text-white rounded-app text-[9px] font-black uppercase tracking-widest border-none">Rate Experience</Button>
                                   )}
                                 </div>
-                                {/* Existing Review Display */}
                                 {existingReview && (
                                   <div className="mt-4 p-4 rounded-app bg-emerald-50 border border-emerald-100 space-y-2 cursor-pointer hover:bg-emerald-100/50 transition-colors" onClick={() => setIsReviewExpanded(!isReviewExpanded)}>
                                     <div className="flex justify-between items-start">
@@ -2052,7 +2041,6 @@ function MyBookingsContent() {
                           );
                         }
 
-                        // NEW TRIP LIFECYCLE ACTIONS
                         if (status === 'Confirmed') {
                           if (isHost && (!b.hostConditionImage && (!b.checkInPhotos || b.checkInPhotos.length === 0))) {
                             return (
@@ -2100,7 +2088,6 @@ function MyBookingsContent() {
                                     <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">First Viewable Preview</span>
                                   </div>
 
-                                  {/* Odometer & Fuel Telemetry */}
                                   <div className="grid grid-cols-2 gap-3">
                                     <div className="p-3 bg-slate-50 rounded-app border border-slate-100 flex items-center justify-between">
                                       <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Odometer</span>
@@ -2112,7 +2099,6 @@ function MyBookingsContent() {
                                     </div>
                                   </div>
 
-                                  {/* Notes / Observations */}
                                   {b.checkInNotes && (
                                     <div className="p-3 bg-amber-50/30 rounded-app border border-amber-100/50 space-y-1">
                                       <span className="text-[8px] font-black text-amber-600 uppercase tracking-widest flex items-center gap-1">
@@ -2122,7 +2108,6 @@ function MyBookingsContent() {
                                     </div>
                                   )}
 
-                                  {/* Uploaded Photos Grid */}
                                   <div className="space-y-2">
                                     <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Uploaded Verification Evidence ({photosList.length})</span>
                                     <div className="grid grid-cols-3 gap-2">
@@ -2178,7 +2163,6 @@ function MyBookingsContent() {
                                     </p>
 
                                     <div className="bg-white p-4 rounded-app border border-emerald-100 space-y-4">
-                                      {/* Odometer & Fuel Telemetry */}
                                       <div className="grid grid-cols-2 gap-3">
                                         <div className="p-3 bg-slate-50 rounded-app border border-slate-100 flex items-center justify-between">
                                           <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Odometer</span>
@@ -2190,7 +2174,6 @@ function MyBookingsContent() {
                                         </div>
                                       </div>
 
-                                      {/* Notes / Observations */}
                                       {b.checkInNotes && (
                                         <div className="p-3 bg-emerald-50/50 rounded-app border border-emerald-100 space-y-1">
                                           <span className="text-[8px] font-black text-emerald-600 uppercase tracking-widest flex items-center gap-1">
@@ -2200,7 +2183,6 @@ function MyBookingsContent() {
                                         </div>
                                       )}
 
-                                      {/* Uploaded Photos Grid */}
                                       <div className="space-y-2">
                                         <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Uploaded Verification Evidence ({photosList.length})</span>
                                         <div className="grid grid-cols-3 gap-2">
@@ -2248,7 +2230,7 @@ function MyBookingsContent() {
                                   <div className="flex gap-3">
                                     <Button
                                       disabled={isSubmittingAction || !isDocumentAccepted}
-                                      onClick={() => handleAcceptConditionCustomer(b._id)}
+                                      onClick={() => setSignatureModal({ isOpen: true, type: 'check-in', bookingId: b._id })}
                                       className="flex-1 h-12 bg-emerald-500 hover:bg-emerald-600 text-white rounded-app text-[10px] font-black uppercase tracking-widest border-none disabled:opacity-50 disabled:grayscale transition-all"
                                     >
                                       {isSubmittingAction ? "PROCESSING..." : "Authorize & Start Journey"}
@@ -2544,7 +2526,7 @@ function MyBookingsContent() {
                                           if (b.settlementAmount > 0 && !b.isSettled) {
                                             window.location.href = `/checkout/extra-charges?id=${b._id}`;
                                           } else {
-                                            handleAcceptReturnCustomer(b._id);
+                                            setSignatureModal({ isOpen: true, type: 'check-out', bookingId: b._id });
                                           }
                                         }}
                                         className="w-full h-14 bg-amber-500 hover:bg-primary-hover text-white rounded-app text-[11px] font-black uppercase tracking-widest border-none transition-all flex items-center justify-center gap-2"
@@ -2701,6 +2683,25 @@ function MyBookingsContent() {
           }}
           onCancel={() => setIsLifecycleModalOpen(false)}
         />
+      </Modal>
+
+      {/* Renter Signature Modal */}
+      <Modal isOpen={signatureModal.isOpen} onClose={() => setSignatureModal({ isOpen: false, type: null, bookingId: null })} title="Sign to Authorize" maxWidth="max-w-md">
+        <div className="p-6 space-y-6">
+          <SignaturePad 
+            initialSignature={user?.signature} 
+            onSave={(sig) => setRenterSignature(sig)} 
+            title={signatureModal.type === 'check-in' ? "Handover Authorization" : "Return Authorization"}
+            subtitle="Your signature confirms you agree to the conditions"
+          />
+          <Button 
+            disabled={!renterSignature || isSubmittingAction}
+            onClick={() => handleAcceptTripAction(signatureModal.bookingId!, signatureModal.type!)}
+            className="w-full h-12 bg-primary hover:bg-primary-hover text-white rounded-app text-[11px] font-black uppercase tracking-widest disabled:opacity-50 transition-all"
+          >
+            {isSubmittingAction ? "Processing..." : "Confirm & Sign"}
+          </Button>
+        </div>
       </Modal>
 
     </div>

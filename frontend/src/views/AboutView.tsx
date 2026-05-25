@@ -9,11 +9,16 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLocale } from "@/components/LocaleContext";
+import { useToast } from "@/components/Toast";
+import { useSettings } from "@/components/ThemeProvider";
+import Link from "next/link";
 
 import { ABOUT_VALUES, ABOUT_STATS } from "@/data/mockData";
 
 export default function AboutPage() {
  const { t } = useLocale();
+ const { showToast } = useToast();
+ const { settings } = useSettings();
  return (
  <div className="min-h-screen bg-background font-sans selection:bg-primary selection:text-white">
  <Header />
@@ -33,9 +38,11 @@ export default function AboutPage() {
  <h1 className="text-6xl font-extrabold tracking-tight text-foreground mb-10 leading-tight" dangerouslySetInnerHTML={{ __html: t('about.title').replace(', ', ', <br />') }}></h1>
  <p className="text-muted-foreground text-xl leading-relaxed mb-10 font-medium">{t('about.subtitle')}</p>
  <div className="flex items-center gap-6">
+ <Link href="/register">
  <Button className="h-14 px-10 rounded-app bg-primary text-white hover:bg-primary-hover font-bold ">
  {t('about.join')}
  </Button>
+ </Link>
  <div className="flex -space-x-3">
  {[1,2,3,4].map(i => (
  <div key={i} className="w-12 h-12 rounded-full border-4 border-background bg-muted overflow-hidden">
@@ -144,9 +151,19 @@ export default function AboutPage() {
  </div>
  </div>
  
+ <a 
+  href={`https://mail.google.com/mail/?view=cm&fs=1&to=${settings.email || "support@carrental.com"}`}
+  target="_blank"
+  rel="noopener noreferrer"
+  onClick={() => {
+    navigator.clipboard.writeText(settings.email || "support@carrental.com");
+    showToast("Email copied to clipboard! Opening Gmail...", "success");
+  }}
+ >
  <Button className="h-20 px-16 rounded-app bg-primary text-white hover:bg-primary-hover font-bold text-2xl ">
  {t('about.talk_concierge')}
  </Button>
+ </a>
  </div>
  </div>
  </section>

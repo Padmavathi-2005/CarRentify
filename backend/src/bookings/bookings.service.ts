@@ -699,12 +699,13 @@ export class BookingsService {
     return this.bookingModel.findById(booking._id).populate('carId');
   }
 
-  async acceptConditionCustomer(bookingId: string, customerId: string) {
+  async acceptConditionCustomer(bookingId: string, customerId: string, signature?: string) {
     const booking = await this.bookingModel.findById(bookingId);
     if (!booking) throw new NotFoundException('Booking not found');
     if (booking.customerId.toString() !== customerId) throw new BadRequestException('Unauthorized');
     if (!booking.hostMileage && (!booking.checkInPhotos || booking.checkInPhotos.length === 0)) throw new BadRequestException('Host has not submitted condition yet');
 
+    booking.checkInRenterSignature = signature;
     booking.customerAcceptedCondition = true;
     booking.tripStatus = 'checked_in';
     booking.status = BookingStatus.ACTIVE; // Set to Active
@@ -781,12 +782,15 @@ export class BookingsService {
     return this.bookingModel.findById(booking._id).populate('carId');
   }
 
-  async acceptReturnCustomer(bookingId: string, customerId: string) {
+  async acceptReturnCustomer(bookingId: string, customerId: string, signature?: string) {
     const booking = await this.bookingModel.findById(bookingId);
     if (!booking) throw new NotFoundException('Booking not found');
     if (booking.customerId.toString() !== customerId) throw new BadRequestException('Unauthorized');
     if (!booking.returnMileage && (!booking.checkOutPhotos || booking.checkOutPhotos.length === 0)) throw new BadRequestException('Host has not submitted return condition yet');
 
+    booking.checkOutRenterSignature = signature;
+    booking.customerAcceptedReturn = true;
+    
     // Handle settlement payment (e.g. deduct from wallet or security deposit)
     if (booking.settlementAmount && booking.settlementAmount > 0) {
         const customer = await this.userModel.findById(customerId);
@@ -934,6 +938,7 @@ export class BookingsService {
     booking.checkInMileage = data.mileage;
     booking.checkInFuelLevel = data.fuelLevel;
     booking.checkInNotes = data.notes;
+    booking.checkInHostSignature = data.signature;
     booking.hostMileage = data.mileage;
     booking.hostConditionImage = data.photos?.[0] || '';
     booking.tripStatus = 'host_submitted_check_in';
@@ -952,6 +957,58 @@ export class BookingsService {
     );
 
     return booking;
+  }
+
+  async acceptAgreement(bookingId: string, userId: string, ip: string, userAgent: string, signatureBase64: string) {
+    const booking = await this.bookingModel.findById(bookingId);
+    if (!booking) throw new NotFoundException('Booking not found');
+    
+    if (booking.customerId.toString() === userId) {
+      booking.renterAgreementSignature = {
+        acceptedAt: new Date(),
+        ipAddress: ip,
+        userAgent: userAgent,
+        signatureBase64: signatureBase64
+      };
+    } else if (booking.vendorId.toString() === userId) {
+      booking.hostAgreementSignature = {
+        acceptedAt: new Date(),
+        ipAddress: ip,
+        userAgent: userAgent,
+        signatureBase64: signatureBase64
+      };
+    } else {
+      throw new BadRequestException('Unauthorized');
+    }
+    
+    await booking.save();
+    return booking;
+  }
+
+  async generateAgreementPdf(bookingId: string) {
+    const booking = await this.bookingModel.findById(bookingId);
+    if (!booking) throw new NotFoundException('Booking not found');
+    
+    // Stub implementation to satisfy TS. In a real scenario, you'd use pdfkit or puppeteer
+    const fs = require('fs');
+    const path = require('path');
+    const PDFDocument = require('pdfkit');
+    
+    return new Promise((resolve, reject) => {
+      const doc = new PDFDocument();
+      const buffers: any[] = [];
+      doc.on('data', buffers.push.bind(buffers));
+      doc.on('end', () => {
+        const pdfData = Buffer.concat(buffers);
+        resolve(pdfData);
+      });
+      
+      doc.fontSize(20).text('Rental Agreement', { align: 'center' });
+      doc.moveDown();
+      doc.fontSize(12).text(`Booking ID: ${booking._id}`);
+      doc.text(`Booking Hash: ${booking.bookingHash}`);
+      doc.end();
+    });
   }
 
   async checkOut(bookingId: string, userId: string, data: any) {
@@ -978,6 +1035,7 @@ export class BookingsService {
     booking.checkOutMileage = data.mileage;
     booking.checkOutFuelLevel = data.fuelLevel;
     booking.checkOutNotes = data.notes;
+    booking.checkOutHostSignature = data.signature;
     booking.returnMileage = data.mileage;
     booking.returnConditionImage = data.photos?.[0] || '';
     booking.settlementAmount = settlement;
@@ -997,5 +1055,28 @@ export class BookingsService {
     );
 
     return booking;
+  }
+  async submitClaim(bookingId: string, userId: string, claimData: any) {
+    const booking = await this.bookingModel.findById(bookingId);
+    if (!booking) {
+      throw new NotFoundException('Booking not found');
+    }
+
+    if (
+      booking.customerId.toString() !== userId &&
+      booking.vendorId.toString() !== userId
+    ) {
+      throw new NotFoundException('Booking not found');
+    }
+
+    booking.claimDetails = {
+      description: claimData.description,
+      dateOfIncident: claimData.dateOfIncident,
+      photos: claimData.photos || [],
+      status: 'Pending',
+      submittedAt: new Date(),
+    };
+
+    return booking.save();
   }
 }

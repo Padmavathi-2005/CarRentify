@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   Camera, 
   Upload, 
@@ -14,12 +14,18 @@ import {
   ChevronRight,
   Loader2,
   ShieldCheck,
-  Check
+  Check,
+  ImageIcon,
+  FileText
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import Switch from "@/components/ui/switch";
 import { API_BASE_URL, getImageUrl } from "@/config/api";
 import { authService } from "@/services/authService";
 import { motion, AnimatePresence } from "framer-motion";
+import { useSettings } from "./ThemeProvider";
+import { useAuth } from "./AuthContext";
+import SignaturePad from "./SignaturePad";
 
 interface TripLifecycleManagerProps {
   booking: any;
@@ -30,33 +36,82 @@ interface TripLifecycleManagerProps {
 }
 
 export default function TripLifecycleManager({ booking, type, onComplete, onCancel, isReadOnly = false }: TripLifecycleManagerProps) {
-  const [step, setStep] = useState(1);
-  const [photos, setPhotos] = useState<string[]>(
-    type === 'check-in' 
-      ? (booking.checkInPhotos?.length > 0 ? booking.checkInPhotos : (booking.hostConditionImage ? [booking.hostConditionImage] : []))
-      : (booking.checkOutPhotos?.length > 0 ? booking.checkOutPhotos : (booking.returnConditionImage ? [booking.returnConditionImage] : []))
-  );
-  const [mileage, setMileage] = useState<number>(
-    type === 'check-in' ? (booking.checkInMileage || booking.hostMileage || 0) : (booking.checkOutMileage || booking.returnMileage || booking.hostMileage || 0)
-  );
-  const [fuelLevel, setFuelLevel] = useState<number>(
-    type === 'check-in' ? (booking.checkInFuelLevel || 100) : (booking.checkOutFuelLevel || 100)
-  );
-  const [notes, setNotes] = useState(
-    type === 'check-in' ? (booking.checkInNotes || "") : (booking.checkOutNotes || "")
-  );
+  const { settings, loading } = useSettings();
+  const { user, login } = useAuth();
+  
+  const coreFields = [
+    { id: 'photos', name: 'Car Condition Photos', type: 'images', required: true, description: 'Upload exterior and interior photos (Minimum 2)' },
+    { id: 'damagePhotos', name: 'Damage Photos', type: 'images', required: false, description: 'Upload photos of any existing damage (optional)' },
+    { id: 'mileage', name: 'Odometer Reading (KM)', type: 'number', required: true, description: 'Current mileage on the car' },
+    { id: 'fuelLevel', name: 'Fuel Level (%)', type: 'number', required: true, description: 'Fuel level from 0 to 100' },
+    { id: 'notes', name: 'General Notes', type: 'text', required: false, description: 'Any visible damages or issues?' }
+  ];
+
+  // Default to core fields if settings are not loaded yet or missing
+  const fields = (type === 'check-in' ? settings?.verification?.checkInFields : settings?.verification?.checkOutFields) || coreFields;
+
+  const [formData, setFormData] = useState<Record<string, any>>({});
   const [isCertified, setIsCertified] = useState(isReadOnly);
-  const [isUploading, setIsUploading] = useState(false);
+  const [isUploading, setIsUploading] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const photoLabels = ["Front View", "Back View", "Left Side", "Right Side", "Dashboard", "Fuel Gauge"];
+  useEffect(() => {
+    // Initialize form data
+    const initialData: Record<string, any> = {};
+    const sourceData = type === 'check-in' ? booking.checkInDetails : booking.checkOutDetails;
+    
+    // Core mapped defaults
+    if (type === 'check-in') {
+      initialData.photos = booking.checkInPhotos?.length > 0 ? booking.checkInPhotos : (booking.hostConditionImage ? [booking.hostConditionImage] : []);
+      initialData.mileage = booking.checkInMileage || booking.hostMileage || 0;
+      initialData.fuelLevel = booking.checkInFuelLevel || 100;
+      initialData.notes = booking.checkInNotes || "";
+    } else {
+      initialData.photos = booking.checkOutPhotos?.length > 0 ? booking.checkOutPhotos : (booking.returnConditionImage ? [booking.returnConditionImage] : []);
+      initialData.mileage = booking.checkOutMileage || booking.returnMileage || booking.hostMileage || 0;
+      initialData.fuelLevel = booking.checkOutFuelLevel || 100;
+      initialData.notes = booking.checkOutNotes || "";
+    }
 
-  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    initialData.signature = type === 'check-in' ? booking.checkInHostSignature : booking.checkOutHostSignature;
+    initialData.renterSignature = type === 'check-in' ? booking.checkInRenterSignature : booking.checkOutRenterSignature;
+
+    // Merge dynamic fields
+    if (sourceData) {
+      Object.assign(initialData, sourceData);
+    }
+    
+    // Ensure all boolean fields are at least false
+    fields.forEach((f: any) => {
+      if (f.type === 'boolean' && initialData[f.id] === undefined) {
+        initialData[f.id] = false;
+      }
+      if (f.type === 'images' && !initialData[f.id]) {
+        initialData[f.id] = [];
+      }
+    });
+
+    if (type === 'check-out' && booking.extraCharges?.hasIssue) {
+      initialData['extraCharges_hasIssue'] = true;
+      initialData['extraCharges_issueDetails'] = booking.extraCharges.issueDetails;
+      initialData['extraCharges_chargeAmount'] = booking.extraCharges.chargeAmount;
+      initialData['extraCharges_proofImages'] = booking.extraCharges.proofImages;
+      initialData['extraCharges_billImage'] = booking.extraCharges.billImage;
+    }
+
+    setFormData(initialData);
+  }, [booking, type, settings]);
+
+  const handleFieldChange = (id: string, value: any) => {
+    setFormData(prev => ({ ...prev, [id]: value }));
+  };
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>, fieldId: string, multiple: boolean) => {
     if (isReadOnly) return;
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
 
-    setIsUploading(true);
+    setIsUploading(fieldId);
     try {
       const uploadPromises = files.map(async (file) => {
         const base64 = await new Promise<string>((resolve) => {
@@ -83,12 +138,18 @@ export default function TripLifecycleManager({ booking, type, onComplete, onCanc
 
       const uploadedUrls = await Promise.all(uploadPromises);
       const validUrls = uploadedUrls.filter(url => url !== null);
-      setPhotos(prev => [...prev, ...validUrls]);
+      
+      if (multiple) {
+        const current = formData[fieldId] || [];
+        handleFieldChange(fieldId, [...current, ...validUrls]);
+      } else {
+        handleFieldChange(fieldId, validUrls[0]);
+      }
     } catch (err) {
       console.error("Upload error:", err);
       alert("Photo upload failed. Please try again.");
     } finally {
-      setIsUploading(false);
+      setIsUploading(null);
     }
   };
 
@@ -96,6 +157,17 @@ export default function TripLifecycleManager({ booking, type, onComplete, onCanc
     if (isReadOnly) return;
     setIsSubmitting(true);
     try {
+      let payload = { ...formData };
+      if (type === 'check-out' && payload.extraCharges_hasIssue) {
+        payload.extraCharges = {
+          hasIssue: true,
+          issueDetails: payload.extraCharges_issueDetails,
+          chargeAmount: payload.extraCharges_chargeAmount,
+          proofImages: payload.extraCharges_proofImages || [],
+          billImage: payload.extraCharges_billImage || null
+        };
+      }
+
       const endpoint = type === 'check-in' ? 'check-in' : 'check-out';
       const res = await fetch(`${API_BASE_URL}/bookings/${booking._id}/${endpoint}`, {
         method: "PATCH",
@@ -103,12 +175,7 @@ export default function TripLifecycleManager({ booking, type, onComplete, onCanc
           "Content-Type": "application/json",
           Authorization: `Bearer ${authService.getToken()}`
         },
-        body: JSON.stringify({
-          photos,
-          mileage,
-          fuelLevel,
-          notes
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (res.ok) {
@@ -124,6 +191,32 @@ export default function TripLifecycleManager({ booking, type, onComplete, onCanc
       setIsSubmitting(false);
     }
   };
+
+  // Validation
+  const isValid = () => {
+    if (!isCertified) return false;
+    for (const field of fields) {
+      if (field.required) {
+        const val = formData[field.id];
+        if (field.type === 'images' && (!val || val.length === 0)) return false;
+        if (field.type === 'images' && field.id === 'photos' && val.length < 2) return false;
+        if (field.type === 'image' && !val) return false;
+        if (field.type === 'document' && !val) return false;
+        if (field.type === 'number' && (val === undefined || val === '' || val <= 0)) return false; // Basic number val
+        if (field.type === 'text' && !val) return false;
+      }
+    }
+    if (!formData.signature) return false;
+    return true;
+  };
+
+  if (loading && !settings) {
+    return (
+      <div className="bg-white rounded-app p-10 flex justify-center items-center">
+        <Loader2 className="animate-spin text-primary" size={32} />
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white rounded-app overflow-hidden shadow-2xl">
@@ -147,87 +240,272 @@ export default function TripLifecycleManager({ booking, type, onComplete, onCanc
       </div>
 
       <div className="p-6 space-y-8 max-h-[80vh] overflow-y-auto custom-scrollbar">
-        {/* Phase 1: Visual Documentation */}
-        <section className="space-y-4">
-          <div className="flex items-center gap-2">
-            <Camera size={16} className="text-primary" />
-            <h3 className="text-[9px] font-black text-slate-900 uppercase tracking-widest">Phase 1: Photos</h3>
-          </div>
+        
+        {fields.map((field: any, idx: number) => {
+          return (
+            <section key={field.id} className={`space-y-4 ${idx > 0 ? 'pt-4 border-t border-slate-50' : ''}`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-app bg-primary/10 text-primary flex items-center justify-center">
+                    {field.type === 'images' || field.type === 'image' ? <Camera size={12} /> : 
+                     field.type === 'document' ? <FileText size={12} /> :
+                     field.type === 'number' && field.id === 'mileage' ? <Gauge size={12} /> :
+                     field.type === 'number' && field.id === 'fuelLevel' ? <Fuel size={12} /> :
+                     <Info size={12} />}
+                  </div>
+                  <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-widest">{field.name} {field.required && <span className="text-rose-500">*</span>}</h3>
+                </div>
+              </div>
+              
+              {field.description && (
+                <p className="text-[10px] text-slate-500 font-bold tracking-tight">{field.description}</p>
+              )}
 
-          <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
-            {photos.map((url, i) => (
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                key={i} 
-                className="relative aspect-square rounded-app overflow-hidden group border border-slate-100"
-              >
-                <img src={getImageUrl(url)} className="w-full h-full object-cover" />
-                {!isReadOnly && (
-                  <button 
-                    onClick={() => setPhotos(photos.filter((_, idx) => idx !== i))}
-                    className="absolute top-1 right-1 w-6 h-6 bg-rose-500 text-white rounded-full flex items-center justify-center shadow-lg"
-                  >
-                    <X size={12} />
-                  </button>
-                )}
-              </motion.div>
-            ))}
+              {/* RENDER DYNAMIC FIELD */}
+              {field.type === 'images' && (
+                <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
+                  {(formData[field.id] || []).map((url: string, i: number) => (
+                    <motion.div 
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      key={i} 
+                      className="relative aspect-square rounded-app overflow-hidden group border border-slate-100"
+                    >
+                      <img src={getImageUrl(url)} className="w-full h-full object-cover" />
+                      {!isReadOnly && (
+                        <button 
+                          onClick={() => handleFieldChange(field.id, formData[field.id].filter((_: any, idx: number) => idx !== i))}
+                          className="absolute top-1 right-1 w-6 h-6 bg-rose-500 text-white rounded-full flex items-center justify-center shadow-lg"
+                        >
+                          <X size={12} />
+                        </button>
+                      )}
+                    </motion.div>
+                  ))}
+                  
+                  {!isReadOnly && (formData[field.id] || []).length < 10 && (
+                    <label className="aspect-square rounded-app border-2 border-dashed border-slate-200 flex flex-col items-center justify-center cursor-pointer hover:border-primary/40 hover:bg-primary/5 transition-all bg-slate-50/50 group">
+                      <input type="file" className="hidden" onChange={(e) => handlePhotoUpload(e, field.id, true)} accept="image/*" multiple />
+                      {isUploading === field.id ? (
+                        <Loader2 size={18} className="text-primary animate-spin" />
+                      ) : (
+                        <>
+                          <Upload size={18} className="text-slate-300 group-hover:text-primary transition-all" />
+                          <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest mt-1">Add</span>
+                        </>
+                      )}
+                    </label>
+                  )}
+                </div>
+              )}
+
+              {field.type === 'image' && (
+                <div className="w-32 h-32 relative">
+                  {formData[field.id] ? (
+                    <div className="relative w-full h-full rounded-app overflow-hidden border border-slate-100">
+                      <img src={getImageUrl(formData[field.id])} className="w-full h-full object-cover" />
+                      {!isReadOnly && (
+                        <button 
+                          onClick={() => handleFieldChange(field.id, null)}
+                          className="absolute top-1 right-1 w-6 h-6 bg-rose-500 text-white rounded-full flex items-center justify-center shadow-lg"
+                        >
+                          <X size={12} />
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    !isReadOnly && (
+                      <label className="w-full h-full rounded-app border-2 border-dashed border-slate-200 flex flex-col items-center justify-center cursor-pointer hover:border-primary/40 hover:bg-primary/5 transition-all bg-slate-50/50 group">
+                        <input type="file" className="hidden" onChange={(e) => handlePhotoUpload(e, field.id, false)} accept="image/*" />
+                        {isUploading === field.id ? (
+                          <Loader2 size={18} className="text-primary animate-spin" />
+                        ) : (
+                          <>
+                            <Camera size={18} className="text-slate-300 group-hover:text-primary transition-all" />
+                            <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest mt-1">Upload</span>
+                          </>
+                        )}
+                      </label>
+                    )
+                  )}
+                </div>
+              )}
+
+              {field.type === 'document' && (
+                <div className="relative">
+                  {formData[field.id] ? (
+                    <div className="w-full h-16 bg-slate-50 border border-slate-100 rounded-app flex items-center justify-between px-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                          <FileText size={14} />
+                        </div>
+                        <a href={getImageUrl(formData[field.id])} target="_blank" rel="noreferrer" className="text-xs font-bold text-slate-700 hover:text-primary underline">
+                          View Document
+                        </a>
+                      </div>
+                      {!isReadOnly && (
+                        <button 
+                          onClick={() => handleFieldChange(field.id, null)}
+                          className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-rose-500 transition-colors"
+                        >
+                          <X size={16} />
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    !isReadOnly && (
+                      <label className="w-full h-16 rounded-app border-2 border-dashed border-slate-200 flex items-center justify-center cursor-pointer hover:border-primary/40 hover:bg-primary/5 transition-all bg-slate-50/50 group">
+                        <input type="file" className="hidden" onChange={(e) => handlePhotoUpload(e, field.id, false)} accept=".pdf,.doc,.docx,image/*" />
+                        {isUploading === field.id ? (
+                          <Loader2 size={18} className="text-primary animate-spin" />
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <Upload size={16} className="text-slate-300 group-hover:text-primary transition-all" />
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5">Upload Document</span>
+                          </div>
+                        )}
+                      </label>
+                    )
+                  )}
+                </div>
+              )}
+
+              {field.type === 'number' && (
+                <div className="relative">
+                  <input 
+                    type="number"
+                    disabled={isReadOnly}
+                    min="0"
+                    value={formData[field.id] || ""}
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      if (val >= 0) handleFieldChange(field.id, val);
+                    }}
+                    className="w-full h-12 bg-slate-50 border border-slate-100 rounded-app px-5 text-sm font-bold outline-none focus:border-primary/20 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+                    placeholder={`Enter ${field.name}...`}
+                  />
+                </div>
+              )}
+
+              {field.type === 'text' && (
+                <textarea 
+                  disabled={isReadOnly}
+                  value={formData[field.id] || ""}
+                  onChange={(e) => handleFieldChange(field.id, e.target.value)}
+                  className="w-full h-24 bg-slate-50 border border-slate-100 rounded-app p-4 text-xs font-medium outline-none resize-none disabled:opacity-70 disabled:cursor-not-allowed"
+                  placeholder={`Enter ${field.name}...`}
+                />
+              )}
+
+              {field.type === 'boolean' && (
+                <div className="flex items-center gap-3 bg-slate-50 p-4 rounded-app border border-slate-100">
+                  <Switch 
+                    checked={formData[field.id] || false} 
+                    disabled={isReadOnly}
+                    onCheckedChange={(val) => handleFieldChange(field.id, val)} 
+                  />
+                  <span className="text-xs font-bold">{formData[field.id] ? "Yes" : "No"}</span>
+                </div>
+              )}
+
+            </section>
+          );
+        })}
+
+        {type === 'check-out' && (
+          <section className="space-y-4 pt-4 border-t border-slate-50">
+            <div className="flex items-center justify-between p-4 bg-rose-50 border border-rose-100 rounded-app">
+              <div>
+                <h3 className="text-xs font-black text-rose-600 uppercase tracking-widest">Report Issue / Extra Charge</h3>
+                <p className="text-[10px] text-rose-500/80 font-bold tracking-tight">Log damages, missing items, or extra fees</p>
+              </div>
+              <Switch 
+                checked={formData['extraCharges_hasIssue'] || false}
+                disabled={isReadOnly}
+                onCheckedChange={(val) => handleFieldChange('extraCharges_hasIssue', val)}
+              />
+            </div>
             
-            {!isReadOnly && photos.length < 10 && (
-              <label className="aspect-square rounded-app border-2 border-dashed border-slate-200 flex flex-col items-center justify-center cursor-pointer hover:border-primary/40 hover:bg-primary/5 transition-all bg-slate-50/50 group">
-                <input type="file" className="hidden" onChange={handlePhotoUpload} accept="image/*" multiple />
-                {isUploading ? (
-                  <Loader2 size={18} className="text-primary animate-spin" />
-                ) : (
-                  <>
-                    <Upload size={18} className="text-slate-300 group-hover:text-primary transition-all" />
-                    <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest mt-1">Add</span>
-                  </>
-                )}
-              </label>
+            {formData['extraCharges_hasIssue'] && (
+              <div className="p-4 bg-slate-50 rounded-app border border-slate-100 space-y-4">
+                <div className="space-y-2">
+                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-500">Issue Details</label>
+                  <textarea 
+                    disabled={isReadOnly}
+                    value={formData['extraCharges_issueDetails'] || ""}
+                    onChange={(e) => handleFieldChange('extraCharges_issueDetails', e.target.value)}
+                    className="w-full h-20 bg-white border border-slate-100 rounded-app p-3 text-xs outline-none focus:border-primary/20"
+                    placeholder="Describe the damage, missing item, or reason for extra charge..."
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-500">Charge Amount ($)</label>
+                  <input 
+                    type="number"
+                    disabled={isReadOnly}
+                    min="0"
+                    value={formData['extraCharges_chargeAmount'] || ""}
+                    onChange={(e) => handleFieldChange('extraCharges_chargeAmount', Number(e.target.value))}
+                    className="w-full h-10 bg-white border border-slate-100 rounded-app px-3 text-xs font-bold outline-none focus:border-primary/20"
+                    placeholder="Enter estimated or exact repair amount..."
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-500">Damage Proof Photos</label>
+                  <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
+                    {(formData['extraCharges_proofImages'] || []).map((url: string, i: number) => (
+                      <div key={i} className="relative aspect-square rounded-app overflow-hidden border border-slate-100">
+                        <img src={getImageUrl(url)} className="w-full h-full object-cover" />
+                        {!isReadOnly && (
+                          <button 
+                            onClick={() => handleFieldChange('extraCharges_proofImages', formData['extraCharges_proofImages'].filter((_: any, idx: number) => idx !== i))}
+                            className="absolute top-1 right-1 w-6 h-6 bg-rose-500 text-white rounded-full flex items-center justify-center shadow-lg"
+                          >
+                            <X size={12} />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                    {!isReadOnly && (
+                      <label className="aspect-square rounded-app border-2 border-dashed border-slate-200 flex flex-col items-center justify-center cursor-pointer hover:border-primary/40 transition-all bg-white">
+                        <input type="file" className="hidden" onChange={(e) => handlePhotoUpload(e, 'extraCharges_proofImages', true)} accept="image/*" multiple />
+                        {isUploading === 'extraCharges_proofImages' ? <Loader2 size={18} className="text-primary animate-spin" /> : <Upload size={18} className="text-slate-300" />}
+                      </label>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-500">Repair Bill / Invoice (Optional)</label>
+                  <div className="w-32 h-32 relative">
+                    {formData['extraCharges_billImage'] ? (
+                      <div className="relative w-full h-full rounded-app overflow-hidden border border-slate-100">
+                        <img src={getImageUrl(formData['extraCharges_billImage'])} className="w-full h-full object-cover" />
+                        {!isReadOnly && (
+                          <button 
+                            onClick={() => handleFieldChange('extraCharges_billImage', null)}
+                            className="absolute top-1 right-1 w-6 h-6 bg-rose-500 text-white rounded-full flex items-center justify-center shadow-lg"
+                          >
+                            <X size={12} />
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <label className="w-full h-full rounded-app border-2 border-dashed border-slate-200 flex flex-col items-center justify-center cursor-pointer hover:border-primary/40 transition-all bg-white">
+                        <input type="file" className="hidden" onChange={(e) => handlePhotoUpload(e, 'extraCharges_billImage', false)} accept="image/*" />
+                        {isUploading === 'extraCharges_billImage' ? <Loader2 size={18} className="text-primary animate-spin" /> : <Upload size={18} className="text-slate-300" />}
+                      </label>
+                    )}
+                  </div>
+                </div>
+
+              </div>
             )}
-          </div>
-          {!isReadOnly && photos.length < 2 && (
-            <p className="text-[7px] font-bold text-rose-500 uppercase tracking-widest mt-2 px-1">
-              Minimum 2 verification photos required
-            </p>
-          )}
-        </section>
+          </section>
+        )}
 
-        {/* Phase 2: Telemetry */}
         <section className="space-y-4 pt-4 border-t border-slate-50">
-          <div className="flex items-center gap-2">
-            <Gauge size={16} className="text-primary" />
-            <h3 className="text-[9px] font-black text-slate-900 uppercase tracking-widest">Phase 2: Odometer</h3>
-          </div>
-
-          <div className="relative">
-            <input 
-              type="number"
-              disabled={isReadOnly}
-              min="1"
-              value={mileage || ""}
-              onChange={(e) => {
-                const val = Number(e.target.value);
-                if (val >= 0) setMileage(val);
-              }}
-              className="w-full h-12 bg-slate-50 border border-slate-100 rounded-app px-5 text-sm font-bold outline-none focus:border-primary/20 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
-              placeholder="Current KM reading..."
-            />
-          </div>
-        </section>
-
-        {/* Phase 3: Notes */}
-        <section className="space-y-4 pt-4 border-t border-slate-50">
-          <textarea 
-            disabled={isReadOnly}
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            className="w-full h-24 bg-slate-50 border border-slate-100 rounded-app p-4 text-xs font-medium outline-none resize-none disabled:opacity-70 disabled:cursor-not-allowed"
-            placeholder="Additional observations (optional)..."
-          />
-
           {!isReadOnly && (
             <div 
               onClick={() => setIsCertified(!isCertified)}
@@ -247,6 +525,40 @@ export default function TripLifecycleManager({ booking, type, onComplete, onCanc
           )}
         </section>
 
+        <div className="pt-8 border-t border-slate-100">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <SignaturePad 
+                initialSignature={formData.signature || (!isReadOnly ? user?.signature : undefined)} 
+                onSave={(sig) => handleFieldChange('signature', sig)} 
+                title={type === 'check-in' ? "Host Handover Signature" : "Host Return Signature"}
+                subtitle={isReadOnly ? "Signature attached to this registry" : "Please sign to authorize this protocol"}
+              />
+              {isReadOnly && !formData.signature && (
+                <div className="p-4 bg-slate-50 border border-slate-100 rounded-app text-center">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">No Signature Provided</p>
+                </div>
+              )}
+              {!isReadOnly && !formData.signature && (
+                <p className="text-rose-500 text-[10px] font-black uppercase tracking-widest mt-2 px-2 flex items-center gap-1">
+                  <AlertCircle size={10} /> Signature is required
+                </p>
+              )}
+            </div>
+
+            {isReadOnly && formData.renterSignature && (
+              <div className="space-y-2">
+                <SignaturePad 
+                  initialSignature={formData.renterSignature} 
+                  onSave={() => {}} 
+                  title={type === 'check-in' ? "Renter Handover Signature" : "Renter Return Signature"}
+                  subtitle="Authorized by the renter"
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Actions */}
         <div className="pt-4 border-t border-slate-100">
           {isReadOnly ? (
@@ -259,7 +571,7 @@ export default function TripLifecycleManager({ booking, type, onComplete, onCanc
           ) : (
             <>
               <Button 
-                disabled={isSubmitting || photos.length < 2 || mileage <= 0 || !isCertified}
+                disabled={isSubmitting || !isValid()}
                 onClick={handleSubmit}
                 className="w-full h-12 bg-primary hover:bg-primary-hover text-white font-black text-[10px] uppercase tracking-widest rounded-app border-none shadow-lg shadow-primary/10 flex items-center justify-center gap-2"
               >
@@ -269,9 +581,9 @@ export default function TripLifecycleManager({ booking, type, onComplete, onCanc
                   "Finalize Registry"
                 )}
               </Button>
-              {(photos.length < 2 || mileage <= 0) && (
+              {!isValid() && (
                 <p className="text-[7px] font-bold text-rose-500 uppercase tracking-widest mt-3 text-center">
-                  {photos.length < 2 ? "Requires 2+ photos" : "Valid Odometer required"}
+                  Please complete all required fields and verify condition
                 </p>
               )}
             </>

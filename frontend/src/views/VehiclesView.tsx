@@ -224,16 +224,17 @@ function VehiclesContent() {
             import('react-leaflet')
           ]);
 
-          // Fix for missing leaflet icons using a robust DivIcon
-          const L = LeafletModule.default || LeafletModule; const icon = new L.DivIcon({
+            const L = LeafletModule.default || LeafletModule; const icon = new L.DivIcon({
             className: 'custom-marker-icon',
-            html: `<div style="position:relative; display:flex; align-items:center; justify-content:center; width:32px; height:32px;">
-  <div style="position:absolute; width:24px; height:24px; background-color:rgba(227,28,95,0.2); border-radius:50%; animation: pulse 2s infinite;"></div>
-  <div style="position:relative; width:12px; height:12px; background-color:#e31c5f; border-radius:50%; border:2px solid white; box-shadow: 0 0 8px rgba(0,0,0,0.3);"></div>
+            html: `<div style="position:relative; display:flex; align-items:center; justify-content:center; width:36px; height:36px;">
+  <div style="position:absolute; width:32px; height:32px; background-color:rgba(227,28,95,0.2); border-radius:50%; animation: pulse 2s infinite;"></div>
+  <div style="position:relative; width:28px; height:28px; background-color:#e31c5f; border-radius:50%; border:2px solid white; box-shadow: 0 0 8px rgba(0,0,0,0.3); display:flex; align-items:center; justify-content:center; color:white;">
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></svg>
+  </div>
   </div>`,
-            iconSize: [32, 32],
-            iconAnchor: [16, 16],
-            popupAnchor: [0, -16]
+            iconSize: [36, 36],
+            iconAnchor: [18, 18],
+            popupAnchor: [0, -18]
           });
           setMapIcon(icon);
           setMapComponents(ReactLeaflet);
@@ -729,11 +730,30 @@ function VehiclesContent() {
                 />
                 {mapIcon && filteredCars.map(car => car.location?.latitude && (
                   <mapComponents.Marker icon={mapIcon} key={car._id} position={[car.location.latitude, car.location.longitude]}>
-                    <mapComponents.Popup className="premium-popup">
-                      <div className="p-1">
-                        <p className="font-black text-[10px] uppercase tracking-tighter text-foreground leading-tight">{car.name}</p>
-                        <p className="text-[9px] font-bold text-primary mt-0.5">{formatPrice(car.pricePerDay, car.currency)}/day</p>
-                      </div>
+                    <mapComponents.Popup className="premium-popup p-0 cursor-pointer overflow-hidden rounded-app">
+                      <Link href={`/vehicles/${car.permalink || car._id || car.id}`}>
+                        <div className="w-48 font-sans overflow-hidden">
+                          <div className="relative w-full h-28">
+                            <img
+                              src={getImageUrl(car.images?.[0] || "")}
+                              className="w-full h-full object-cover"
+                            />
+                            <div className="absolute bottom-2 right-2 bg-white/95 backdrop-blur-md px-2 py-0.5 rounded shadow-lg border border-black/10">
+                              <p className="text-[10px] font-black text-primary leading-none">{formatPrice(car.pricePerDay, car.currency)}/day</p>
+                            </div>
+                          </div>
+                          <div className="p-2.5 bg-card border-t border-border">
+                            <h4 className="font-black text-[11px] text-foreground line-clamp-1 leading-tight">{car.name}</h4>
+                            <div className="flex items-center gap-2 mt-1.5 text-muted-foreground">
+                              <span className="text-[9px] font-bold uppercase">{car.year}</span>
+                              <span className="text-[8px] opacity-50">•</span>
+                              <div className="flex items-center gap-1"><Users size={10} /><span className="text-[9px] font-bold">{car.seats || 4}</span></div>
+                              <span className="text-[8px] opacity-50">•</span>
+                              <div className="flex items-center gap-1"><Fuel size={10} /><span className="text-[9px] font-bold line-clamp-1">{car.fuelType || 'Auto'}</span></div>
+                            </div>
+                          </div>
+                        </div>
+                      </Link>
                     </mapComponents.Popup>
                   </mapComponents.Marker>
                 ))}
@@ -948,15 +968,39 @@ function VehiclesContent() {
                     const lng = car.location?.longitude ? Number(car.location.longitude) : mapCenter[1] + (Math.cos(i * 2.4) * 0.03);
                     return (
                       <mapComponents.Marker icon={mapIcon} key={car._id || i} position={[lat, lng]}>
-                        <mapComponents.Popup>
-                          <div className="p-2 w-48 font-sans">
-                            <img
-                              src={getImageUrl(car.images?.[0] || "")}
-                              className="w-full h-24 object-cover rounded-app mb-2"
-                            />
-                            <h4 className="font-black text-xs text-foreground">{car.name}</h4>
-                            <p className="text-[10px] font-bold text-primary mt-1">{formatPrice(car.pricePerDay, car.currency)}/day</p>
-                          </div>
+                        <mapComponents.Popup className="premium-popup p-0 cursor-pointer overflow-hidden rounded-app">
+                          <Link href={`/vehicles/${car.permalink || car._id || car.id}`}>
+                            <div className="w-56 font-sans overflow-hidden">
+                              <div className="relative w-full h-36">
+                                <img
+                                  src={getImageUrl(car.images?.[0] || "")}
+                                  className="w-full h-full object-cover"
+                                />
+                                <div className="absolute top-2 left-2 bg-background/90 backdrop-blur-md px-2 py-0.5 rounded border border-border/50">
+                                  <span className="text-[9px] font-black uppercase tracking-widest text-foreground">{car.vehicleType?.name || car.type || 'Vehicle'}</span>
+                                </div>
+                                <div className="absolute bottom-2 right-2 bg-white/95 backdrop-blur-md px-2 py-0.5 rounded shadow-lg border border-black/10">
+                                  <p className="text-[12px] font-black text-primary leading-none">{formatPrice(car.pricePerDay, car.currency)}<span className="text-[9px] font-bold opacity-80"> /day</span></p>
+                                </div>
+                              </div>
+                              <div className="p-3 bg-card border-t border-border flex flex-col gap-2.5">
+                                <div>
+                                  <h4 className="font-black text-[13px] text-foreground line-clamp-1 leading-tight">{car.name}</h4>
+                                  <p className="text-[10px] text-muted-foreground font-bold line-clamp-1 mt-0.5 uppercase tracking-wide">{car.brandName || car.brand?.name || 'Brand'} • {car.year}</p>
+                                </div>
+                                <div className="flex items-center gap-3 pt-2 border-t border-border/50">
+                                  <div className="flex items-center gap-1 text-muted-foreground">
+                                    <Users size={12} />
+                                    <span className="text-[9px] font-bold">{car.seats || 4} Seats</span>
+                                  </div>
+                                  <div className="flex items-center gap-1 text-muted-foreground">
+                                    <Fuel size={12} />
+                                    <span className="text-[9px] font-bold line-clamp-1 max-w-[80px]">{car.fuelType || 'Gas'}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </Link>
                         </mapComponents.Popup>
                       </mapComponents.Marker>
                     );

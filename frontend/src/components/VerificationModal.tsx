@@ -102,10 +102,28 @@ export default function VerificationModal({
 
  if (settingsRes.ok) {
  const settings = await settingsRes.json();
- const verificationFields = settings.verification?.fields || settings.fields || [];
+        const defaultVerifFields = [
+          { id: 'driving_license_front', name: 'Driver License (Front)', type: 'image', required: true, description: 'Upload the front of your driver license' },
+          { id: 'driving_license_back', name: 'Driver License (Back)', type: 'image', required: true, description: 'Upload the back of your driver license' },
+          { id: 'driverLicense', name: 'Driver License Number', type: 'text', required: true, description: 'Enter your driver license number' },
+          { id: 'licenseExpiryDate', name: 'License Expiry Date', type: 'date', required: true, description: 'Enter the expiration date printed on your driver\'s license' },
+          { id: 'selfie', name: 'Selfie Photo', type: 'image', required: true, description: 'Upload a clear selfie photo of your face' },
+          { id: 'dob', name: 'Date of Birth', type: 'date', required: true, description: 'Enter your date of birth' }
+        ];
+        const verificationFields = settings.verification?.fields && settings.verification.fields.length > 0 ? settings.verification.fields : defaultVerifFields;
+
+  // Explicitly add driver license number field if not present
+  if (!verificationFields.find((f: any) => f.id === 'driverLicense')) {
+    verificationFields.push({
+      id: 'driverLicense',
+      name: 'Driver License Number',
+      type: 'text',
+      required: true,
+      description: 'Enter your driver\'s license number'
+    });
+  }
 
   // Explicitly add expiry date field if not present
-
   if (!verificationFields.find((f: any) => f.id === 'licenseExpiryDate')) {
     verificationFields.push({
       id: 'licenseExpiryDate',

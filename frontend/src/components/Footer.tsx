@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useSettings } from "@/components/ThemeProvider";
 import { useLocale } from "@/components/LocaleContext";
+import { useToast } from "@/components/Toast";
 import { API_BASE_URL } from "@/config/api";
 
 const resolveAsset = (path: string | null | undefined) => {
@@ -15,6 +16,7 @@ const resolveAsset = (path: string | null | undefined) => {
 const Footer = () => {
   const { settings } = useSettings();
   const { language, t } = useLocale();
+  const { showToast } = useToast();
   const currentYear = new Date().getFullYear();
   const [dynamicPages, setDynamicPages] = useState<any[]>([]);
   const [email, setEmail] = useState("");
@@ -156,14 +158,30 @@ const Footer = () => {
             <h4 className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-[0.2em] mb-8">{t('footer.contact')}</h4>
             <ul className="space-y-4 text-sm font-bold text-slate-900 dark:text-slate-300">
               <li className="text-slate-400 dark:text-white/40 font-medium lowercase tracking-widest text-[10px]">{t('footer.headquarters')}:</li>
-              <li className="text-slate-900 dark:text-white">{t('footer.hq_loc')}</li>
+              <li className="text-slate-900 dark:text-white">{settings.hqLoc || t('footer.hq_loc')}</li>
               <li className="pt-2 flex flex-col gap-2">
-                <Link href={`mailto:${settings.email || "support@carrental.com"}`} className="text-primary hover:underline truncate block">
+                <a 
+                  href={`https://mail.google.com/mail/?view=cm&fs=1&to=${settings.email || "support@carrental.com"}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => {
+                    navigator.clipboard.writeText(settings.email || "support@carrental.com");
+                    showToast("Email copied to clipboard! Opening Gmail...", "success");
+                  }}
+                  className="text-primary hover:underline truncate block"
+                >
                   {settings.email || "support@carrental.com"}
-                </Link>
-                <Link href={`tel:${settings.phone}`} className="text-slate-600 dark:text-slate-300 hover:text-primary transition-colors block">
+                </a>
+                <a 
+                  href={`tel:${settings.phone || "+44 20 7946 0000"}`}
+                  onClick={() => {
+                    navigator.clipboard.writeText(settings.phone || "+44 20 7946 0000");
+                    showToast("Phone number copied to clipboard!", "success");
+                  }}
+                  className="text-slate-600 dark:text-slate-300 hover:text-primary transition-colors block"
+                >
                   {settings.phone || "+44 20 7946 0000"}
-                </Link>
+                </a>
               </li>
             </ul>
           </div>

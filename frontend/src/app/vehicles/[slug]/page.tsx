@@ -161,7 +161,7 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ slug: 
    useEffect(() => {
       if (car?._id) {
          fetch(`${API_BASE_URL}/reviews/car/${car._id}`).then(r => r.json()).then(setReviews).catch(() => { });
-         fetch(`${API_BASE_URL}/bookings/availability/${car._id}`).then(r => r.json()).then(data => {
+         fetch(`${API_BASE_URL}/bookings/availability/${car._id}?t=${Date.now()}`).then(r => r.json()).then(data => {
             setBookedSlots(data);
             
             // Robust DateTime Parsing to avoid Timezone/ISO inconsistencies
@@ -280,7 +280,7 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ slug: 
       if (!user) return setShowLoginModal(true);
       setBookingError("");
 
-      if (!user.licenseExpiryDate || new Date(user.licenseExpiryDate).getTime() < new Date(endDate).getTime()) {
+      if (!(user as any).licenseExpiryDate || new Date((user as any).licenseExpiryDate).getTime() < new Date(endDate).getTime()) {
          setBookingError("Your driver's license is missing or will expire before this trip ends. Please update it in your profile.");
          return;
       }

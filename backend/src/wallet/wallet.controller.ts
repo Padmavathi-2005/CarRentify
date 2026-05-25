@@ -38,6 +38,11 @@ export class WalletController {
     return this.walletService.capturePayPalOrder(req.user.userId, orderId);
   }
 
+  @Post('capture-stripe/:sessionId')
+  async captureStripe(@Req() req: any, @Param('sessionId') sessionId: string) {
+    return this.walletService.captureStripeSession(req.user.userId, sessionId);
+  }
+
   @Get('payout-method')
   async getPayoutMethod(@Req() req: any) {
     return this.walletService.getPayoutMethod(req.user.userId);

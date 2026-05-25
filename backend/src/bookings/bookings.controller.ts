@@ -8,6 +8,8 @@ import {
   UseGuards,
   Request,
   NotFoundException,
+  StreamableFile,
+  Header
 } from '@nestjs/common';
 import { BookingsService } from './bookings.service';
 import { JwtAuthGuard } from '../auth/strategies/jwt-auth.guard';
@@ -15,6 +17,23 @@ import { JwtAuthGuard } from '../auth/strategies/jwt-auth.guard';
 @Controller('bookings')
 export class BookingsController {
   constructor(private readonly bookingsService: BookingsService) {}
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('sign-agreement/:id')
+  async acceptAgreement(@Param('id') id: string, @Body() body: any, @Request() req: any) {
+    const ip = req.headers['x-forwarded-for'] || req.ip || 'Unknown IP';
+    const userAgent = req.headers['user-agent'] || 'Unknown Device';
+    return this.bookingsService.acceptAgreement(id, req.user.userId, ip, userAgent, body.signatureBase64);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get(':id/agreement/pdf')
+  @Header('Content-Type', 'application/pdf')
+  @Header('Content-Disposition', 'attachment; filename="rental-agreement.pdf"')
+  async getAgreementPdf(@Param('id') id: string) {
+    const pdfDoc = await this.bookingsService.generateAgreementPdf(id);
+    return new StreamableFile(pdfDoc as any);
+  }
 
   @Get('availability/:carId')
   async getAvailability(@Param('carId') carId: string) {
@@ -37,6 +56,12 @@ export class BookingsController {
   @Get(':id')
   async getOne(@Param('id') id: string, @Request() req: any) {
     return this.bookingsService.getById(id, req.user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch(':id/claim')
+  async submitClaim(@Param('id') id: string, @Body() claimData: any, @Request() req: any) {
+    return this.bookingsService.submitClaim(id, req.user.userId, claimData);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -90,8 +115,8 @@ export class BookingsController {
 
   @UseGuards(JwtAuthGuard)
   @Patch(':id/accept-condition')
-  async acceptConditionCustomer(@Param('id') id: string, @Request() req: any) {
-    return this.bookingsService.acceptConditionCustomer(id, req.user.userId);
+  async acceptConditionCustomer(@Param('id') id: string, @Body() body: any, @Request() req: any) {
+    return this.bookingsService.acceptConditionCustomer(id, req.user.userId, body.signature);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -108,8 +133,8 @@ export class BookingsController {
 
   @UseGuards(JwtAuthGuard)
   @Patch(':id/accept-return')
-  async acceptReturnCustomer(@Param('id') id: string, @Request() req: any) {
-    return this.bookingsService.acceptReturnCustomer(id, req.user.userId);
+  async acceptReturnCustomer(@Param('id') id: string, @Body() body: any, @Request() req: any) {
+    return this.bookingsService.acceptReturnCustomer(id, req.user.userId, body.signature);
   }
 
   @UseGuards(JwtAuthGuard)

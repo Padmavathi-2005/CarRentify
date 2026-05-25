@@ -139,7 +139,7 @@ export class PaymentsService {
           payment_method_types: ['card'],
           line_items,
           mode: 'payment',
-          success_url: `${siteUrl}/dashboard/bookings?success=true&id=${booking._id}&session_id={CHECKOUT_SESSION_ID}${isSettlement ? '&type=settlement' : ''}`,
+          success_url: `${siteUrl}/dashboard/bookings${isSettlement ? '' : `/${booking._id}/agreement`}?success=true&id=${booking._id}&session_id={CHECKOUT_SESSION_ID}${isSettlement ? '&type=settlement' : '&promptSign=true'}`,
           cancel_url: `${siteUrl}/dashboard/bookings?canceled=true`,
           metadata: {
             bookingId: booking._id.toString(),
@@ -181,7 +181,7 @@ export class PaymentsService {
               description: isSettlement ? `Extra Usage Settlement: ${car.name}` : `Car Rental: ${car.name}`,
             }],
             application_context: {
-              return_url: `${siteUrl}/dashboard/bookings?success=true&gateway=paypal&id=${booking._id}${isSettlement ? '&type=settlement' : ''}`,
+              return_url: `${siteUrl}/dashboard/bookings${isSettlement ? '' : `/${booking._id}/agreement`}?success=true&gateway=paypal&id=${booking._id}${isSettlement ? '&type=settlement' : '&promptSign=true'}`,
               cancel_url: `${siteUrl}/dashboard/bookings?canceled=true`,
             }
           }),

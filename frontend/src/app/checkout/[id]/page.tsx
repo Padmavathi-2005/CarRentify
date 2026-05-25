@@ -42,10 +42,11 @@ export default function CheckoutPage({ params }: { params: any }) {
         const res = await fetch(`${API_BASE_URL}/bookings/my-bookings`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
+        let foundBooking = null;
         if (res.ok) {
           const data = await res.json();
-          const found = data.find((b: any) => b._id === bookingId);
-          if (found) setBooking(found);
+          foundBooking = data.find((b: any) => b._id === bookingId);
+          if (foundBooking) setBooking(foundBooking);
           else setError(t('checkout.final_valuation.not_found'));
         }
         
@@ -53,7 +54,7 @@ export default function CheckoutPage({ params }: { params: any }) {
         const profile = await authService.getProfile();
         setUser(profile);
 
-        if (found && (!profile.licenseExpiryDate || new Date(profile.licenseExpiryDate).getTime() < new Date(found.endDate).getTime())) {
+        if (foundBooking && (!profile.licenseExpiryDate || new Date(profile.licenseExpiryDate).getTime() < new Date(foundBooking.endDate).getTime())) {
           setError(t('checkout.final_valuation.license_expired') || "Your driver's license is missing or will expire before this trip ends. Please update it in your profile.");
         }
       } catch (err) { setError("Network error synchronizing telemetry."); }

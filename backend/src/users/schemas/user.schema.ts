@@ -98,6 +98,12 @@ export class User {
   licenseBackImage: string;
 
   @Prop()
+  signature: string;
+
+  @Prop()
+  driverLicense: string;
+
+  @Prop()
   licenseExpiryDate: Date;
 
   @Prop({ default: false })

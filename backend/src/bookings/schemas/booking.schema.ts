@@ -159,6 +159,15 @@ export class Booking {
   @Prop()
   checkInNotes?: string;
 
+  @Prop()
+  checkInHostSignature?: string;
+
+  @Prop()
+  checkInRenterSignature?: string;
+
+  @Prop({ type: Object })
+  checkInDetails?: Record<string, any>;
+
   @Prop({ type: [String], default: [] })
   checkOutPhotos: string[];
 
@@ -170,6 +179,59 @@ export class Booking {
 
   @Prop()
   checkOutNotes?: string;
+
+  @Prop()
+  checkOutHostSignature?: string;
+
+  @Prop()
+  checkOutRenterSignature?: string;
+
+  @Prop({ type: Object })
+  checkOutDetails?: Record<string, any>;
+
+  @Prop({ type: Object })
+  extraCharges?: {
+    hasIssue: boolean;
+    issueDetails?: string;
+    chargeAmount?: number;
+    proofImages?: string[];
+    billImage?: string;
+  };
+
+  // --- AGREEMENT FIELDS ---
+  @Prop({ type: Object })
+  renterAgreementSignature?: {
+    acceptedAt: Date;
+    ipAddress: string;
+    userAgent: string;
+    signatureBase64?: string;
+  };
+
+  @Prop({ type: Object })
+  hostAgreementSignature?: {
+    acceptedAt: Date;
+    ipAddress: string;
+    userAgent: string;
+    signatureBase64?: string;
+  };
+
+  @Prop()
+  agreementText?: string;
+
+  @Prop()
+  agreementHash?: string;
+
+  @Prop()
+  renterLegalName?: string;
+
+  @Prop()
+  hostLegalName?: string;
+
+  @Prop()
+  agreementVersion?: string;
+
+  @Prop()
+  agreementGeneratedAt?: Date;
 
   @Prop({
     type: String,
@@ -186,6 +248,16 @@ export class Booking {
     longitude?: number;
     fee: number;
     distance?: number;
+  };
+
+  // --- CLAIM DETAILS ---
+  @Prop({ type: Object })
+  claimDetails?: {
+    description: string;
+    dateOfIncident: Date;
+    photos: string[];
+    status: string; // e.g. Pending, Approved, Rejected
+    submittedAt: Date;
   };
 }
 

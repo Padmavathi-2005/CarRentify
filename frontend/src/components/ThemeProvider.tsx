@@ -72,6 +72,11 @@ type Settings = {
     phone: string;
     copyright: string;
     theme: 'light' | 'dark';
+    hqLoc?: string;
+    verification?: any;
+    cancellation?: any;
+    plans?: any[];
+    taxes?: any;
     socialLinks: { id: string; icon: string; url: string }[];
     walletBalance: number;
     minWithdrawalAmount: number;

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { 
  User, 
  Mail, 
@@ -22,22 +23,27 @@ import {
   Edit3,
   Upload,
   ChevronDown,
-  LocateFixed
+  LocateFixed,
+  ArrowRight,
+  X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
 import Modal from "@/components/ui/modal";
 import { useAuth } from "@/components/AuthContext";
-import { API_BASE_URL } from "@/config/api";
+import { API_BASE_URL, getImageUrl } from "@/config/api";
 import Link from "next/link";
 import { authService } from "@/services/authService";
 import { useLocale } from "@/components/LocaleContext";
 import DeleteAccountModal from "@/components/DeleteAccountModal";
 import { useToast } from "@/components/Toast";
 
-export default function ProfileView() {
- const { user, setUser, setShowVerifModal } = useAuth();
+ export default function ProfileView() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  
+  const { user, setUser, setShowVerifModal } = useAuth();
  const { showToast } = useToast();
  const { t } = useLocale();
  const [loading, setLoading] = useState(false);
@@ -72,7 +78,7 @@ export default function ProfileView() {
 
  const [selectedImage, setSelectedImage] = useState<File | null>(null);
  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
- const [isVerifPreviewOpen, setIsVerifPreviewOpen] = useState(false);
+ const [previewedArtifact, setPreviewedArtifact] = useState<any>(null);
  const [fullImageUrl, setFullImageUrl] = useState<string | null>(null);
  
   const [addressSuggestions, setAddressSuggestions] = useState<any[]>([]);
@@ -113,22 +119,7 @@ export default function ProfileView() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  useEffect(() => {
-    const header = document.querySelector('nav.fixed');
- if (isVerifPreviewOpen && header) {
- (header as HTMLElement).style.opacity = '0';
- (header as HTMLElement).style.pointerEvents = 'none';
- } else if (header) {
- (header as HTMLElement).style.opacity = '1';
- (header as HTMLElement).style.pointerEvents = 'auto';
- }
- return () => {
- if (header) {
- (header as HTMLElement).style.opacity = '1';
- (header as HTMLElement).style.pointerEvents = 'auto';
- }
- };
- }, [isVerifPreviewOpen]);
+
 
   const fetchAddressSuggestions = async (query: string) => {
   if (query.length < 3) {
@@ -387,17 +378,17 @@ export default function ProfileView() {
  <div className="w-full pt-4 border-t border-border/50 space-y-4">
  <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">
   <span>{t('dashboard.profile.identity_status')}</span>
-  {user?.verificationStatus ? (
-    <button 
-      onClick={() => setIsVerifPreviewOpen(true)}
-      className={`px-2 py-0.5 rounded-app border-none cursor-pointer hover:scale-105 transition-all ${
-      user.verificationStatus === 'approved' ? 'bg-emerald-500/10 text-emerald-500' :
-      user.verificationStatus === 'pending' ? 'bg-orange-500/10 text-orange-500' :
-      'bg-destructive/10 text-destructive'
-    }`}>
-      {user.verificationStatus.replace('_', ' ')}
-    </button>
-  ) : (
+   {user?.verificationStatus ? (
+     <button 
+       onClick={() => { if (verifStatus?.documents?.length > 0) setPreviewedArtifact(verifStatus.documents[0]); }}
+       className={`px-2 py-0.5 rounded-app border-none cursor-pointer hover:scale-105 transition-all ${
+       user.verificationStatus === 'approved' ? 'bg-emerald-500/10 text-emerald-500' :
+       user.verificationStatus === 'pending' ? 'bg-orange-500/10 text-orange-500' :
+       'bg-destructive/10 text-destructive'
+     }`}>
+       {user.verificationStatus.replace('_', ' ')}
+     </button>
+   ) : (
     <button 
       onClick={() => setShowVerifModal(true)}
       className="px-2 py-0.5 rounded-app bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all font-black uppercase tracking-widest flex items-center gap-1 group border-none"
@@ -409,19 +400,24 @@ export default function ProfileView() {
   </div>
  
   {verifStatus?.documents && verifStatus.documents.length > 0 ? (
-    <div className="space-y-2 text-left">
-      <h4 className="text-[8px] font-black text-muted-foreground/40 uppercase tracking-widest mb-2">{t('dashboard.profile.registry_artifacts')}</h4>
-      {verifStatus.documents.map((doc: any, i: number) => (
-        <div key={i} onClick={() => setIsVerifPreviewOpen(true)} className="flex items-center justify-between p-3 bg-muted/30 rounded-app border border-border dark:border-white/5 cursor-pointer hover:bg-muted hover:border-primary/20 group transition-all">
-          <div className="flex flex-col">
-            <span className="text-[8px] font-black text-muted-foreground/60 uppercase tracking-tighter mb-0.5 group-hover:text-primary transition-colors">{t('dashboard.profile.digital_evidence')}</span>
-            <span className="text-[10px] font-black text-foreground uppercase tracking-widest">{doc.fieldId.replace('_', ' ')}</span>
+    <div className="text-left">
+      <div className="flex items-center justify-between mb-3">
+        <h4 className="text-[8px] font-black text-muted-foreground/40 uppercase tracking-widest">{t('dashboard.profile.registry_artifacts')}</h4>
+        <span className="text-[8px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">{verifStatus.documents.length} Items</span>
+      </div>
+      <div className="max-h-[220px] overflow-y-auto custom-scrollbar pr-2 space-y-2">
+        {verifStatus.documents.map((doc: any, i: number) => (
+          <div key={i} onClick={() => setPreviewedArtifact(doc)} className="flex items-center justify-between p-3 bg-muted/30 rounded-app border border-border dark:border-white/5 cursor-pointer hover:bg-muted hover:border-primary/20 group transition-all">
+            <div className="flex flex-col truncate pr-2">
+              <span className="text-[8px] font-black text-muted-foreground/60 uppercase tracking-tighter mb-0.5 group-hover:text-primary transition-colors">{t('dashboard.profile.digital_evidence')}</span>
+              <span className="text-[10px] font-black text-foreground uppercase tracking-widest truncate">{doc.fieldId.replace(/_/g, ' ')}</span>
+            </div>
+            <div className="w-6 h-6 shrink-0 rounded-app bg-card border border-border flex items-center justify-center text-primary group-hover:scale-110 group-hover:bg-primary group-hover:text-white transition-all">
+              <CheckCircle2 size={12} />
+            </div>
           </div>
-          <div className="w-6 h-6 rounded-app bg-card border border-border flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
-            <CheckCircle2 size={12} />
-          </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   ) : (
     <div className="pt-2">
@@ -773,52 +769,47 @@ export default function ProfileView() {
 
  {/* Verification Preview Modal */}
  <Modal
- isOpen={isVerifPreviewOpen}
- onClose={() => setIsVerifPreviewOpen(false)}
- title={t('dashboard.profile.modal_title')}
- description={t('dashboard.profile.modal_desc')}
+ isOpen={!!previewedArtifact}
+ onClose={() => setPreviewedArtifact(null)}
+ title={previewedArtifact?.fieldName || t('dashboard.profile.modal_title')}
+ description="Reviewing submitted verification document"
  icon={<ShieldCheck size={24} className="text-primary" />}
- className="max-w-4xl"
+ className="max-w-md"
  >
- {verifStatus?.documents && (
- <div className="space-y-8">
- <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
- {verifStatus.documents.map((doc: any) => (
- <div key={doc.fieldId} className="space-y-3">
- <button onClick={() => setShowVerifModal(true)} className="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-primary transition-all flex items-center gap-1.5 group">
- {doc.fieldName} <ChevronRight size={10} className="opacity-0 group-hover:opacity-100 transition-all" />
- </button>
- {doc.fieldType === 'image' ? (
- <div 
- onClick={() => setFullImageUrl(doc.value.startsWith('http') ? doc.value : doc.value)}
- className="relative aspect-video bg-slate-100 rounded-app overflow-hidden border border-slate-100 group cursor-zoom-in"
- >
- <img 
- src={doc.value.startsWith('http') ? doc.value : doc.value} 
- className="w-full h-full object-cover transition-transform group-hover:scale-105" 
- alt={doc.fieldName} 
- />
- </div>
+ {previewedArtifact && (
+ <div className="space-y-6">
+ <div className="p-4 bg-slate-50 border border-slate-100 rounded-app">
+ <div className="flex flex-col gap-1 mb-4">
+ <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{previewedArtifact.fieldName}</span>
+ {previewedArtifact.fieldType !== 'image' ? (
+ <span className="text-xl font-black text-slate-900">{previewedArtifact.value}</span>
  ) : (
- <div className="p-4 bg-slate-50 border border-slate-100 rounded-app font-black text-slate-900">
- {doc.value}
- </div>
+ <button onClick={() => { setPreviewedArtifact(null); setShowVerifModal(true); }} className="text-[10px] font-bold text-primary hover:text-primary-hover flex items-center gap-1 w-fit mt-1">
+ Update Document <ArrowRight size={10} />
+ </button>
  )}
  </div>
- ))}
- </div>
-
- {fullImageUrl && (
- <div className="fixed inset-0 z-[10000] bg-black/95 flex items-center justify-center p-4 lg:p-20 overflow-hidden" onClick={() => setFullImageUrl(null)}>
- <div className="relative max-w-full max-h-full flex items-center justify-center">
+ 
+ {previewedArtifact.fieldType === 'image' && (
+ <div 
+ onClick={() => setFullImageUrl(getImageUrl(previewedArtifact.value))}
+ className="relative w-full aspect-video bg-slate-200 rounded-lg overflow-hidden border border-slate-200 cursor-zoom-in shadow-sm group"
+ >
  <img 
- src={fullImageUrl} 
- className="max-w-full max-h-[85vh] object-contain rounded-app" 
- onClick={(e) => e.stopPropagation()}
+ src={getImageUrl(previewedArtifact.value)} 
+ className="w-full h-full object-cover transition-transform group-hover:scale-105" 
+ alt={previewedArtifact.fieldName} 
  />
+ <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+ <span className="opacity-0 group-hover:opacity-100 text-white drop-shadow-md transition-opacity">🔍 View Full Size</span>
  </div>
  </div>
  )}
+ </div>
+ </div>
+ )}
+
+
 
  {user?.verificationStatus === 'rejected' && (
  <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-app space-y-2">
@@ -834,9 +825,26 @@ export default function ProfileView() {
  </Link>
  </div>
  )}
- </div>
- )}
  </Modal>
+
+ {fullImageUrl && mounted && createPortal(
+ <div className="fixed inset-0 z-[100000] bg-black/95 flex items-center justify-center p-4 lg:p-20 overflow-hidden animate-in fade-in duration-300" onClick={() => setFullImageUrl(null)} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}>
+ <button 
+ onClick={() => setFullImageUrl(null)}
+ className="absolute top-6 right-6 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white backdrop-blur-md transition-all z-[10001]"
+ >
+ <X size={24} />
+ </button>
+ <div className="relative max-w-full max-h-full flex items-center justify-center animate-in zoom-in-95 duration-300">
+ <img 
+ src={fullImageUrl} 
+ className="max-w-full max-h-[85vh] object-contain rounded-app shadow-2xl" 
+ onClick={(e) => e.stopPropagation()}
+ />
+ </div>
+ </div>,
+ document.body
+ )}
 
  <DeleteAccountModal 
  isOpen={showDeleteModal}
