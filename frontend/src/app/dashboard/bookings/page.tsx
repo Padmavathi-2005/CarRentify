@@ -1015,7 +1015,7 @@ function MyBookingsContent() {
                       <p className="text-[8px] font-black text-slate-300 uppercase tracking-widest leading-none">{t('bookings.labels.booking_hash')}</p>
                       <p className="text-[10px] font-black text-slate-600 tracking-widest italic">{booking.bookingHash || booking._id.slice(-8).toUpperCase()}</p>
                     </div>
-                    <div className="hidden md:flex ml-auto items-center gap-2 group-hover:text-primary transition-colors text-[10px] font-black uppercase tracking-widest">
+                    <div className="hidden md:flex ml-auto items-center gap-2 text-slate-400 dark:text-slate-300 group-hover:text-primary transition-colors text-[10px] font-black uppercase tracking-widest">
                       {t('bookings.actions.detail_view')} <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
                     </div>
                   </div>
@@ -1116,7 +1116,7 @@ function MyBookingsContent() {
             </div>
 
             <div className="flex flex-col md:flex-row items-stretch">
-              <div className="w-full md:w-[320px] bg-slate-50 p-6 lg:p-8 space-y-8 border-r border-slate-100 shrink-0">
+              <div className="w-full md:w-[320px] bg-slate-50 dark:bg-black p-6 lg:p-8 space-y-8 border-r border-slate-100 dark:border-white/10 shrink-0">
                 <div className="aspect-square rounded-app overflow-hidden border border-slate-200 relative bg-white">
                   <img src={getImageUrl(selectedBooking.carId?.image || (selectedBooking.carId?.images && selectedBooking.carId.images[0]) || "")} className="w-full h-full object-contain p-2" onError={(e) => (e.target as HTMLImageElement).src = PLACEHOLDER_IMAGE} />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
@@ -1127,24 +1127,24 @@ function MyBookingsContent() {
 
                 <div className="space-y-6">
                   <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-app bg-white border border-slate-100 flex items-center justify-center text-primary "><ShieldCheck size={18} /></div>
+                    <div className="w-10 h-10 rounded-app bg-white dark:bg-white/5 border border-slate-100 dark:border-white/10 flex items-center justify-center text-primary "><ShieldCheck size={18} /></div>
                     <div>
                       <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Status Protocol</p>
-                      <p className="text-[11px] font-black text-slate-900 uppercase tracking-widest">{selectedBooking.status}</p>
+                      <p className="text-[11px] font-black text-slate-900 dark:text-white uppercase tracking-widest">{selectedBooking.status}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-app bg-white border border-slate-100 flex items-center justify-center text-primary "><CreditCard size={18} /></div>
+                    <div className="w-10 h-10 rounded-app bg-white dark:bg-white/5 border border-slate-100 dark:border-white/10 flex items-center justify-center text-primary "><CreditCard size={18} /></div>
                     <div>
                       <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Total Liquidity</p>
-                      <p className="text-[11px] font-black text-slate-900 uppercase tracking-widest">{formatPrice(selectedBooking.totalPrice, selectedBooking.carId?.currency)}</p>
+                      <p className="text-[11px] font-black text-slate-900 dark:text-white uppercase tracking-widest">{formatPrice(selectedBooking.totalPrice, selectedBooking.carId?.currency)}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-app bg-white border border-slate-100 flex items-center justify-center text-primary "><Zap size={18} /></div>
+                    <div className="w-10 h-10 rounded-app bg-white dark:bg-white/5 border border-slate-100 dark:border-white/10 flex items-center justify-center text-primary "><Zap size={18} /></div>
                     <div>
                       <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Booking Hash</p>
-                      <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest italic">{selectedBooking.bookingHash || selectedBooking._id.toUpperCase()}</p>
+                      <p className="text-[10px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest italic">{selectedBooking.bookingHash || selectedBooking._id.toUpperCase()}</p>
                     </div>
                   </div>
                 </div>
@@ -1189,7 +1189,7 @@ function MyBookingsContent() {
                   >
                     <div>
                       <p className="text-[9px] font-black text-primary uppercase tracking-[0.15em] mb-0.5">Journey Completed</p>
-                      <p className="text-xs font-bold text-slate-700">Rate your experience & help the community</p>
+                      <p className="text-xs font-bold text-slate-700 dark:text-slate-300">Rate your experience & help the community</p>
                     </div>
                     <button
                       onClick={() => setShowReviewModal(true)}
@@ -1592,7 +1592,7 @@ function MyBookingsContent() {
                   </motion.div>
                 ) : (
                   <div className="space-y-10">
-                    <div className="flex items-center justify-between bg-slate-50 p-6 rounded-app border border-slate-100">
+                    <div className="flex items-center justify-between bg-slate-50 dark:bg-black p-6 rounded-app border border-slate-100 dark:border-white/10">
                       <div className="flex items-center gap-4">
                         <div className="w-12 h-12 rounded-app bg-primary/20 flex items-center justify-center text-primary font-black text-xs">
                           {(() => {
@@ -1606,7 +1606,7 @@ function MyBookingsContent() {
                         </div>
                         <div>
                           <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">{userType === 'host' ? 'Customer Contact' : 'Host Liaison'}</p>
-                          <h4 className="text-sm font-black text-slate-900 uppercase">
+                          <h4 className="text-sm font-black text-slate-900 dark:text-white uppercase">
                             {userType === 'host' ?
                               `${selectedBooking.customerId?.firstName} ${selectedBooking.customerId?.lastName}` :
                               `${selectedBooking.vendorId?.firstName} ${selectedBooking.vendorId?.lastName}`}
@@ -1635,15 +1635,15 @@ function MyBookingsContent() {
                       <div className="flex items-center gap-2">
                         <div className="w-1.5 h-4 bg-primary rounded-full" />
                         <Car size={12} className="text-primary" />
-                        <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Vehicle Registry</h4>
+                        <h4 className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-widest">Vehicle Registry</h4>
                       </div>
-                      <div className="bg-slate-50 p-6 rounded-app border border-slate-100 flex items-center justify-between relative overflow-hidden group">
+                      <div className="bg-slate-50 dark:bg-black p-6 rounded-app border border-slate-100 dark:border-white/10 flex items-center justify-between relative overflow-hidden group">
                         <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary" />
                         <div className="space-y-1 relative z-10">
                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                             {typeof selectedBooking.carId?.brand === 'object' ? selectedBooking.carId.brand.name : ''} {selectedBooking.carId?.model}
                           </p>
-                          <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">
+                          <h3 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight">
                             {selectedBooking.carId?.name || selectedBooking.carId?.title || 'Vehicle'}
                           </h3>
                         </div>
@@ -1659,20 +1659,20 @@ function MyBookingsContent() {
                         <div className="flex items-center gap-2">
                           <div className="w-1.5 h-4 bg-emerald-500 rounded-full" />
                           <Calendar size={12} className="text-emerald-500" />
-                          <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Journey Start</h4>
+                          <h4 className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-widest">Journey Start</h4>
                         </div>
-                        <div className="bg-slate-50 p-5 rounded-app border border-slate-100 space-y-3">
+                        <div className="bg-slate-50 dark:bg-black p-5 rounded-app border border-slate-100 dark:border-white/10 space-y-3">
                           <div className="flex items-center gap-3">
                             <Calendar size={14} className="text-slate-400" />
-                            <span className="text-xs font-black text-slate-600 uppercase tracking-widest">{formatDate(selectedBooking.startDate)}</span>
+                            <span className="text-xs font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest">{formatDate(selectedBooking.startDate)}</span>
                           </div>
                           <div className="flex items-center gap-3">
                             <Clock size={14} className="text-slate-400" />
-                            <span className="text-xs font-black text-slate-600 uppercase tracking-widest">{selectedBooking.pickupTime || "10:00 AM"}</span>
+                            <span className="text-xs font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest">{selectedBooking.pickupTime || "10:00 AM"}</span>
                           </div>
                           <div className="flex items-center gap-3">
                             <MapPin size={14} className="text-slate-400" />
-                            <span className="text-xs font-black text-slate-600 uppercase tracking-widest">{selectedBooking.carId?.location?.city || "New York Hub"}</span>
+                            <span className="text-xs font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest">{selectedBooking.carId?.location?.city || "New York Hub"}</span>
                           </div>
                         </div>
                       </div>
@@ -1681,20 +1681,20 @@ function MyBookingsContent() {
                         <div className="flex items-center gap-2">
                           <div className="w-1.5 h-4 bg-slate-300 rounded-full" />
                           <History size={12} className="text-slate-400" />
-                          <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Return State</h4>
+                          <h4 className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-widest">Return State</h4>
                         </div>
-                        <div className="bg-slate-50 p-5 rounded-app border border-slate-100 space-y-3 opacity-80">
+                        <div className="bg-slate-50 dark:bg-black p-5 rounded-app border border-slate-100 dark:border-white/10 space-y-3 opacity-80">
                           <div className="flex items-center gap-3">
                             <Calendar size={14} className="text-slate-400" />
-                            <span className="text-xs font-black text-slate-600 uppercase tracking-widest">{formatDate(selectedBooking.endDate)}</span>
+                            <span className="text-xs font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest">{formatDate(selectedBooking.endDate)}</span>
                           </div>
                           <div className="flex items-center gap-3">
                             <Clock size={14} className="text-slate-400" />
-                            <span className="text-xs font-black text-slate-600 uppercase tracking-widest">{selectedBooking.returnTime || "10:00 AM"}</span>
+                            <span className="text-xs font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest">{selectedBooking.returnTime || "10:00 AM"}</span>
                           </div>
                           <div className="flex items-center gap-3">
                             <MapPin size={14} className="text-slate-400" />
-                            <span className="text-xs font-black text-slate-600 uppercase tracking-widest">{selectedBooking.carId?.location?.city || "New York Hub"}</span>
+                            <span className="text-xs font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest">{selectedBooking.carId?.location?.city || "New York Hub"}</span>
                           </div>
                         </div>
                       </div>

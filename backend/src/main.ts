@@ -8,12 +8,20 @@ import { ConfigService } from '@nestjs/config';
 import { join } from 'path';
 import * as dns from 'node:dns';
 
+import fastifyMultipart from '@fastify/multipart';
+
 async function bootstrap() {
   dns.setServers(['8.8.8.8', '1.1.1.1']);
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     new FastifyAdapter({ bodyLimit: 10485760 }), // 10MB limit for base64 uploads
   );
+
+  await app.register(fastifyMultipart, {
+    limits: {
+      fileSize: 10 * 1024 * 1024, // 10MB
+    },
+  });
 
   const configService = app.get(ConfigService);
 

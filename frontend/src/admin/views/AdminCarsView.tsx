@@ -40,6 +40,10 @@ export default function CarsPage() {
  const [loading, setLoading] = useState(true);
  const [currentPage, setCurrentPage] = useState(1);
  const [itemsPerPage, setItemsPerPage] = useState(10);
+
+ useEffect(() => {
+  if (settings?.itemsPerPageLimit) setItemsPerPage(settings.itemsPerPageLimit);
+ }, [settings?.itemsPerPageLimit]);
  
  // Filter & Sort State
  const [selectedTiers, setSelectedTiers] = useState<string[]>([]);

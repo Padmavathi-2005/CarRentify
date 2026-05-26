@@ -5,6 +5,11 @@ import { ChatService } from './chat.service';
 export class ChatController {
   constructor(private readonly chatService: ChatService) {}
 
+  @Get('admin/conversations')
+  async getAllConversations() {
+    return this.chatService.getAllConversations();
+  }
+
   @Get('conversations/:userId')
   async getConversations(@Param('userId') userId: string) {
     return this.chatService.getConversations(userId);

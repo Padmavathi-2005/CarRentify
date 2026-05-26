@@ -7,6 +7,8 @@ import { Transaction, TransactionSchema } from './schemas/transaction.schema';
 import { SettingsModule } from '../settings/settings.module';
 import { PaymentGateway, PaymentGatewaySchema } from '../settings/schemas/payment-gateway.schema';
 import { PayoutMethod, PayoutMethodSchema } from './schemas/payout-method.schema';
+import { NotificationsModule } from '../notifications/notifications.module';
+import { User, UserSchema } from '../users/schemas/user.schema';
 
 @Module({
   imports: [
@@ -15,8 +17,10 @@ import { PayoutMethod, PayoutMethodSchema } from './schemas/payout-method.schema
       { name: Transaction.name, schema: TransactionSchema },
       { name: PaymentGateway.name, schema: PaymentGatewaySchema },
       { name: PayoutMethod.name, schema: PayoutMethodSchema },
+      { name: User.name, schema: UserSchema },
     ]),
     SettingsModule,
+    NotificationsModule,
   ],
   controllers: [WalletController],
   providers: [WalletService],

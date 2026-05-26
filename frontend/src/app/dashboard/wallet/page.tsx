@@ -33,7 +33,7 @@ export default function WalletPage() {
  const { t, formatPrice, formatCurrency, currencies, currency: userCurrencyCode } = useLocale();
  const userCurrency = currencies.find(c => c.code === userCurrencyCode) || { symbol: '$' };
  const [balance, setBalance] = useState({ balance: 0, currency: "USD" });
- const [stats, setStats] = useState({ totalEarnings: 0, pendingPayouts: 0 });
+ const [stats, setStats] = useState({ totalEarnings: 0, pendingPayouts: 0, pendingEarnings: 0 });
  const [transactions, setTransactions] = useState([]);
  const [loading, setLoading] = useState(true);
  const [isAddingFunds, setIsAddingFunds] = useState(false);
@@ -337,13 +337,13 @@ export default function WalletPage() {
  </div>
 
   {/* Quick Stats */}
-  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
   <div className="bg-white dark:bg-black p-6 rounded-app border border-slate-100 dark:border-white/20 flex items-center gap-4 group hover:border-primary/20 transition-all">
   <div className="w-14 h-14 rounded-[1.5rem] bg-emerald-50 dark:bg-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
   <TrendingUp size={24} />
   </div>
   <div className="space-y-1">
-  <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Total Earnings</p>
+  <p className="text-xs font-medium text-slate-500 dark:text-slate-400">{t('dashboard.wallet.total_earnings') || 'Total Earnings'}</p>
   <p className="text-xl font-bold text-slate-900 dark:text-white">{formatPrice(stats.totalEarnings, { code: balance.currency, exchangeRate: 1 })}</p>
   </div>
   </div>
@@ -352,8 +352,17 @@ export default function WalletPage() {
   <Banknote size={24} />
   </div>
   <div className="space-y-1">
-  <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Pending Payouts</p>
+  <p className="text-xs font-medium text-slate-500 dark:text-slate-400">{t('dashboard.wallet.pending_payouts') || 'Pending Payouts'}</p>
   <p className="text-xl font-bold text-slate-900 dark:text-white">{formatPrice(stats.pendingPayouts, { code: balance.currency, exchangeRate: 1 })}</p>
+  </div>
+  </div>
+  <div className="bg-white dark:bg-black p-6 rounded-app border border-slate-100 dark:border-white/20 flex items-center gap-4 group hover:border-primary/20 transition-all">
+  <div className="w-14 h-14 rounded-[1.5rem] bg-indigo-50 dark:bg-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+  <DollarSign size={24} />
+  </div>
+  <div className="space-y-1">
+  <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Pending Earnings</p>
+  <p className="text-xl font-bold text-slate-900 dark:text-white">{formatPrice(stats.pendingEarnings || 0, { code: balance.currency, exchangeRate: 1 })}</p>
   </div>
   </div>
   </div>
@@ -375,7 +384,7 @@ export default function WalletPage() {
  variant="ghost" 
  className="h-8 px-4 rounded-app bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-primary hover:bg-primary hover:text-white transition-all text-xs font-semibold"
  >
- {payoutMethod ? "Update" : "Link Account"}
+ {payoutMethod ? t('dashboard.wallet.update_account') || "Update" : t('dashboard.wallet.link_account') || "Link Account"}
  </Button>
  </div>
  
@@ -400,7 +409,7 @@ export default function WalletPage() {
  <div className="w-12 h-12 rounded-app bg-slate-100 dark:bg-slate-900 flex items-center justify-center text-slate-300 dark:text-slate-600">
  <Plus size={24} />
  </div>
- <p className="text-[10px] text-slate-400 dark:text-slate-500 font-black uppercase tracking-widest">Connect a payout destination</p>
+ <p className="text-[10px] text-slate-400 dark:text-slate-500 font-black uppercase tracking-widest">{t('dashboard.wallet.connect_payout') || "Connect a payout destination"}</p>
  </div>
  )}
  </div>

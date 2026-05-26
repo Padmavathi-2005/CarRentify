@@ -482,7 +482,7 @@ import { useToast } from "@/components/Toast";
  <User size={120} />
  </div>
 
- <div className="flex items-center gap-2 border-b border-border/50 pb-6">
+ <div className="flex items-center gap-2 pb-6">
  <ShieldCheck size={16} className="text-primary" />
  <h3 className="text-xs font-black text-foreground uppercase tracking-[0.2em]">{t('dashboard.profile.core_matrix')}</h3>
  </div>
@@ -491,22 +491,22 @@ import { useToast } from "@/components/Toast";
  <div className="space-y-3">
  <label className="text-[9px] font-black text-slate-900 dark:text-slate-300 uppercase tracking-widest block ml-1">{t('dashboard.profile.first_name')}</label>
  <div className="relative group">
- <User className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/40 group-focus-within:text-primary transition-colors" size={16} />
+ <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-primary transition-colors" size={16} />
  <Input 
  value={formData.firstName}
  onChange={(e) => setFormData({...formData, firstName: e.target.value})}
- className="h-11 pl-12 rounded-app border-border focus:bg-card focus:border-primary transition-all font-bold text-xs" 
+ className="h-11 pl-12 rounded-app border-border focus:bg-card focus:border-primary transition-all font-bold text-xs text-slate-900 dark:text-white" 
  />
  </div>
  </div>
  <div className="space-y-3">
  <label className="text-[9px] font-black text-slate-900 dark:text-slate-300 uppercase tracking-widest block ml-1">{t('dashboard.profile.last_name')}</label>
  <div className="relative group">
- <User className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/40 group-focus-within:text-primary transition-colors" size={16} />
+ <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-primary transition-colors" size={16} />
  <Input 
  value={formData.lastName}
  onChange={(e) => setFormData({...formData, lastName: e.target.value})}
- className="h-11 pl-12 rounded-app border-border focus:bg-card focus:border-primary transition-all font-bold text-xs" 
+ className="h-11 pl-12 rounded-app border-border focus:bg-card focus:border-primary transition-all font-bold text-xs text-slate-900 dark:text-white" 
  />
  </div>
  </div>
@@ -516,9 +516,9 @@ import { useToast } from "@/components/Toast";
  <div className="flex gap-3">
  <div 
  onClick={() => setOpenCountry(!openCountry)}
- className={`h-11 flex items-center gap-2 px-4 border rounded-app cursor-pointer transition-all min-w-[90px] shrink-0 ${openCountry ? 'bg-slate-100 border-primary' : 'bg-slate-50 border-border hover:border-primary/40'}`}
+ className={`h-11 flex items-center gap-2 px-4 border rounded-app cursor-pointer transition-all min-w-[90px] shrink-0 ${openCountry ? 'bg-slate-100 dark:bg-white/10 border-primary' : 'bg-slate-50 dark:bg-white/5 border-border hover:border-primary/40'}`}
  >
- <span className="text-base leading-none">{selectedCountry.flag}</span>
+ <span className="text-base leading-none text-slate-900 dark:text-white">{selectedCountry.flag}</span>
  <span className="text-xs font-black text-slate-900 dark:text-white">{selectedCountry.code}</span>
  <ChevronDown size={12} className={`text-slate-400 transition-transform ${openCountry ? 'rotate-180 text-primary' : ''}`} />
  </div>
@@ -530,7 +530,7 @@ import { useToast } from "@/components/Toast";
  const digits = e.target.value.replace(/\D/g, '');
  setFormData({...formData, phone: selectedCountry.code + ' ' + digits});
  }}
- className="h-11 pl-4 rounded-app border-border focus:bg-card focus:border-primary transition-all font-bold text-xs" 
+ className="h-11 pl-4 rounded-app border-border focus:bg-card focus:border-primary transition-all font-bold text-xs text-slate-900 dark:text-white" 
  />
  </div>
  </div>
@@ -562,7 +562,7 @@ import { useToast } from "@/components/Toast";
  selectedCountry.id === c.id ? 'bg-primary border-primary text-white' : 'bg-card border-border hover:border-primary/40 hover:bg-slate-50 dark:hover:bg-white/5 text-foreground'
  }`}
  >
- <span className="text-xl leading-none">{c.flag}</span>
+ <span className="text-xl leading-none text-slate-900 dark:text-white">{c.flag}</span>
  <div className="flex flex-col">
  <span className="text-[10px] font-black uppercase tracking-widest leading-none">{c.name}</span>
  <span className={`text-[9px] font-bold mt-1 ${selectedCountry.id === c.id ? 'text-white/70' : 'text-slate-400'}`}>{c.code}</span>
@@ -579,21 +579,21 @@ import { useToast } from "@/components/Toast";
  <div className="space-y-3">
  <label className="text-[9px] font-black text-slate-900 dark:text-slate-300 uppercase tracking-widest block ml-1">{t('dashboard.profile.email')}</label>
  <div className="relative group opacity-60">
- <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/40" size={16} />
+ <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={16} />
  <Input 
  value={user?.email || ""}
  disabled
- className="h-11 pl-12 rounded-app bg-muted border-dashed border-border cursor-not-allowed font-bold text-xs" 
+ className="h-11 pl-12 rounded-app bg-muted border-dashed border-border cursor-not-allowed font-bold text-xs text-slate-900 dark:text-white" 
  />
  <div className="absolute right-4 top-1/2 -translate-y-1/2">
- <Lock size={12} className="text-muted-foreground/40" />
+ <Lock size={12} className="text-slate-400 dark:text-slate-500" />
  </div>
  </div>
  </div>
  <div className="space-y-3 md:col-span-2">
  <label className="text-[9px] font-black text-slate-900 dark:text-slate-300 uppercase tracking-widest block ml-1">{t('dashboard.profile.address')}</label>
  <div className="relative group">
- <Globe className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/40 group-focus-within:text-primary transition-colors" size={16} />
+ <Globe className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-primary transition-colors" size={16} />
  <Input 
  value={formData.address}
  placeholder={t('dashboard.profile.address_placeholder')}
@@ -601,7 +601,7 @@ import { useToast } from "@/components/Toast";
  setFormData({...formData, address: e.target.value});
  fetchAddressSuggestions(e.target.value);
  }}
- className="h-11 pl-12 pr-12 rounded-app border-border focus:bg-card focus:border-primary transition-all font-bold text-xs" 
+ className="h-11 pl-12 pr-12 rounded-app border-border focus:bg-card focus:border-primary transition-all font-bold text-xs text-slate-900 dark:text-white" 
  />
  
  <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
@@ -642,11 +642,11 @@ import { useToast } from "@/components/Toast";
   <div className="space-y-3 md:col-span-2">
   <label className="text-[9px] font-black text-slate-900 dark:text-slate-300 uppercase tracking-widest block ml-1">Profile Slug (URL)</label>
   <div className="relative group">
-  <LinkIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/40 group-focus-within:text-primary transition-colors" size={16} />
+  <LinkIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-primary transition-colors" size={16} />
   <Input 
   value={formData.slug}
   onChange={(e) => setFormData({...formData, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-')})}
-  className="h-11 pl-12 rounded-app border-border focus:bg-card focus:border-primary transition-all font-bold text-xs" 
+  className="h-11 pl-12 rounded-app border-border focus:bg-card focus:border-primary transition-all font-bold text-xs text-slate-900 dark:text-white" 
   placeholder="your-unique-slug"
   />
   </div>
@@ -679,7 +679,7 @@ import { useToast } from "@/components/Toast";
 
  {/* Security Hub */}
  <form onSubmit={handleChangePassword} className="bg-card p-10 rounded-app border border-border dark:border-white/10 space-y-8">
- <div className="flex items-center gap-2 border-b border-border/50 pb-6 text-foreground">
+ <div className="flex items-center gap-2 pb-6 text-foreground">
  <div className="p-2 bg-destructive/10 rounded-app text-destructive"><Lock size={16} /></div>
  <h3 className="text-xs font-black uppercase tracking-[0.2em]">{t('dashboard.profile.security_protocol')}</h3>
  </div>
@@ -697,7 +697,7 @@ import { useToast } from "@/components/Toast";
  type="password"
  value={passData.currentPassword}
  onChange={(e) => setPassData({...passData, currentPassword: e.target.value})}
- className="h-12 rounded-app bg-muted/30 border-border focus:bg-card text-xs font-bold"
+ className="h-12 rounded-app bg-muted/30 border-border focus:bg-card text-xs font-bold text-slate-900 dark:text-white"
  placeholder="••••••••"
  required
  />
@@ -708,7 +708,7 @@ import { useToast } from "@/components/Toast";
  type="password"
  value={passData.newPassword}
  onChange={(e) => setPassData({...passData, newPassword: e.target.value})}
- className="h-12 rounded-app bg-muted/30 border-border focus:bg-card text-xs font-bold"
+ className="h-12 rounded-app bg-muted/30 border-border focus:bg-card text-xs font-bold text-slate-900 dark:text-white"
  placeholder="Min 6 chars"
  required
  />
@@ -719,7 +719,7 @@ import { useToast } from "@/components/Toast";
  type="password"
  value={passData.confirmPassword}
  onChange={(e) => setPassData({...passData, confirmPassword: e.target.value})}
- className="h-12 rounded-app bg-muted/30 border-border focus:bg-card text-xs font-bold"
+ className="h-12 rounded-app bg-muted/30 border-border focus:bg-card text-xs font-bold text-slate-900 dark:text-white"
  placeholder="Re-type new"
  required
  />

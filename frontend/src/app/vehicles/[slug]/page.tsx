@@ -80,6 +80,7 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ slug: 
 
    const [showShareModal, setShowShareModal] = useState(false);
    const [similarCars, setSimilarCars] = useState<any[]>([]);
+    const [recentlyViewed, setRecentlyViewed] = useState<any[]>([]);
     const [showOverview, setShowOverview] = useState(false);
     const [showReviewModal, setShowReviewModal] = useState(false);
     const [lastBookingId, setLastBookingId] = useState("");
@@ -145,6 +146,19 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ slug: 
                if (allRes.ok) {
                   const all = await allRes.json();
                   setSimilarCars(all.filter((c: any) => c._id !== data._id).slice(0, 4));
+
+                  // Recently Viewed logic
+                  try {
+                     const recentIds = JSON.parse(localStorage.getItem('recentCars') || '[]');
+                     const recentCarsList = recentIds.map((id: string) => all.find((c: any) => c._id === id)).filter(Boolean).filter((c: any) => c._id !== data._id).slice(0, 4);
+                     setRecentlyViewed(recentCarsList);
+                     
+                     // Add current car to recent
+                     const newRecent = [data._id, ...recentIds.filter((id: string) => id !== data._id)].slice(0, 10);
+                     localStorage.setItem('recentCars', JSON.stringify(newRecent));
+                  } catch (e) {
+                     console.error("Local storage error:", e);
+                  }
                }
             } else {
                setFetchError(true);
@@ -369,7 +383,7 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ slug: 
                         </div>
                         {(isOwner || isAdmin) && (
                            <Link href={`/dashboard/cars/edit/${car._id}`}>
-                              <Button variant="outline" className="h-10 px-6 rounded-app font-black uppercase text-[10px] tracking-widest gap-2">
+                              <Button variant="outline" className="h-10 px-6 rounded-app font-black uppercase text-[10px] tracking-widest gap-2 dark:text-white dark:hover:text-white">
                                  <Edit size={14} /> Edit
                               </Button>
                            </Link>
@@ -490,13 +504,29 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ slug: 
             </div>
 
             <div className="mt-32 space-y-12">
-               <div className="flex items-center gap-4">
-                  <div className="w-2 h-8 bg-primary rounded-full" />
-                  <h2 className="text-3xl font-black text-foreground tracking-tighter uppercase">Similar Vehicles</h2>
-               </div>
-               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-                  {similarCars.map((c, i) => <CarCard key={c._id} car={c} index={i} />)}
-               </div>
+               {similarCars.length > 0 && (
+                  <>
+                     <div className="flex items-center gap-4">
+                        <div className="w-2 h-8 bg-primary rounded-full" />
+                        <h2 className="text-3xl font-black text-foreground tracking-tighter uppercase">Similar Vehicles</h2>
+                     </div>
+                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+                        {similarCars.map((c, i) => <CarCard key={c._id} car={c} index={i} />)}
+                     </div>
+                  </>
+               )}
+
+               {recentlyViewed.length > 0 && (
+                  <div className="pt-12 mt-12 border-t border-border/50">
+                     <div className="flex items-center gap-4 mb-12">
+                        <div className="w-2 h-8 bg-muted-foreground/40 rounded-full" />
+                        <h2 className="text-3xl font-black text-foreground tracking-tighter uppercase text-muted-foreground">Recently Viewed</h2>
+                     </div>
+                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+                        {recentlyViewed.map((c, i) => <CarCard key={c._id} car={c} index={i} />)}
+                     </div>
+                  </div>
+               )}
             </div>
          </main>
 

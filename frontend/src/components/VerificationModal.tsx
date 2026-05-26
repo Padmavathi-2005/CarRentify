@@ -442,10 +442,10 @@ function VerificationForm({
 
  return (
  <div className="space-y-6">
- <div className="bg-slate-50 border border-slate-100 rounded-app p-5 flex items-start gap-4">
+ <div className="bg-slate-50 dark:bg-black border border-slate-100 dark:border-white/10 rounded-app p-5 flex items-start gap-4">
  <ShieldCheck className="text-slate-400 shrink-0 mt-0.5" size={18} />
  <div className="space-y-1">
- <p className="text-[11px] font-black text-slate-900 uppercase tracking-widest">{t('dashboard.verification.standards')}</p>
+ <p className="text-[11px] font-black text-slate-900 dark:text-white uppercase tracking-widest">{t('dashboard.verification.standards')}</p>
  <p className="text-[10px] font-bold text-slate-400 leading-relaxed uppercase tracking-widest">
  {t('dashboard.verification.standards_desc')}
  </p>
@@ -455,11 +455,11 @@ function VerificationForm({
  {fields.map((field: VerificationField, idx: number) => (
  <div key={field.id} className="space-y-3">
  <div className="flex items-center gap-3">
- <div className="w-7 h-7 rounded-full bg-slate-100 text-slate-900 flex items-center justify-center text-[10px] font-black shrink-0">
+ <div className="w-7 h-7 rounded-full bg-slate-100 dark:bg-white/10 text-slate-900 dark:text-white flex items-center justify-center text-[10px] font-black shrink-0">
  {idx + 1}
  </div>
  <div>
- <p className="text-[11px] font-black text-slate-900 uppercase tracking-widest leading-none">
+ <p className="text-[11px] font-black text-slate-900 dark:text-white uppercase tracking-widest leading-none">
  {field.name}
  {field.required && (
  <span className="text-rose-500 ml-1">*</span>
@@ -509,10 +509,10 @@ function VerificationForm({
  {/* Country Code Dropdown Trigger */}
  <div
  onClick={() => setOpenCountryId(openCountryId === field.id ? null : field.id)}
- className={`h-12 flex items-center gap-2 px-4 border rounded-app cursor-pointer transition-all min-w-[90px] shrink-0 ${openCountryId === field.id ? 'bg-slate-100 border-slate-900/30' : 'bg-slate-50 border-slate-100 hover:border-slate-900/30'}`}
+ className={`h-12 flex items-center gap-2 px-4 border rounded-app cursor-pointer transition-all min-w-[90px] shrink-0 ${openCountryId === field.id ? 'bg-slate-100 dark:bg-white/10 border-slate-900/30 dark:border-white/20' : 'bg-slate-50 dark:bg-black border-slate-100 dark:border-white/10 hover:border-slate-900/30 dark:hover:border-white/20'}`}
  >
  <span className="text-lg leading-none">{getCountry(field.id).flag}</span>
- <span className="text-sm font-black text-slate-900">{getCountry(field.id).code}</span>
+ <span className="text-sm font-black text-slate-900 dark:text-white">{getCountry(field.id).code}</span>
  <ChevronDown size={12} className={`text-slate-400 transition-transform ${openCountryId === field.id ? 'rotate-180 text-slate-900' : ''}`} />
  </div>
 
@@ -534,7 +534,7 @@ function VerificationForm({
  setPhoneError(null);
  }
  }}
- className={`w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-app text-sm font-bold text-slate-900 transition-all hover:border-primary/40 focus:bg-white focus:ring-4 focus:ring-primary/5 focus:border-primary outline-none ${phoneError ? 'border-red-500 ring-red-500' : ''}`}
+ className={`w-full h-12 px-4 bg-slate-50 dark:bg-black border border-slate-100 dark:border-white/10 rounded-app text-sm font-bold text-slate-900 dark:text-white transition-all hover:border-primary/40 focus:bg-white dark:focus:bg-white/5 focus:ring-4 focus:ring-primary/5 focus:border-primary outline-none ${phoneError ? 'border-red-500 ring-red-500' : ''}`}
  />
  <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[9px] font-black text-slate-300 pointer-events-none uppercase tracking-widest">
  {t('dashboard.verification.min_digits')}
@@ -552,7 +552,7 @@ function VerificationForm({
  exit={{ opacity: 0, height: 0 }}
  className="overflow-hidden"
  >
- <div className="w-full bg-slate-50/50 border border-slate-100 rounded-app mt-1 px-2 py-2 grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-[220px] overflow-y-auto custom-scrollbar">
+ <div className="w-full bg-slate-50/50 dark:bg-black/50 border border-slate-100 dark:border-white/10 rounded-app mt-1 px-2 py-2 grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-[220px] overflow-y-auto custom-scrollbar">
  {COUNTRIES.map(c => (
  <div
  key={c.id}
@@ -567,7 +567,7 @@ function VerificationForm({
  });
  }}
  className={`flex items-center gap-2 px-3 py-2.5 cursor-pointer transition-all rounded-app ${
- getCountry(field.id).id === c.id ? 'bg-slate-900 text-white ' : 'bg-white hover:bg-slate-100 hover:text-slate-900 text-slate-600 '
+ getCountry(field.id).id === c.id ? 'bg-slate-900 text-white dark:bg-white/20' : 'bg-white dark:bg-black hover:bg-slate-100 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white text-slate-600 dark:text-slate-300'
  }`}
  >
  <span className="text-lg leading-none">{c.flag}</span>
@@ -588,7 +588,7 @@ function VerificationForm({
  onChange={(e) =>
  setValues((p: any) => ({ ...p, [field.id]: e.target.value }))
  }
- className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-app text-sm font-bold text-slate-900 transition-all hover:border-primary/40 focus:bg-white focus:ring-4 focus:ring-primary/5 focus:border-primary outline-none"
+ className="w-full h-12 px-4 bg-slate-50 dark:bg-black border border-slate-100 dark:border-white/10 rounded-app text-sm font-bold text-slate-900 dark:text-white transition-all hover:border-primary/40 focus:bg-white dark:focus:bg-white/5 focus:ring-4 focus:ring-primary/5 focus:border-primary outline-none"
  />
  )}
  </div>
@@ -653,11 +653,10 @@ function ImageUploadField({
  <div
  onClick={() => inputRef.current?.click()}
  className={`relative h-32 rounded-app border-2 border-dashed cursor-pointer transition-all flex items-center justify-center overflow-hidden group ${
- error ? "border-rose-300 bg-rose-50/50" :
- value
- ? "border-emerald-200 bg-emerald-50/30"
- : "border-slate-200 bg-slate-50 hover:border-slate-900/40 hover:bg-slate-100"
- }`}
+  error ? "border-rose-300 bg-rose-50/50" :
+  value ? "border-emerald-200 dark:border-emerald-500/30 bg-emerald-50/30 dark:bg-emerald-500/10"
+  : "border-slate-200 dark:border-white/30 bg-slate-50 dark:bg-black hover:border-slate-900/40 dark:hover:border-white/50 hover:bg-slate-100 dark:hover:bg-white/5"
+  }`}
  >
  <input
  ref={inputRef}
@@ -668,7 +667,7 @@ function ImageUploadField({
  />
 
  {isUploading ? (
- <div className="flex flex-col items-center gap-2 text-slate-900">
+ <div className="flex flex-col items-center gap-2 text-slate-900 dark:text-white">
  <Loader2 className="animate-spin" size={24} />
  <p className="text-[10px] font-black uppercase tracking-widest">
  {t('dashboard.verification.uploading')}
@@ -698,8 +697,8 @@ function ImageUploadField({
  <div className="absolute inset-0 bg-emerald-500/0 hover:bg-emerald-500/5 transition-all z-0" />
  </>
  ) : (
- <div className="flex flex-col items-center gap-3 text-slate-400 group-hover:text-slate-900 transition-colors">
- <div className="w-12 h-12 rounded-app bg-white border border-slate-100 group-hover:border-slate-900/20 flex items-center justify-center">
+ <div className="flex flex-col items-center gap-3 text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
+ <div className="w-12 h-12 rounded-app bg-white dark:bg-black border border-slate-100 dark:border-white/30 group-hover:border-slate-900/20 dark:group-hover:border-white/50 flex items-center justify-center">
  <FileImage size={22} />
  </div>
  <div className="text-center">

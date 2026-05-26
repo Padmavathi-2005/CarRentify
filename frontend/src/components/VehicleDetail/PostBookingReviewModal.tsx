@@ -176,10 +176,10 @@ export default function PostBookingReviewModal({
  className="w-full max-w-lg bg-white rounded-app overflow-hidden flex flex-col max-h-[88vh]"
  >
  {/* Header */}
- <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-slate-100">
+ <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-border">
  <div>
  <p className="text-[9px] font-black text-primary uppercase tracking-[0.2em] mb-0.5">Completed</p>
- <h2 className="text-lg font-black text-slate-900 tracking-tight leading-none">Rate Your Experience</h2>
+ <h2 className="text-lg font-black text-foreground tracking-tight leading-none">Rate Your Experience</h2>
  </div>
  <button onClick={onClose} className="w-9 h-9 rounded-app bg-slate-50 hover:bg-rose-50 hover:text-rose-500 text-slate-400 flex items-center justify-center transition-all">
  <X size={16} />
@@ -203,14 +203,14 @@ export default function PostBookingReviewModal({
  <div>
  <div className="flex items-center gap-2 mb-3">
  <Car size={13} className="text-primary" />
- <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Vehicle — <span className="text-slate-700">{carName}</span></p>
+ <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Vehicle — <span className="text-slate-700 dark:text-slate-300">{carName}</span></p>
  </div>
  <div className="space-y-2">
  {carCategories.map((cat) => (
- <div key={cat.id} className="flex items-center justify-between py-2 px-3 rounded-app hover:bg-slate-50 transition-colors group">
+ <div key={cat.id} className="flex items-center justify-between py-2 px-3 rounded-app hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group">
  <div className="flex items-center gap-2 min-w-[130px]">
  <cat.icon size={13} className={`transition-colors ${carRatings[cat.id as keyof typeof carRatings] > 0 ? "text-primary" : "text-slate-300 group-hover:text-slate-400"}`} />
- <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest">{cat.label}</span>
+ <span className="text-[10px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-widest">{cat.label}</span>
  </div>
  <StarRating
  value={carRatings[cat.id as keyof typeof carRatings]}
@@ -223,20 +223,20 @@ export default function PostBookingReviewModal({
  </div>
 
  {/* Divider */}
- <div className="border-t border-slate-100" />
+ <div className="border-t border-border" />
 
  {/* ── Host Section ── */}
  <div>
  <div className="flex items-center gap-2 mb-3">
  <User size={13} className="text-amber-500" />
- <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Host — <span className="text-slate-700">{hostName}</span></p>
+ <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Host — <span className="text-slate-700 dark:text-slate-300">{hostName}</span></p>
  </div>
  <div className="space-y-2">
  {hostCategories.map((cat) => (
- <div key={cat.id} className="flex items-center justify-between py-2 px-3 rounded-app hover:bg-amber-50/40 transition-colors group">
+ <div key={cat.id} className="flex items-center justify-between py-2 px-3 rounded-app hover:bg-amber-50/40 dark:hover:bg-amber-500/10 transition-colors group">
  <div className="flex items-center gap-2 min-w-[130px]">
  <cat.icon size={13} className={`transition-colors ${hostRatings[cat.id as keyof typeof hostRatings] > 0 ? "text-amber-500" : "text-slate-300 group-hover:text-slate-400"}`} />
- <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest">{cat.label}</span>
+ <span className="text-[10px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-widest">{cat.label}</span>
  </div>
  <StarRating
  value={hostRatings[cat.id as keyof typeof hostRatings]}
@@ -249,7 +249,7 @@ export default function PostBookingReviewModal({
  </div>
 
  {/* Divider */}
- <div className="border-t border-slate-100" />
+ <div className="border-t border-border" />
 
  {/* ── Comment ── */}
  <textarea
@@ -257,7 +257,7 @@ export default function PostBookingReviewModal({
  onChange={(e) => setComment(e.target.value)}
  placeholder="Share your experience — what stood out or could be improved?"
  rows={3}
- className="w-full bg-slate-50 border border-slate-200 rounded-app px-4 py-3 text-sm font-medium text-slate-800 placeholder:text-slate-300 focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/5 transition-all outline-none resize-none"
+ className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-app px-4 py-3 text-sm font-medium text-slate-800 dark:text-white placeholder:text-slate-400 focus:border-primary focus:bg-white dark:focus:bg-white/10 focus:ring-4 focus:ring-primary/5 transition-all outline-none resize-none"
  />
 
  {/* Submit */}

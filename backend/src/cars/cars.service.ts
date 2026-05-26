@@ -7,6 +7,11 @@ import { Car, CarDocument } from './schemas/car.schema';
 import { Brand, BrandDocument } from '../brands/schemas/brand.schema';
 import { Booking, BookingDocument, BookingStatus } from '../bookings/schemas/booking.schema';
 import { Review, ReviewDocument } from '../reviews/schemas/review.schema';
+import { User, UserDocument } from '../users/schemas/user.schema';
+import { SettingsService } from '../settings/settings.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import OpenAI from 'openai';
+import * as mongoose from 'mongoose';
 
 @Injectable()
 export class CarsService implements OnModuleInit {
@@ -15,6 +20,9 @@ export class CarsService implements OnModuleInit {
     @InjectModel(Brand.name) private brandModel: Model<BrandDocument>,
     @InjectModel(Booking.name) private bookingModel: Model<BookingDocument>,
     @InjectModel(Review.name) private reviewModel: Model<ReviewDocument>,
+    @InjectModel(User.name) private userModel: Model<UserDocument>,
+    private readonly settingsService: SettingsService,
+    private notificationsService: NotificationsService,
   ) {}
 
   async onModuleInit() {
@@ -160,12 +168,44 @@ export class CarsService implements OnModuleInit {
       vehicleType: vehicleType,
       vendor: vendorId,
       available: true,
+      status: 'pending',
     };
 
     try {
       this.validatePricing(doc);
       const createdCar = new this.carModel(doc);
-      return await createdCar.save();
+      const savedCar = await createdCar.save();
+
+      // Notify admins
+      try {
+        const admins = await this.userModel.find({ role: 'admin' }).exec();
+        
+        const primaryAdminEmail = 'admin@gmail.com';
+        if (!admins.find(a => a.email === primaryAdminEmail)) {
+          const primaryAdmin = await this.userModel.findOne({ email: primaryAdminEmail }).exec();
+          if (primaryAdmin) admins.push(primaryAdmin);
+        }
+        
+        if (admins.length > 0) {
+          await Promise.all(admins.map(admin => 
+            this.notificationsService.create(
+              admin._id.toString(),
+              'New Car Listed',
+              `A new car (${savedCar.name}) has been listed and is pending approval.`,
+              'info',
+              { 
+                type: 'car_listing', 
+                carId: savedCar._id.toString(),
+                url: `/admin/cars`
+              }
+            )
+          ));
+        }
+      } catch (notifyErr) {
+        console.error('[CarsService] Failed to notify admins:', notifyErr);
+      }
+      
+      return savedCar;
     } catch (error) {
       console.error('[CarsService] Create Error:', error);
       if (error.code === 11000) {
@@ -511,5 +551,69 @@ export class CarsService implements OnModuleInit {
       },
     ]);
     return results;
+  }
+
+  async generateAiAutofill(prompt: string) {
+    const apiKey = await this.settingsService.getAiApiKey();
+    if (!apiKey) {
+      throw new BadRequestException('AI API Key is not configured in settings. Please contact the administrator.');
+    }
+
+    const openai = new OpenAI({ apiKey });
+
+    try {
+      const response = await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: "system",
+            content: "You are an expert car rental listing generator. Extract details for a car rental listing based on the user's description. Guess reasonable defaults for missing information (e.g. realistic price per day, realistic seats, realistic fuel type). You must strictly follow the output JSON schema."
+          },
+          {
+            role: "user",
+            content: `Description: "${prompt}"`
+          }
+        ],
+        response_format: {
+          type: "json_schema",
+          json_schema: {
+            name: "car_listing_schema",
+            strict: true,
+            schema: {
+              type: "object",
+              properties: {
+                name: { type: "string", description: "An attractive, catchy title for the luxury car rental listing" },
+                shortDescription: { type: "string", description: "A highly attractive, punchy short description (1-2 sentences max) to hook the customer" },
+                permalink: { type: "string", description: "A URL-friendly slug based on the car title (e.g. 2023-tesla-model-x-plaid)" },
+                model: { type: "string", description: "The specific model of the car" },
+                year: { type: "integer", description: "The manufacturing year of the car" },
+                pricePerDay: { type: "integer", description: "An estimated reasonable daily rental price in USD for this car" },
+                fuelType: { type: "string", enum: ["Petrol", "Diesel", "Electric", "Hybrid", "Premium Gas"] },
+                transmission: { type: "string", enum: ["Automatic", "Manual", "Semiautomatic"] },
+                seats: { type: "integer" },
+                mileage: { type: "integer", description: "Estimated or provided mileage in miles" },
+                description: { type: "string", description: "A detailed, engaging, and professional description for a luxury car rental listing (at least 2-3 sentences)" },
+                brandName: { type: "string", description: "The make or brand of the car" },
+                categoryName: { type: "string", description: "The category of the car" }
+              },
+              required: ["name", "shortDescription", "permalink", "model", "year", "pricePerDay", "fuelType", "transmission", "seats", "mileage", "description", "brandName", "categoryName"],
+              additionalProperties: false
+            }
+          }
+        },
+        temperature: 0.7,
+      });
+
+      const jsonText = response.choices[0].message.content;
+      if (!jsonText) {
+          throw new Error('Failed to generate content');
+      }
+
+      const data = JSON.parse(jsonText);
+      return data;
+    } catch (error: any) {
+      console.error('AI Autofill Error:', error);
+      throw new BadRequestException(error.message || 'Something went wrong processing the AI request');
+    }
   }
 }

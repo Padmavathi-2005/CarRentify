@@ -75,6 +75,15 @@ export class ChatService {
       .exec();
   }
 
+  async getAllConversations() {
+    return this.conversationModel
+      .find()
+      .populate('participants', 'firstName lastName profileImage')
+      .populate('lastMessage')
+      .sort({ updatedAt: -1 })
+      .exec();
+  }
+
   async getMessages(conversationId: string) {
     return this.messageModel
       .find({ conversationId: new Types.ObjectId(conversationId) } as any)

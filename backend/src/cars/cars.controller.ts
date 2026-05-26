@@ -8,6 +8,7 @@ import {
   Delete,
   UseGuards,
   Request,
+  BadRequestException,
 } from '@nestjs/common';
 import { CarsService } from './cars.service';
 import { CreateCarDto } from './dto/create-car.dto';
@@ -22,6 +23,14 @@ export class CarsController {
   getTopDestinations() {
     console.log('API: Fetching top destinations');
     return this.carsService.getTopDestinations(12);
+  }
+
+  @Post('ai-autofill')
+  async aiAutofill(@Body('prompt') prompt: string) {
+    if (!prompt) {
+      throw new BadRequestException('Prompt is required');
+    }
+    return this.carsService.generateAiAutofill(prompt);
   }
 
   @Get('check-permalink/:permalink')

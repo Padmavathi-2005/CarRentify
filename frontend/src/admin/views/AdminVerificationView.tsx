@@ -22,7 +22,7 @@ import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import { Input } from "../../components/ui/input";
 import Modal from "../../components/ui/modal";
-import { API_BASE_URL, BACKEND_URL } from "@/config/api";
+import { API_BASE_URL, BACKEND_URL, getImageUrl } from "@/config/api";
 import { authService } from "@/services/authService";
 import { useDraggableScroll } from "@/hooks/useDraggableScroll";
 
@@ -288,12 +288,13 @@ export default function AdminVerificationView() {
  <div key={doc.fieldId} className="space-y-3">
  <p className="text-[10px] font-black text-[var(--admin-text-muted)] uppercase tracking-widest">{doc.fieldName}</p>
  {doc.fieldType === 'image' ? (
+ <>
  <div 
- onClick={() => setFullImageUrl(doc.value.startsWith('http') ? doc.value : `${BACKEND_URL}${doc.value}`)}
+ onClick={() => setFullImageUrl(getImageUrl(doc.value))}
  className="relative aspect-video bg-[var(--admin-bg)] rounded-app overflow-hidden border border-[var(--admin-border)] group cursor-zoom-in"
  >
  <img 
- src={doc.value.startsWith('http') ? doc.value : `${BACKEND_URL}${doc.value}`} 
+ src={getImageUrl(doc.value)} 
  className="w-full h-full object-cover transition-transform group-hover:scale-105" 
  alt={doc.fieldName} 
  />
@@ -301,6 +302,8 @@ export default function AdminVerificationView() {
  <Eye size={16} /> Click to Inspect
  </div>
  </div>
+ <p className="text-[8px] text-rose-500 break-all">{getImageUrl(doc.value)}</p>
+ </>
  ) : (
  <div className="p-4 bg-[var(--admin-bg)] border border-[var(--admin-border)] rounded-app font-black text-[var(--admin-text-main)]">
  {doc.value}

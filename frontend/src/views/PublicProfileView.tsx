@@ -160,7 +160,7 @@ export default function PublicProfileView() {
                   <div className="flex items-center gap-2 mb-6">
                     <div className="flex items-center gap-1 bg-amber-400/10 text-amber-500 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
                       <Star size={12} className="fill-current" />
-                      {stats.averageScore} Rating
+                      {stats.averageScore ? Number(stats.averageScore).toFixed(1) : '0.0'} Rating
                     </div>
                     {stats.totalReviews > 0 && (
                       <div className="bg-primary/10 text-primary px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">

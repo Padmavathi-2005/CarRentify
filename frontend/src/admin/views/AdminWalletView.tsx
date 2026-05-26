@@ -95,7 +95,11 @@ export default function AdminWalletView() {
 
   // Calculate high-level financial stats
   const totalCommission = transactions
-    .filter(t => t.type === 'credit' && t.source === 'booking')
+    .filter(t => t.type === 'credit' && t.source === 'booking' && (!t.status || t.status === 'success'))
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const pendingCommission = transactions
+    .filter(t => t.type === 'credit' && t.source === 'booking' && t.status === 'pending')
     .reduce((sum, t) => sum + t.amount, 0);
 
   const averageCommission = transactions.length > 0 && transactions.filter(t => t.source === 'booking').length > 0
@@ -141,20 +145,20 @@ export default function AdminWalletView() {
       </div>
 
       {/* Stats Cards Section */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {/* Main Wallet Card */}
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
         >
-          <Card className="rounded-app border-none bg-gradient-to-br from-slate-900 to-slate-950 p-6 text-white shadow-xl relative overflow-hidden group">
+          <Card className="rounded-app border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm relative overflow-hidden group">
             <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-2xl group-hover:bg-primary/20 transition-all duration-500" />
             <div className="flex justify-between items-start mb-6 relative z-10">
-              <div className="w-12 h-12 rounded-app bg-white/5 flex items-center justify-center border border-white/10">
+              <div className="w-12 h-12 rounded-app bg-primary/5 dark:bg-primary/10 flex items-center justify-center border border-primary/10">
                 <Wallet size={20} className="text-primary" />
               </div>
-              <span className="text-[8px] font-black uppercase tracking-widest bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-1 rounded-full">
+              <span className="text-[8px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400 px-2.5 py-1 rounded-full">
                 Active Ledger
               </span>
             </div>
@@ -163,10 +167,10 @@ export default function AdminWalletView() {
               <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">
                 Admin Balance
               </p>
-              <h3 className="text-3xl font-black tracking-tight mb-2">
+              <h3 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight mb-2">
                 {formatPrice(balanceData.balance)}
               </h3>
-              <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">
+              <p className="text-[8px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
                 Currency: {balanceData.currency}
               </p>
             </div>
@@ -228,6 +232,36 @@ export default function AdminWalletView() {
               </h3>
               <p className="text-[8px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
                 Total ledger size: {transactions.length} items
+              </p>
+            </div>
+          </Card>
+        </motion.div>
+
+        {/* Pending Commission Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.3 }}
+        >
+          <Card className="rounded-app border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm group h-full">
+            <div className="flex justify-between items-start mb-6">
+              <div className="w-12 h-12 rounded-app bg-amber-500/5 dark:bg-amber-500/10 flex items-center justify-center border border-amber-500/10">
+                <Wallet size={20} className="text-amber-500" />
+              </div>
+              <span className="text-[8px] font-black uppercase tracking-widest bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400 px-2.5 py-1 rounded-full">
+                Escrow
+              </span>
+            </div>
+            
+            <div>
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">
+                Pending Commissions
+              </p>
+              <h3 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight mb-2">
+                {formatPrice(pendingCommission)}
+              </h3>
+              <p className="text-[8px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                From Active Trips
               </p>
             </div>
           </Card>

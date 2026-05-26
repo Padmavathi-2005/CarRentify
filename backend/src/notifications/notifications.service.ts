@@ -54,6 +54,14 @@ export class NotificationsService {
       .exec();
   }
 
+  async findAllAdmin() {
+    return this.notificationModel
+      .find({}) // Admins see all platform notifications
+      .sort({ createdAt: -1 })
+      .limit(100)
+      .exec();
+  }
+
   async markAsRead(id: string, userId: string) {
     return this.notificationModel.findOneAndUpdate(
       { _id: id, userId: userId.toString() }, 

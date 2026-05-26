@@ -38,7 +38,7 @@ export default function AdminMessagesView() {
  try {
  const user = authService.getAdminUser();
  if (!user) return;
- const res = await fetch(`${API_BASE_URL}/chat/conversations/${user._id || user.id}`);
+ const res = await fetch(`${API_BASE_URL}/chat/admin/conversations`);
  if (res.ok) {
  const data = await res.json();
  setConversations(data);
@@ -114,7 +114,9 @@ export default function AdminMessagesView() {
  </div>
  <div className="flex-1 min-w-0">
  <div className="flex justify-between items-center mb-1">
- <h4 className="font-black admin-dash-text-main text-xs truncate">{chat.participants?.[0]?.firstName || "User"}</h4>
+ <h4 className="font-black admin-dash-text-main text-xs truncate">
+ {chat.participants?.map((p: any) => p.firstName || "User").join(" - ") || "Chat"}
+ </h4>
  <span className="text-[9px] font-bold admin-dash-text-muted">{new Date(chat.updatedAt).toLocaleDateString()}</span>
  </div>
  <p className="text-[10px] admin-dash-text-muted truncate">{chat.lastMessage?.text || "No messages yet"}</p>
@@ -152,7 +154,9 @@ export default function AdminMessagesView() {
  <User size={18} />
  </div>
  <div>
- <h3 className="font-black admin-dash-text-main text-sm">{activeChat.participants?.[0]?.firstName || "User"}</h3>
+ <h3 className="font-black admin-dash-text-main text-sm">
+ {activeChat.participants?.map((p: any) => p.firstName || "User").join(" - ") || "Chat"}
+ </h3>
  <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">Active Now</p>
  </div>
  </div>
@@ -166,22 +170,36 @@ export default function AdminMessagesView() {
  <span className="px-4 py-1 admin-dash-card border admin-dash-border rounded-full text-[9px] font-black admin-dash-text-muted uppercase tracking-widest ">No Messages Yet</span>
  </div>
  )}
- {messages.map((m: any) => (
- <div key={m._id} className={`flex items-start gap-4 ${m.sender === authService.getAdminUser()?._id ? 'ml-auto justify-end max-w-[70%]' : 'max-w-[70%]'}`}>
- {m.sender !== authService.getAdminUser()?._id && (
+ {messages.map((m: any) => {
+ const adminId = authService.getAdminUser()?._id || authService.getAdminUser()?.id;
+ const isAdmin = m.sender === adminId;
+ const p2Id = activeChat.participants?.[1]?._id || activeChat.participants?.[1]?.id;
+ const isRightSide = isAdmin || (p2Id && m.sender === p2Id);
+
+ const senderUser = activeChat.participants?.find((p: any) => (p._id || p.id) === m.sender);
+ const senderName = senderUser?.firstName || (isAdmin ? "Admin" : "User");
+
+ return (
+ <div key={m._id} className={`flex items-start gap-4 ${isRightSide ? 'ml-auto justify-end max-w-[70%]' : 'max-w-[70%]'}`}>
+ {!isRightSide && (
  <div className="w-8 h-8 rounded-app admin-dash-header-bg flex items-center justify-center admin-dash-text-muted shrink-0"><User size={14} /></div>
  )}
- <div className={`space-y-1 ${m.sender === authService.getAdminUser()?._id ? 'text-right' : ''}`}>
- <div className={`p-4 rounded-app text-[11px] font-bold leading-relaxed ${m.sender === authService.getAdminUser()?._id ? 'bg-primary text-white rounded-tr-none' : 'admin-dash-card border admin-dash-border rounded-tl-none admin-dash-text-main'}`}>
+ <div className={`space-y-1 ${isRightSide ? 'text-right' : ''}`}>
+ <p className={`text-[9px] font-black admin-dash-text-muted uppercase tracking-widest mb-1 ${isRightSide ? 'text-right' : 'text-left'}`}>{senderName}</p>
+ <div className={`p-4 rounded-app text-[11px] font-bold leading-relaxed admin-dash-card border admin-dash-border admin-dash-text-main ${isRightSide ? 'rounded-tr-none' : 'rounded-tl-none'}`}>
  {m.text}
  </div>
- <span className="text-[9px] font-bold admin-dash-text-muted flex items-center gap-2 justify-end">
+ <span className={`text-[9px] font-bold admin-dash-text-muted flex items-center gap-2 ${isRightSide ? 'justify-end' : 'justify-start'}`}>
  {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
- {m.sender === authService.getAdminUser()?._id && <CheckCheck size={12} className="text-primary" />}
+ {isAdmin && <CheckCheck size={12} className="text-primary" />}
  </span>
  </div>
+ {isRightSide && (
+ <div className="w-8 h-8 rounded-app admin-dash-header-bg flex items-center justify-center admin-dash-text-muted shrink-0"><User size={14} /></div>
+ )}
  </div>
- ))}
+ );
+ })}
  </div>
  
  {/* Input Area */}

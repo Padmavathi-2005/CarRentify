@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { PlusCircle, Upload, X, Check, Save, Sparkles, ChevronLeft, LayoutGrid, Info, Settings, InfoIcon, ShieldCheck } from "lucide-react";
+import { PlusCircle, Upload, X, Check, Save, Sparkles, ChevronLeft, LayoutGrid, Info, Settings, InfoIcon, ShieldCheck, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useSettings } from "@/components/ThemeProvider";
@@ -18,6 +18,9 @@ export default function AddCarView() {
  const [images, setImages] = useState<{url: string, isWide: boolean}[]>([]);
  const [validationError, setValidationError] = useState<string | null>(null);
  const fileInputRef = useRef<HTMLInputElement>(null);
+ 
+ const [aiPrompt, setAiPrompt] = useState("");
+ const [isAiLoading, setIsAiLoading] = useState(false);
  
  const [formData, setFormData] = useState({
  brand: "",
@@ -146,6 +149,61 @@ export default function AddCarView() {
  }
  };
 
+ const handleAiAutofill = async () => {
+ if (!aiPrompt.trim()) return;
+ setIsAiLoading(true);
+ try {
+ const token = localStorage.getItem('token');
+ const res = await fetch(`${API_BASE_URL}/cars/ai-autofill`, {
+ method: 'POST',
+ headers: { 
+   'Content-Type': 'application/json',
+   'Authorization': `Bearer ${token}` 
+ },
+ body: JSON.stringify({ prompt: aiPrompt })
+ });
+ if (!res.ok) {
+ const err = await res.json();
+ throw new Error(err.error || 'Failed to generate details');
+ }
+ const data = await res.json();
+ 
+ // Match brand
+ let brandId = formData.brand;
+ if (data.brandName) {
+ const matchedBrand = brands.find(b => b.name.toLowerCase() === data.brandName.toLowerCase());
+ if (matchedBrand) brandId = matchedBrand._id;
+ }
+
+ // Match category
+ let vehicleTypeId = formData.vehicleType;
+ if (data.categoryName) {
+ const matchedType = vehicleTypes.find(t => t.name.toLowerCase() === data.categoryName.toLowerCase());
+ if (matchedType) vehicleTypeId = matchedType._id;
+ }
+
+ setFormData(prev => ({
+ ...prev,
+ brand: brandId,
+ vehicleType: vehicleTypeId,
+ model: data.model || prev.model,
+ year: data.year || prev.year,
+ pricePerDay: data.pricePerDay || prev.pricePerDay,
+ fuelType: data.fuelType || prev.fuelType,
+ transmission: data.transmission || prev.transmission,
+ seats: data.seats || prev.seats,
+ mileage: data.mileage || prev.mileage,
+ description: data.description || prev.description,
+ }));
+ 
+ setValidationError(null);
+ } catch (error: any) {
+ setValidationError(error.message || 'AI Autofill failed.');
+ } finally {
+ setIsAiLoading(false);
+ }
+ };
+
  return (
  <div className="max-w-5xl mx-auto space-y-8">
  {/* Error Banner */}
@@ -180,6 +238,28 @@ export default function AddCarView() {
  <h1 className="text-3xl font-bold text-slate-900 mb-2">Create New Listing</h1>
  <p className="text-slate-500">Share your premium vehicle with the CarRental community.</p>
  </div>
+ </div>
+
+ {/* AI Autofill Magic */}
+ <div className="bg-gradient-to-r from-violet-50 to-fuchsia-50 p-6 rounded-app border border-violet-100 flex flex-col md:flex-row gap-4 items-center">
+ <div className="flex-1 w-full">
+ <label className="text-xs font-bold uppercase tracking-widest text-violet-600 px-1 mb-2 block">✨ Magic Autofill</label>
+ <Input 
+ value={aiPrompt}
+ onChange={(e) => setAiPrompt(e.target.value)}
+ placeholder="e.g., 2023 Tesla Model S Plaid, 15k miles, Electric"
+ className="h-12 bg-white border-violet-200 rounded-app px-6 font-medium text-slate-700 w-full focus:ring-violet-300"
+ onKeyDown={(e) => e.key === 'Enter' && !isAiLoading && (e.preventDefault(), handleAiAutofill())}
+ />
+ </div>
+ <Button 
+ type="button"
+ onClick={handleAiAutofill}
+ disabled={isAiLoading || !aiPrompt.trim()}
+ className="md:mt-6 h-12 px-8 bg-violet-600 hover:bg-violet-700 text-white rounded-app font-bold transition-all whitespace-nowrap"
+ >
+ {isAiLoading ? "Generating..." : <><Wand2 size={18} className="mr-2" /> Autofill with AI</>}
+ </Button>
  </div>
 
  <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8">

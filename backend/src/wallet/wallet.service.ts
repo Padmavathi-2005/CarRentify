@@ -7,6 +7,8 @@ import { SettingsService } from '../settings/settings.service';
 import { ConfigService } from '@nestjs/config';
 import { PaymentGateway, PaymentGatewayDocument } from '../settings/schemas/payment-gateway.schema';
 import { PayoutMethod, PayoutMethodDocument } from './schemas/payout-method.schema';
+import { NotificationsService } from '../notifications/notifications.service';
+import { User, UserDocument } from '../users/schemas/user.schema';
 import Stripe from 'stripe';
 
 @Injectable()
@@ -18,6 +20,8 @@ export class WalletService {
     private readonly configService: ConfigService,
     @InjectModel(PaymentGateway.name) private gatewayModel: Model<PaymentGatewayDocument>,
     @InjectModel(PayoutMethod.name) private payoutModel: Model<PayoutMethodDocument>,
+    private readonly notificationsService: NotificationsService,
+    @InjectModel(User.name) private userModel: Model<UserDocument>,
   ) {}
 
   async getPayoutMethod(userId: string) {
@@ -249,6 +253,13 @@ export class WalletService {
     wallet.balance += amount;
     await wallet.save();
 
+    // Sync with User model
+    const mongoose = require('mongoose');
+    const userModel = mongoose.model('User');
+    if (userModel) {
+      await userModel.findByIdAndUpdate(userId, { walletBalance: wallet.balance });
+    }
+
     return { transaction, newBalance: wallet.balance };
   }
 
@@ -274,6 +285,13 @@ export class WalletService {
     wallet.balance -= amount;
     await wallet.save();
 
+    // Sync with User model
+    const mongoose = require('mongoose');
+    const userModel = mongoose.model('User');
+    if (userModel) {
+      await userModel.findByIdAndUpdate(userId, { walletBalance: wallet.balance });
+    }
+
     return { transaction, newBalance: wallet.balance };
   }
 
@@ -284,6 +302,61 @@ export class WalletService {
     } else {
       return this.deductFunds(userId, amount, description, TransactionSource.ADMIN);
     }
+  }
+
+  async addPendingFunds(userId: string, amount: number, description: string, referenceId: string) {
+    const wallet = await this.getOrCreateWallet(userId);
+    
+    let transaction = await this.transactionModel.findOne({ referenceId, source: TransactionSource.BOOKING, type: TransactionType.CREDIT });
+    if (!transaction) {
+      transaction = await this.transactionModel.create({
+        user: new Types.ObjectId(userId),
+        wallet: wallet._id,
+        amount: amount,
+        type: TransactionType.CREDIT,
+        status: TransactionStatus.PENDING,
+        source: TransactionSource.BOOKING,
+        description: description,
+        referenceId: referenceId,
+        currency: wallet.currency,
+      });
+    }
+    return { transaction };
+  }
+
+  async finalizePendingFunds(userId: string, referenceId: string, finalAmount: number, description?: string) {
+    let transaction = await this.transactionModel.findOne({ user: new Types.ObjectId(userId), referenceId, source: TransactionSource.BOOKING, type: TransactionType.CREDIT });
+    if (transaction && transaction.status === TransactionStatus.PENDING) {
+      const wallet = await this.walletModel.findById(transaction.wallet);
+      transaction.status = TransactionStatus.SUCCESS;
+      transaction.amount = finalAmount;
+      if (description) transaction.description = description;
+      await transaction.save();
+      
+      if (wallet) {
+        wallet.balance += finalAmount;
+        await wallet.save();
+      }
+      return transaction;
+    }
+    return null;
+  }
+
+  async cancelPendingFunds(referenceId: string, reason: string = 'Booking Cancelled') {
+    // Find all pending transactions for this referenceId (should be Admin and Host)
+    const transactions = await this.transactionModel.find({ 
+      referenceId, 
+      source: TransactionSource.BOOKING, 
+      type: TransactionType.CREDIT,
+      status: TransactionStatus.PENDING
+    });
+    
+    for (const tx of transactions) {
+      tx.status = TransactionStatus.FAILED;
+      tx.description = `${tx.description} - ${reason}`;
+      await tx.save();
+    }
+    return transactions.length;
   }
 
   async getWalletStats(userId: string) {
@@ -298,11 +371,16 @@ export class WalletService {
       .filter(t => t.type === TransactionType.DEBIT && t.source === TransactionSource.WITHDRAWAL && t.status === TransactionStatus.PENDING)
       .reduce((sum, t) => sum + t.amount, 0);
 
+    const pendingEarnings = transactions
+      .filter(t => t.type === TransactionType.CREDIT && t.source === TransactionSource.BOOKING && t.status === TransactionStatus.PENDING)
+      .reduce((sum, t) => sum + t.amount, 0);
+
     return {
       balance: wallet.balance,
       currency: wallet.currency,
       totalEarnings,
       pendingPayouts,
+      pendingEarnings,
     };
   }
 
@@ -326,6 +404,24 @@ export class WalletService {
 
     wallet.balance -= amount;
     await wallet.save();
+
+    // Notify all admins about the new withdrawal request
+    try {
+      const requester = await this.userModel.findById(userId).lean();
+      const requesterName = requester ? `${(requester as any).firstName} ${(requester as any).lastName}` : 'A user';
+      const admins = await this.userModel.find({ role: 'admin' }).lean();
+      await Promise.all(admins.map(admin =>
+        this.notificationsService.create(
+          (admin as any)._id.toString(),
+          'New Withdrawal Request',
+          `${requesterName} has requested a withdrawal of ${amount} ${wallet.currency}.`,
+          'withdrawal',
+          { type: 'withdrawal_request', transactionId: transaction._id.toString(), url: '/admin/withdrawals' }
+        )
+      ));
+    } catch (err) {
+      console.error('[WalletService] Failed to notify admins of withdrawal request:', err);
+    }
 
     return { transaction, newBalance: wallet.balance };
   }

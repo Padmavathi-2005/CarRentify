@@ -109,6 +109,9 @@ export class SettingsService implements OnModuleInit {
         { id: 'f2', label: 'Terms', url: '/terms' },
         { id: 'f3', label: 'Privacy', url: '/privacy' }
       ]
+    },
+    ai: {
+      openAiApiKey: ''
     }
   };
 
@@ -160,7 +163,14 @@ export class SettingsService implements OnModuleInit {
       // Flatten defaults for base object
       const flattenedDefaults = Object.values(this.defaultSections).reduce((acc, val) => ({ ...acc, ...val }), { ...this.defaultSections.general });
 
-      return { ...flattenedDefaults, ...dbSettings };
+      const finalSettings = { ...flattenedDefaults, ...dbSettings };
+      
+      // Obscure sensitive keys from the public response
+      if (finalSettings.openAiApiKey) {
+        finalSettings.openAiApiKey = '********';
+      }
+
+      return finalSettings;
     } catch (err) {
       console.error('getSettings() failed, returning defaults:', err);
       return Object.values(this.defaultSections).reduce((acc, val) => ({ ...acc, ...val }), { ...this.defaultSections.general });
@@ -169,14 +179,34 @@ export class SettingsService implements OnModuleInit {
 
   async updateSettings(updateDto: Partial<any>) {
     try {
+      // Flatten any nested section objects (e.g. { ai: { openAiApiKey: 'x' } } → { openAiApiKey: 'x' })
+      const flatDto: any = {};
+      for (const [key, value] of Object.entries(updateDto)) {
+        if (value !== null && typeof value === 'object' && !Array.isArray(value) && !(value instanceof Date)) {
+          // Check if this key matches a known section name — if so, flatten its children
+          if (this.defaultSections[key as keyof typeof this.defaultSections]) {
+            Object.assign(flatDto, value);
+          } else {
+            flatDto[key] = value;
+          }
+        } else {
+          flatDto[key] = value;
+        }
+      }
+
       for (const [sectionId, fields] of Object.entries(this.defaultSections)) {
         const sectionUpdate: any = {};
         const fieldsToUnset: any = {};
         
         // 1. Identify fields to update/set
         Object.keys(fields).forEach((field) => {
-          if (updateDto[field] !== undefined)
-            sectionUpdate[field] = updateDto[field];
+          if (flatDto[field] !== undefined) {
+            // Prevent overwriting with obscured values
+            if (field === 'openAiApiKey' && flatDto[field] === '********') {
+              return; // Skip updating this field
+            }
+            sectionUpdate[field] = flatDto[field];
+          }
         });
 
         // 2. Identify unwanted fields to PURGE from DB
@@ -220,6 +250,15 @@ export class SettingsService implements OnModuleInit {
       return (doc as any)?.primaryColor || '#3f147b';
     } catch {
       return '#3f147b';
+    }
+  }
+
+  async getAiApiKey() {
+    try {
+      const doc = await this.settingModel.findById('ai').lean();
+      return (doc as any)?.openAiApiKey || '';
+    } catch {
+      return '';
     }
   }
 

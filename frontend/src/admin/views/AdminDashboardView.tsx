@@ -11,6 +11,7 @@ import {
 import { Card, CardContent } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
+import Link from "next/link";
 import { useLocale } from "@/components/LocaleContext";
 
 import { ADMIN_STATS, ADMIN_ACTIVITY, ADMIN_TASKS } from "../../data/mockData";
@@ -119,10 +120,10 @@ export default function AdminDashboard() {
  }
 
  const statCards = [
- { label: "Total Revenue", value: stats?.revenue?.value ? formatPrice(stats.revenue.value) : formatPrice(0), change: stats?.revenue?.change || "+0%", up: stats?.revenue?.up ?? true, icon: DollarSign, color: "text-emerald-500", bg: "bg-emerald-500/5", border: "border-emerald-500/10" },
- { label: "Active Users", value: stats?.users?.value?.toString() || "0", change: stats?.users?.change || "+0%", up: stats?.users?.up ?? true, icon: Users, color: "text-blue-500", bg: "bg-blue-500/5", border: "border-blue-500/10" },
- { label: "Car Status", value: stats?.fleet?.value ? `${stats.fleet.value}%` : "0%", change: stats?.fleet?.change || "0%", up: stats?.fleet?.up ?? true, icon: Car, color: "text-violet-500", bg: "bg-violet-500/5", border: "border-violet-500/10" },
- { label: "New Bookings", value: stats?.bookings?.value?.toString() || "0", change: stats?.bookings?.change || "+0%", up: stats?.bookings?.up ?? true, icon: Calendar, color: "text-amber-500", bg: "bg-amber-500/5", border: "border-amber-500/10" }
+ { label: "Total Revenue", href: "/admin/wallet", value: stats?.revenue?.value ? formatPrice(stats.revenue.value) : formatPrice(0), change: stats?.revenue?.change || "+0%", up: stats?.revenue?.up ?? true, icon: DollarSign, color: "text-emerald-500", bg: "bg-emerald-500/5", border: "border-emerald-500/10" },
+ { label: "Active Users", href: "/admin/users", value: stats?.users?.value?.toString() || "0", change: stats?.users?.change || "+0%", up: stats?.users?.up ?? true, icon: Users, color: "text-blue-500", bg: "bg-blue-500/5", border: "border-blue-500/10" },
+ { label: "Available Fleet %", href: "/admin/cars", value: stats?.fleet?.value ? `${stats.fleet.value}%` : "0%", change: stats?.fleet?.change || "0%", up: stats?.fleet?.up ?? true, icon: Car, color: "text-violet-500", bg: "bg-violet-500/5", border: "border-violet-500/10" },
+ { label: "New Bookings", href: "/admin/bookings", value: stats?.bookings?.value?.toString() || "0", change: stats?.bookings?.change || "+0%", up: stats?.bookings?.up ?? true, icon: Calendar, color: "text-amber-500", bg: "bg-amber-500/5", border: "border-amber-500/10" }
  ];
 
  return (
@@ -161,7 +162,8 @@ export default function AdminDashboard() {
  animate={{ opacity: 1, y: 0 }}
  transition={{ delay: i * 0.1 }}
  >
- <Card className={`admin-stat-card rounded-app border ${stat.border} ${stat.bg} p-5 hover: hover:-translate-y-1 transition-all duration-500 group relative overflow-hidden`}>
+ <Link href={stat.href} className="block outline-none">
+ <Card className={`admin-stat-card rounded-app border ${stat.border} ${stat.bg} p-5 hover: hover:-translate-y-1 transition-all duration-500 group relative overflow-hidden cursor-pointer`}>
  <div className="flex justify-between items-start mb-6 relative z-10">
  <div className={`w-12 h-12 admin-dash-card rounded-app flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 border`}>
  <Icon size={20} className={stat.color} />
@@ -179,6 +181,7 @@ export default function AdminDashboard() {
  </div>
  </div>
  </Card>
+ </Link>
  </motion.div>
  );
  })}

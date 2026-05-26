@@ -300,7 +300,6 @@ html.dark,
   .border-border\/40,
   .border-border\/50 {
     border-color: rgba(255, 255, 255, 0.3) !important;
-    border-width: 1px !important;
   }
 
   /* Force secondary/muted text to be light enough to read */

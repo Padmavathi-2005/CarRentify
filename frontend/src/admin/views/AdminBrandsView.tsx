@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useSettings } from "@/components/ThemeProvider";
 import { API_BASE_URL } from "@/config/api";
 import Modal from "@/components/ui/modal";
 
@@ -29,6 +30,13 @@ export default function AdminBrandsView() {
  const [loading, setLoading] = useState(true);
  const [currentPage, setCurrentPage] = useState(1);
  const [itemsPerPage, setItemsPerPage] = useState(10);
+ const { settings } = useSettings();
+ const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
+ const [sortOrder, setSortOrder] = useState<"newest" | "name_asc" | "name_desc">("newest");
+
+ React.useEffect(() => {
+  if (settings?.itemsPerPageLimit) setItemsPerPage(settings.itemsPerPageLimit);
+ }, [settings?.itemsPerPageLimit]);
 
  // Modal States
  const [isModalOpen, setIsModalOpen] = useState(false);
@@ -168,9 +176,19 @@ export default function AdminBrandsView() {
   }
  };
 
- const filteredBrands = brands.filter(brand => 
-  brand.name?.toLowerCase().includes(search.toLowerCase())
- );
+ const filteredBrands = brands
+  .filter(brand => {
+   const matchesSearch = brand.name?.toLowerCase().includes(search.toLowerCase());
+   const matchesStatus = statusFilter === "all" ? true : 
+                         statusFilter === "active" ? brand.isActive !== false : 
+                         brand.isActive === false;
+   return matchesSearch && matchesStatus;
+  })
+  .sort((a, b) => {
+   if (sortOrder === "name_asc") return (a.name || "").localeCompare(b.name || "");
+   if (sortOrder === "name_desc") return (b.name || "").localeCompare(a.name || "");
+   return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+  });
 
  // Pagination Logic
  const totalItems = filteredBrands.length;
@@ -226,10 +244,20 @@ export default function AdminBrandsView() {
   />
   </div>
   <div className="md:col-span-2 flex gap-3">
-  <Button variant="outline" className="h-11 flex-1 rounded-app border-[var(--admin-border)] bg-[var(--admin-card-bg)] text-[10px] font-black uppercase tracking-[0.2em] text-[var(--admin-text-muted)] hover:bg-[var(--admin-bg)] transition-all">
-  <Filter size={14} className="mr-2" /> Tier Filters
+  <Button 
+    variant="outline" 
+    onClick={() => { setStatusFilter(p => p === "all" ? "active" : p === "active" ? "inactive" : "all"); setCurrentPage(1); }}
+    className="h-11 flex-1 rounded-app border-[var(--admin-border)] bg-[var(--admin-card-bg)] text-[10px] font-black uppercase tracking-[0.2em] text-[var(--admin-text-muted)] hover:bg-[var(--admin-bg)] transition-all"
+  >
+  <Filter size={14} className="mr-2" /> 
+  {statusFilter === "all" ? "All Partners" : statusFilter === "active" ? "Active Partners" : "Inactive Partners"}
   </Button>
-  <Button variant="outline" className="h-11 w-11 rounded-app border-[var(--admin-border)] bg-[var(--admin-card-bg)] text-[var(--admin-text-muted)] hover:text-primary transition-all">
+  <Button 
+    variant="outline" 
+    onClick={() => setSortOrder(p => p === "newest" ? "name_asc" : p === "name_asc" ? "name_desc" : "newest")}
+    className="h-11 w-11 rounded-app border-[var(--admin-border)] bg-[var(--admin-card-bg)] text-[var(--admin-text-muted)] hover:text-primary transition-all"
+    title={sortOrder === "newest" ? "Sort by Newest" : sortOrder === "name_asc" ? "Sort A-Z" : "Sort Z-A"}
+  >
   <ArrowUpDown size={16} />
   </Button>
   </div>

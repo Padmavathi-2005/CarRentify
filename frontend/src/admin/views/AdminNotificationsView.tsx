@@ -26,11 +26,12 @@ export default function AdminNotificationsView() {
  const [notifications, setNotifications] = useState<any[]>([]);
  const [loading, setLoading] = useState(true);
  const [search, setSearch] = useState("");
+ const [filterType, setFilterType] = useState<'all' | 'urgent' | 'sync'>('all');
 
  const fetchNotifications = async () => {
  setLoading(true);
  try {
- const res = await fetch(`${API_BASE_URL}/notifications`, {
+ const res = await fetch(`${API_BASE_URL}/notifications?_t=${Date.now()}`, {
  headers: { Authorization: `Bearer ${authService.getAdminToken()}` }
  });
  if (res.ok) {
@@ -48,10 +49,18 @@ export default function AdminNotificationsView() {
  fetchNotifications();
  }, []);
 
- const filtered = notifications.filter(n => 
- n.title?.toLowerCase().includes(search.toLowerCase()) || 
- (n.body || n.message)?.toLowerCase().includes(search.toLowerCase())
- );
+ const filtered = notifications.filter(n => {
+   const searchLower = search.toLowerCase();
+   const matchesSearch = (n.title || "").toLowerCase().includes(searchLower) || 
+                         (n.body || n.message || "").toLowerCase().includes(searchLower);
+   let matchesType = true;
+   if (filterType === 'urgent') {
+     matchesType = n.type === 'warning' || n.type === 'error';
+   } else if (filterType === 'sync') {
+     matchesType = n.type === 'info' || n.type === 'success' || !n.type;
+   }
+   return matchesSearch && matchesType;
+ });
 
  return (
  <div className="space-y-6">
@@ -94,17 +103,26 @@ export default function AdminNotificationsView() {
  <div className="space-y-4 pt-4 border-t border-[var(--admin-border)]">
  <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--admin-text-main)]">Priority Levels</h4>
  <div className="space-y-1">
- <button className="w-full flex items-center justify-between p-3 rounded-app bg-primary text-white font-black text-[10px] uppercase tracking-widest ">
+ <button 
+  onClick={() => setFilterType('all')}
+  className={`w-full flex items-center justify-between p-3 rounded-app font-black text-[10px] uppercase tracking-widest transition-all ${filterType === 'all' ? 'bg-primary text-white' : 'hover:bg-[var(--admin-bg)] text-[var(--admin-text-muted)]'}`}
+ >
  <span>All Streams</span>
  <Zap size={12} />
  </button>
- <button className="w-full flex items-center justify-between p-3 rounded-app hover:bg-[var(--admin-bg)] text-[var(--admin-text-muted)] font-black text-[10px] uppercase tracking-widest transition-all">
+ <button 
+  onClick={() => setFilterType('urgent')}
+  className={`w-full flex items-center justify-between p-3 rounded-app font-black text-[10px] uppercase tracking-widest transition-all ${filterType === 'urgent' ? 'bg-primary text-white' : 'hover:bg-[var(--admin-bg)] text-[var(--admin-text-muted)]'}`}
+ >
  <span>Urgent Alerts</span>
- <div className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+ <div className={`w-1.5 h-1.5 rounded-full ${filterType === 'urgent' ? 'bg-white' : 'bg-rose-500'}`} />
  </button>
- <button className="w-full flex items-center justify-between p-3 rounded-app hover:bg-[var(--admin-bg)] text-[var(--admin-text-muted)] font-black text-[10px] uppercase tracking-widest transition-all">
+ <button 
+  onClick={() => setFilterType('sync')}
+  className={`w-full flex items-center justify-between p-3 rounded-app font-black text-[10px] uppercase tracking-widest transition-all ${filterType === 'sync' ? 'bg-primary text-white' : 'hover:bg-[var(--admin-bg)] text-[var(--admin-text-muted)]'}`}
+ >
  <span>System Syncs</span>
- <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+ <div className={`w-1.5 h-1.5 rounded-full ${filterType === 'sync' ? 'bg-white' : 'bg-blue-500'}`} />
  </button>
  </div>
  </div>
@@ -154,8 +172,17 @@ export default function AdminNotificationsView() {
  >
  View Context
  </button>
+ ) : (n.data?.bookingId || n.data?.userId) ? (
+ <button 
+  onClick={() => router.push(n.data?.bookingId ? '/admin/bookings' : '/admin/users')}
+ className="text-[9px] font-black text-primary uppercase tracking-widest hover:underline"
+ >
+ Reference Context
+ </button>
  ) : (
- <button className="text-[9px] font-black text-primary uppercase tracking-widest hover:underline">Reference Context</button>
+ <button className="text-[9px] font-black text-slate-300 uppercase tracking-widest cursor-default">
+ Context N/A
+ </button>
  )}
  </div>
  </div>

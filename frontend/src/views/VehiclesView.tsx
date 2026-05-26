@@ -171,6 +171,24 @@ function VehiclesContent() {
   const yearTrackRef = useRef<HTMLDivElement>(null);
   const listingTopRef = useRef<HTMLDivElement>(null);
 
+  // Enable horizontal scrolling with mouse wheel for the filter bar
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      if (e.shiftKey) return;
+      
+      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+        e.preventDefault();
+        el.scrollLeft += e.deltaY;
+      }
+    };
+
+    el.addEventListener('wheel', handleWheel, { passive: false });
+    return () => el.removeEventListener('wheel', handleWheel);
+  }, []);
+
   // Close components on outside click or scroll
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

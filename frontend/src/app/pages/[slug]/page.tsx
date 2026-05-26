@@ -82,16 +82,16 @@ export default function StaticPageView() {
   const localizedContent = currentLang === 'en' ? page : (page.translations?.[currentLang] || page);
 
   return (
-    <div className="min-h-screen bg-[#FDFDFD] font-sans selection:bg-primary selection:text-white" dir={isRTL ? "rtl" : "ltr"}>
+    <div className="min-h-screen bg-background font-sans selection:bg-primary selection:text-white" dir={isRTL ? "rtl" : "ltr"}>
       <Header />
       
       {/* Simple Professional Header Hub */}
-      <section className="bg-white border-b border-slate-50 pt-28 pb-8">
+      <section className="bg-card border-b border-border pt-28 pb-8">
          <div className="max-w-4xl mx-auto px-6">
             <motion.h1 
                initial={{ opacity: 0, y: 10 }}
                animate={{ opacity: 1, y: 0 }}
-               className="text-4xl md:text-5xl font-black text-slate-900 tracking-tighter"
+               className="text-4xl md:text-5xl font-black text-foreground tracking-tighter"
             >
                {localizedContent.title}
             </motion.h1>
@@ -100,9 +100,9 @@ export default function StaticPageView() {
 
       {/* Clean Content Stage */}
       <main className="max-w-4xl mx-auto px-6 pb-32 pt-8">
-         <div className="bg-white p-8 md:p-12 rounded-app border border-slate-100 shadow-sm relative group">
+         <div className="bg-card p-8 md:p-12 rounded-app border border-border shadow-sm relative group">
             {/* Localized Article Content */}
-            <article className="prose prose-slate max-w-none prose-headings:font-black prose-headings:tracking-tighter prose-p:font-medium prose-p:text-slate-600 prose-p:leading-[1.8] prose-p:text-lg">
+            <article className="prose prose-slate dark:prose-invert max-w-none prose-headings:font-black prose-headings:tracking-tighter prose-p:font-medium prose-p:text-muted-foreground prose-p:leading-[1.8] prose-p:text-lg">
                <div 
                  className="localized-body"
                  dangerouslySetInnerHTML={{ __html: localizedContent.content }} 
@@ -110,9 +110,9 @@ export default function StaticPageView() {
                
                {/* SEO Discovery Tag */}
                {localizedContent.metaDescription && (
-                 <div className="mt-16 p-8 rounded-app bg-slate-50/50 border border-slate-100 flex items-start gap-4">
+                 <div className="mt-16 p-8 rounded-app bg-muted/50 border border-border flex items-start gap-4">
                     <ShieldCheck className="text-emerald-500 mt-1" size={20} />
-                    <p className="text-sm font-bold text-slate-500 leading-relaxed italic">{localizedContent.metaDescription}</p>
+                    <p className="text-sm font-bold text-muted-foreground leading-relaxed italic">{localizedContent.metaDescription}</p>
                  </div>
                )}
             </article>
@@ -122,12 +122,12 @@ export default function StaticPageView() {
       <Footer />
 
       <style jsx global>{`
-         .localized-body h1 { font-size: 2.25rem; font-weight: 900; margin-bottom: 1rem; color: #0f172a; }
-         .localized-body h2 { font-size: 1.5rem; font-weight: 900; margin-top: 2rem; margin-bottom: 0.5rem; color: #0f172a; }
-         .localized-body p { margin-top: 0; margin-bottom: 1rem; }
+         .localized-body h1 { font-size: 2.25rem; font-weight: 900; margin-bottom: 1rem; color: hsl(var(--foreground)); }
+         .localized-body h2 { font-size: 1.5rem; font-weight: 900; margin-top: 2rem; margin-bottom: 0.5rem; color: hsl(var(--foreground)); }
+         .localized-body p { margin-top: 0; margin-bottom: 1rem; color: hsl(var(--muted-foreground)); }
          .localized-body ul { margin-bottom: 2rem; list-style-type: none; padding: 0; }
-         .localized-body li { padding: 1rem 0; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; gap: 0.75rem; font-weight: 600; color: #475569; }
-         .localized-body li:before { content: "•"; color: #3f147b; font-weight: 900; font-size: 1.5rem; }
+         .localized-body li { padding: 1rem 0; border-bottom: 1px solid hsl(var(--border)); display: flex; align-items: center; gap: 0.75rem; font-weight: 600; color: hsl(var(--muted-foreground)); }
+         .localized-body li:before { content: "•"; color: hsl(var(--primary)); font-weight: 900; font-size: 1.5rem; }
          
          @keyframes fadeIn {
             from { opacity: 0; transform: translateY(20px); }

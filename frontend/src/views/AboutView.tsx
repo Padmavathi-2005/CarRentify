@@ -142,11 +142,11 @@ export default function AboutPage() {
  <div className="flex flex-wrap gap-4">
  <div className="flex items-center gap-3 px-6 h-14 bg-card rounded-app border border-border/50 ">
  <Clock className="w-5 h-5 text-primary" />
- <span className="font-bold text-sm">{t('about.response_time')}</span>
+ <span className="font-bold text-sm text-slate-900 dark:text-white">{t('about.response_time')}</span>
  </div>
  <div className="flex items-center gap-3 px-6 h-14 bg-card rounded-app border border-border/50 ">
  <Globe className="w-5 h-5 text-primary" />
- <span className="font-bold text-sm">{t('about.multilingual')}</span>
+ <span className="font-bold text-sm text-slate-900 dark:text-white">{t('about.multilingual')}</span>
  </div>
  </div>
  </div>

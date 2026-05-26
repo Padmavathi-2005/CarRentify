@@ -18,15 +18,17 @@ const bookings = [
  { id: "BK-4504", car: "BMW X7 M50i", user: "Nathan Drake", status: "Cancelled", date: "Mar 25, 2026 - Mar 28, 2026", total: 540, location: "Paris CDG T2E" },
 ];
 
-export default function BookingsPage() {
- const { formatPrice } = useLocale();
- const [search, setSearch] = useState("");
+ export default function BookingsPage() {
+  const { formatPrice } = useLocale();
+  const [search, setSearch] = useState("");
+  const [activeTab, setActiveTab] = useState("All");
 
- const filteredBookings = bookings.filter(bk => 
- bk.id.toLowerCase().includes(search.toLowerCase()) || 
- bk.user.toLowerCase().includes(search.toLowerCase()) ||
- bk.car.toLowerCase().includes(search.toLowerCase())
- );
+  const filteredBookings = bookings.filter(bk => 
+    (activeTab === "All" || bk.status === activeTab) &&
+    (bk.id.toLowerCase().includes(search.toLowerCase()) || 
+     bk.user.toLowerCase().includes(search.toLowerCase()) ||
+     bk.car.toLowerCase().includes(search.toLowerCase()))
+  );
 
  return (
  <motion.div
@@ -38,14 +40,6 @@ export default function BookingsPage() {
  <div>
  <h1 className="text-4xl font-extrabold tracking-tight text-[var(--admin-text-main)] mb-2">Reservation System</h1>
  <p className="text-[var(--admin-text-muted)] font-medium tracking-wide">Track, modify, and optimize your global booking schedule.</p>
- </div>
- <div className="flex items-center gap-3 w-full md:w-auto">
- <Button variant="outline" className="flex-1 md:flex-none h-12 px-6 rounded-app bg-[var(--admin-card-bg)] border-[var(--admin-border)] text-[var(--admin-text-main)] font-bold flex items-center gap-2 hover:bg-[var(--admin-bg)] transition-all">
- <Calendar size={18} /> Schedule View
- </Button>
- <Button className="flex-1 md:flex-none h-12 px-8 rounded-app bg-[var(--primary-brand-color)] text-white font-bold flex items-center gap-2 transition-all hover:opacity-90">
- New Manual Booking
- </Button>
  </div>
  </div>
 
@@ -63,9 +57,13 @@ export default function BookingsPage() {
  
  <div className="flex items-center gap-2">
  {["All", "Active", "Pending", "Completed", "Cancelled"].map((tab) => (
- <button key={tab} className={`px-4 h-10 rounded-app text-xs font-bold tracking-wide transition-all border border-[var(--admin-border)] ${tab === 'All' ? 'bg-[var(--primary-brand-color)] text-white border-none ' : 'bg-[var(--admin-card-bg)] text-[var(--admin-text-muted)] hover:bg-[var(--admin-bg)]'}`}>
- {tab}
- </button>
+  <button 
+    key={tab} 
+    onClick={() => setActiveTab(tab)}
+    className={`px-4 h-10 rounded-app text-xs font-bold tracking-wide transition-all border border-[var(--admin-border)] ${tab === activeTab ? 'bg-[var(--primary-brand-color)] text-white border-none shadow-md shadow-primary/20' : 'bg-[var(--admin-card-bg)] text-[var(--admin-text-muted)] hover:bg-[var(--admin-bg)]'}`}
+  >
+  {tab}
+  </button>
  ))}
  </div>
  </div>

@@ -85,21 +85,28 @@ export class BookingsService {
       (((booking as any).baseAmount ?? booking.totalPrice) * rate) / 100;
 
     // Find Admin User
-    const admin = await this.userModel.findOne({ email: 'admin@gmail.com' });
+    const admin = await this.userModel.findOne({ role: 'admin' });
     if (admin) {
-      await this.userModel.findByIdAndUpdate(admin._id, {
-        $inc: { walletBalance: commissionAmount }
-      });
-      
-      // Update Admin's digital wallet and create transaction history
-      await this.walletService.addFunds(
+      // Add PENDING transaction to Admin's Wallet (Escrow)
+      await this.walletService.addPendingFunds(
         admin._id.toString(),
         commissionAmount,
-        `Commission collected from Booking #${booking.bookingHash || booking._id.toString().slice(-8).toUpperCase()}`,
-        TransactionSource.BOOKING,
+        `Pending Commission for Booking #${booking.bookingHash || booking._id.toString().slice(-8).toUpperCase()}`,
         booking._id.toString()
       );
       
+      // Add PENDING transaction to Host's Wallet (Escrow)
+      const baseAmt = (booking as any).baseAmount ?? booking.totalPrice;
+      const hostTripEarnings = Math.max(0, baseAmt - commissionAmount);
+      if (hostTripEarnings > 0) {
+        await this.walletService.addPendingFunds(
+          booking.vendorId.toString(),
+          hostTripEarnings,
+          `Pending Payout for Booking #${booking.bookingHash || booking._id.toString().slice(-8).toUpperCase()}`,
+          booking._id.toString()
+        );
+      }
+
       booking.isCommissionProcessed = true;
       await booking.save();
       console.log(`[Commission] $${commissionAmount} credited to Admin for Booking ${bookingId}`);
@@ -348,10 +355,20 @@ export class BookingsService {
       throw new BadRequestException('Unauthorized');
 
     if (booking.status === BookingStatus.CONFIRMED) {
+      // Cancel pending escrow funds
+      await this.walletService.cancelPendingFunds(booking._id.toString(), 'Host Cancelled');
+
       // Refund to Wallet
       await this.userModel.findByIdAndUpdate(booking.customerId, {
         $inc: { walletBalance: booking.totalPrice },
       });
+      await this.walletService.addFunds(
+        booking.customerId.toString(),
+        booking.totalPrice,
+        `Refund for cancelled booking ${(booking.carId as any).name}`,
+        TransactionSource.REFUND,
+        booking._id.toString()
+      );
       booking.isRefunded = true;
     }
 
@@ -472,11 +489,42 @@ export class BookingsService {
     const refundPercentage = await this.calculateRefundPercentage(booking);
     const refundAmount = (booking.totalPrice * refundPercentage) / 100;
 
+    if (booking.status === BookingStatus.CONFIRMED) {
+      // Cancel pending escrow funds
+      await this.walletService.cancelPendingFunds(booking._id.toString(), 'Customer Cancelled');
+    }
+
     if (refundAmount > 0) {
       await this.userModel.findByIdAndUpdate(booking.customerId, {
         $inc: { walletBalance: refundAmount },
       });
+      await this.walletService.addFunds(
+        booking.customerId.toString(),
+        refundAmount,
+        `Refund for cancelled booking ${(booking.carId as any).name} (${refundPercentage}% Policy)`,
+        TransactionSource.REFUND,
+        booking._id.toString()
+      );
       booking.isRefunded = true;
+    }
+
+    // Cancellation Penalty Split
+    const cancellationFee = booking.totalPrice - refundAmount;
+    if (booking.status === BookingStatus.CONFIRMED && cancellationFee > 0) {
+      const financeSettings = await this.settingModel.findById('financials');
+      const rate = financeSettings ? (financeSettings as any).commissionRate : 15;
+      const adminFee = (cancellationFee * rate) / 100;
+      const hostFee = cancellationFee - adminFee;
+
+      const admin = await this.userModel.findOne({ role: 'admin' });
+      if (admin && adminFee > 0) {
+        await this.userModel.findByIdAndUpdate(admin._id, { $inc: { walletBalance: adminFee } });
+        await this.walletService.addFunds(admin._id.toString(), adminFee, `Cancellation Fee Cut (Booking #${booking._id.toString().slice(-8).toUpperCase()})`, TransactionSource.BOOKING, booking._id.toString());
+      }
+      if (hostFee > 0) {
+        await this.userModel.findByIdAndUpdate(booking.vendorId, { $inc: { walletBalance: hostFee } });
+        await this.walletService.addFunds(booking.vendorId.toString(), hostFee, `Cancellation Payout (Booking #${booking._id.toString().slice(-8).toUpperCase()})`, TransactionSource.BOOKING, booking._id.toString());
+      }
     }
 
     booking.status = BookingStatus.CANCELLED;
@@ -901,14 +949,66 @@ export class BookingsService {
     const vendor = await this.userModel.findById(booking.vendorId);
     const car = await this.carModel.findById(booking.carId);
     
-    // Credit vendor for settlement (if any)
-    if (booking.settlementAmount && booking.settlementAmount > 0) {
+    // Calculate Host Payout: Base Amount minus Platform Fee
+    // If baseAmount is undefined, fallback to totalPrice minus platformFee.
+    const baseAmt = (booking as any).baseAmount ?? booking.totalPrice;
+    const pFee = (booking as any).platformFee ?? 0;
+    const hostTripEarnings = Math.max(0, baseAmt - pFee);
+    
+    // Include any extra settlement (damages, late fees, etc)
+    const extraSettlement = booking.settlementAmount && booking.settlementAmount > 0 ? booking.settlementAmount : 0;
+    const totalHostPayout = hostTripEarnings + extraSettlement;
+
+    if (totalHostPayout > 0) {
+        // Update user's fast-access wallet balance
         await this.userModel.findByIdAndUpdate(booking.vendorId, {
-            $inc: { walletBalance: booking.settlementAmount }
+            $inc: { walletBalance: totalHostPayout }
         });
+        
+        // Finalize the pending escrow funds to digital wallet
+        const finalizedTx = await this.walletService.finalizePendingFunds(
+            booking.vendorId.toString(),
+            booking._id.toString(),
+            totalHostPayout,
+            `Trip Payout for ${car?.name || 'Booking'} #${booking.bookingHash || booking._id.toString().slice(-8).toUpperCase()}${extraSettlement > 0 ? ' (Includes Settlement)' : ''}`
+        );
+
+        // If for some reason there was no pending tx (e.g. legacy booking), fallback to addFunds
+        if (!finalizedTx) {
+            await this.walletService.addFunds(
+                booking.vendorId.toString(),
+                totalHostPayout,
+                `Trip Payout for ${car?.name || 'Booking'} #${booking.bookingHash || booking._id.toString().slice(-8).toUpperCase()}${extraSettlement > 0 ? ' (Includes Settlement)' : ''}`,
+                TransactionSource.BOOKING,
+                booking._id.toString()
+            );
+        }
     }
 
-    await this.sendCommunication(vendor, 'Trip Completed', `The customer has accepted the return condition and completed the trip for ${car?.name}. Settlement of $${(booking.settlementAmount || 0).toFixed(2)} processed.`, 'success', { type: 'booking', bookingId: booking._id.toString(), userType: 'host' });
+    // Finalize Admin Commission
+    const admin = await this.userModel.findOne({ role: 'admin' });
+    if (admin && pFee > 0) {
+        await this.userModel.findByIdAndUpdate(admin._id, {
+            $inc: { walletBalance: pFee }
+        });
+        const finalizedAdminTx = await this.walletService.finalizePendingFunds(
+            admin._id.toString(),
+            booking._id.toString(),
+            pFee,
+            `Commission collected from Booking #${booking.bookingHash || booking._id.toString().slice(-8).toUpperCase()}`
+        );
+        if (!finalizedAdminTx) {
+            await this.walletService.addFunds(
+                admin._id.toString(),
+                pFee,
+                `Commission collected from Booking #${booking.bookingHash || booking._id.toString().slice(-8).toUpperCase()}`,
+                TransactionSource.BOOKING,
+                booking._id.toString()
+            );
+        }
+    }
+
+    await this.sendCommunication(vendor, 'Trip Completed & Payout Processed', `The trip for ${car?.name} is completed. A total payout of $${totalHostPayout.toFixed(2)} has been credited to your wallet.`, 'success', { type: 'booking', bookingId: booking._id.toString(), userType: 'host' });
 
     return this.bookingModel.findById(booking._id).populate('carId');
   }
@@ -928,6 +1028,9 @@ export class BookingsService {
     booking.tripStatus = 'not_started';
 
     if (booking.handoverRejectionCount >= 3) {
+      // Cancel pending escrow funds
+      await this.walletService.cancelPendingFunds(booking._id.toString(), 'Auto-cancelled due to handover rejections');
+
       booking.status = BookingStatus.CANCELLED;
       booking.isRefunded = true;
       await booking.save();
@@ -935,6 +1038,13 @@ export class BookingsService {
       await this.userModel.findByIdAndUpdate(customerId, {
         $inc: { walletBalance: booking.totalPrice }
       });
+      await this.walletService.addFunds(
+        customerId.toString(),
+        booking.totalPrice,
+        `Refund for cancelled booking ${(booking.carId as any)?.name} (Handover Rejections)`,
+        TransactionSource.REFUND,
+        booking._id.toString()
+      );
 
       const vendor = await this.userModel.findById(booking.vendorId);
       const customer = await this.userModel.findById(customerId);
@@ -994,10 +1104,19 @@ export class BookingsService {
       details
     });
 
-    // 2. Full Refund
+    // 2. Cancel Escrow & Full Refund
+    await this.walletService.cancelPendingFunds(booking._id.toString(), 'Host Reported');
+
     await this.userModel.findByIdAndUpdate(customerId, {
       $inc: { walletBalance: booking.totalPrice }
     });
+    await this.walletService.addFunds(
+      customerId.toString(),
+      booking.totalPrice,
+      `Refund for cancelled booking ${(booking.carId as any)?.name} (Host Reported)`,
+      TransactionSource.REFUND,
+      booking._id.toString()
+    );
 
     // 3. Cancel Booking
     booking.status = BookingStatus.CANCELLED;

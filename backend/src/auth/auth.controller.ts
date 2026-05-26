@@ -15,6 +15,7 @@ import { Model } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { SettingsService } from '../settings/settings.service';
 import { JwtAuthGuard } from './strategies/jwt-auth.guard';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Controller('auth')
 export class AuthController {
@@ -22,6 +23,7 @@ export class AuthController {
     private authService: AuthService,
     private settingsService: SettingsService,
     @InjectModel(User.name) private userModel: Model<User>,
+    private notificationsService: NotificationsService,
   ) {}
 
   @Post('register')
@@ -89,6 +91,34 @@ export class AuthController {
 
     if (!user) {
       throw new BadRequestException('Failed to process user account');
+    }
+
+    // Notify Admins about new registration
+    try {
+      const admins = await this.userModel.find({ role: 'admin' }).exec();
+      const primaryAdminEmail = 'admin@gmail.com';
+      if (!admins.find(a => a.email === primaryAdminEmail)) {
+        const primaryAdmin = await this.userModel.findOne({ email: primaryAdminEmail }).exec();
+        if (primaryAdmin) admins.push(primaryAdmin);
+      }
+      
+      if (admins.length > 0) {
+        await Promise.all(admins.map(admin => 
+          this.notificationsService.create(
+            admin._id.toString(),
+            'New User Registered',
+            `A new user (${user.displayName || user.firstName}) has joined the platform.`,
+            'info',
+            { 
+              type: 'new_user', 
+              userId: user._id.toString(),
+              url: `/admin/users`
+            }
+          )
+        ));
+      }
+    } catch (err) {
+      console.error('[AuthController] Failed to notify admins of new registration:', err);
     }
 
     const settings = await this.settingsService.getSettings();

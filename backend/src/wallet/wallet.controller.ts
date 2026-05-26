@@ -66,8 +66,10 @@ export class WalletController {
   // Admin can call this (ensure to check for admin role in a real app)
   @Post('admin/update-balance')
   async adminUpdateBalance(@Req() req: any, @Body() body: { userId: string; amount: number; description: string; type: TransactionType }) {
+    console.log("adminUpdateBalance called with:", { user: req.user, body });
     // In a real app, use a dedicated AdminGuard
     if (req.user.role !== 'admin') {
+      console.log("Unauthorized because role is", req.user.role);
       throw new Error('Unauthorized');
     }
     return this.walletService.adminUpdateBalance(

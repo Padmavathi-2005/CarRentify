@@ -1,41 +1,44 @@
 'use client';
 
 import React, { useState, useMemo, useEffect, useRef } from "react";
-import { 
- Save, 
- Image as ImageIcon, 
- MapPin, 
- Info, 
- ArrowLeft,
- ArrowRight,
- Settings,
- Navigation,
- ShieldCheck,
- Zap,
- LayoutDashboard,
- Plus,
- Trash2,
- X,
- ChevronDown,
- Gauge,
- Fuel,
- Activity,
- FileText,
- XCircle,
- AlertCircle,
- Calculator,
- TrendingDown,
- CloudUpload,
- UploadCloud,
- Globe,
- Milestone,
- RefreshCw,
- Check,
- Eye,
- CheckCircle2,
- Rocket,
- Search,
- ChevronUp
+import {
+  Save,
+  Image as ImageIcon,
+  MapPin,
+  Info,
+  ArrowLeft,
+  ArrowRight,
+  Settings,
+  Navigation,
+  ShieldCheck,
+  Zap,
+  LayoutDashboard,
+  Plus,
+  Trash2,
+  X,
+  ChevronDown,
+  Gauge,
+  Fuel,
+  Activity,
+  FileText,
+  XCircle,
+  AlertCircle,
+  Calculator,
+  TrendingDown,
+  CloudUpload,
+  UploadCloud,
+  Globe,
+  Milestone,
+  RefreshCw,
+  Check,
+  Eye,
+  CheckCircle2,
+  Rocket,
+  Search,
+  ChevronUp,
+  Wand2,
+  Bot,
+  MousePointer2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -60,14 +63,14 @@ import VerificationModal from "@/components/VerificationModal";
 import { useLocale } from "@/components/LocaleContext";
 
 const LocationPicker = dynamic(() => import("@/components/LocationPicker"), {
- ssr: false,
- loading: () => <div className="w-full h-[300px] bg-slate-50 animate-pulse rounded-app mt-4 border border-slate-100 flex items-center justify-center text-slate-300 font-bold text-[8px] uppercase tracking-widest">Loading Telemetry...</div>,
+  ssr: false,
+  loading: () => <div className="w-full h-[300px] bg-slate-50 animate-pulse rounded-app mt-4 border border-slate-100 flex items-center justify-center text-slate-300 font-bold text-[8px] uppercase tracking-widest">Loading Telemetry...</div>,
 });
 
 interface PriceTier {
- days: number;
- pricePerDay: number;
- discountPercentage: number;
+  days: number;
+  pricePerDay: number;
+  discountPercentage: number;
 }
 
 export default function NewCarPage() {
@@ -113,8 +116,8 @@ export default function NewCarPage() {
   const [extras, setExtras] = useState<{ name: string; description?: string; price: number; priceType: 'per_day' | 'per_trip'; category?: string }[]>([]);
   const [minBookingDays, setMinBookingDays] = useState("1");
   const [bookingType, setBookingType] = useState("Instant");
-  
-  
+
+
   const [brandId, setBrandId] = useState("");
   const [model, setModel] = useState("");
   const [vehicleType, setVehicleType] = useState("");
@@ -138,6 +141,78 @@ export default function NewCarPage() {
   const [customSpecs, setCustomSpecs] = useState<Record<string, any>>({});
   const [customFiles, setCustomFiles] = useState<Record<string, any>>({});
 
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [isAiExpanded, setIsAiExpanded] = useState(false);
+  const [showDemoPointer, setShowDemoPointer] = useState(false);
+  const [demoClickEffect, setDemoClickEffect] = useState(false);
+  const [demoSuccess, setDemoSuccess] = useState(false);
+  const demoActiveRef = useRef(true);
+
+  useEffect(() => {
+    let isCancelled = false;
+    const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+    const runDemo = async () => {
+      while (demoActiveRef.current && !isCancelled) {
+        await sleep(3000); // Wait 3 seconds before starting sequence
+        if (!demoActiveRef.current || isCancelled) break;
+
+        setIsAiExpanded(true);
+        await sleep(1000);
+        if (!demoActiveRef.current || isCancelled) break;
+
+        const textToType = "2023 Tesla Model X Plaid...";
+        let currentText = "";
+        for (let i = 0; i < textToType.length; i++) {
+          if (!demoActiveRef.current || isCancelled) break;
+          currentText += textToType.charAt(i);
+          setAiPrompt(currentText);
+          await sleep(50);
+        }
+
+        if (!demoActiveRef.current || isCancelled) break;
+        setShowDemoPointer(true);
+        await sleep(1200);
+
+        if (!demoActiveRef.current || isCancelled) break;
+        setDemoClickEffect(true);
+        await sleep(200);
+        setDemoClickEffect(false);
+
+        if (!demoActiveRef.current || isCancelled) break;
+        setDemoSuccess(true);
+        await sleep(1500);
+
+        if (!demoActiveRef.current || isCancelled) break;
+        setShowDemoPointer(false);
+        await sleep(500);
+
+        if (!demoActiveRef.current || isCancelled) break;
+        setIsAiExpanded(false);
+        await sleep(500); // Wait for close animation
+
+        if (!demoActiveRef.current || isCancelled) break;
+        setDemoSuccess(false);
+        setAiPrompt("");
+      }
+    };
+
+    runDemo();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
+
+  const handleUserInteraction = () => {
+    if (demoActiveRef.current) {
+      demoActiveRef.current = false;
+      setShowDemoPointer(false);
+      setDemoSuccess(false);
+    }
+  };
+
   const [brands, setBrands] = useState<any[]>([]);
   const [carTypes, setCarTypes] = useState<any[]>([]);
   const [currencies, setCurrencies] = useState<any[]>([]);
@@ -147,10 +222,10 @@ export default function NewCarPage() {
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [mainImage, setMainImage] = useState<File | null>(null);
   const [mainImagePreview, setMainImagePreview] = useState<string | null>(null);
-  const [fileMetas, setFileMetas] = useState<{isWide: boolean}[]>([]);
+  const [fileMetas, setFileMetas] = useState<{ isWide: boolean }[]>([]);
   const [docFiles, setDocFiles] = useState<{ [key: string]: File | null }>({ rc: null, insurance: null, other: null });
   const [docPreviews, setDocPreviews] = useState<{ [key: string]: string | null }>({ rc: null, insurance: null, other: null });
-  
+
   // SEO State
   const [seoTitle, setSeoTitle] = useState("");
   const [seoDescription, setSeoDescription] = useState("");
@@ -158,12 +233,12 @@ export default function NewCarPage() {
   const [seoImage, setSeoImage] = useState<File | null>(null);
   const [seoImagePreview, setSeoImagePreview] = useState<string | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
-  
+
   const years = useMemo(() => {
     const currentYear = new Date().getFullYear();
-    return Array.from({ length: 50 }, (_, i) => ({ 
-      value: (currentYear - i).toString(), 
-      label: (currentYear - i).toString() 
+    return Array.from({ length: 50 }, (_, i) => ({
+      value: (currentYear - i).toString(),
+      label: (currentYear - i).toString()
     }));
   }, []);
 
@@ -197,7 +272,7 @@ export default function NewCarPage() {
         combined.push({ id: cs.id, title: cs.title || `Step ${cs.id}`, icon: Settings });
       }
     });
-    return combined.sort((a,b) => a.id - b.id);
+    return combined.sort((a, b) => a.id - b.id);
   }, [baseSteps, customSteps]);
 
   // Location State
@@ -249,6 +324,60 @@ export default function NewCarPage() {
     }
   };
 
+  const handleAiAutofill = async (overridePrompt?: string) => {
+    const promptToUse = typeof overridePrompt === 'string' ? overridePrompt : aiPrompt;
+    if (!promptToUse.trim()) return;
+    setIsAiLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_BASE_URL}/cars/ai-autofill`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ prompt: promptToUse })
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Failed to generate details');
+      }
+      const data = await res.json();
+
+      if (data.brandName) {
+        const matchedBrand = brands.find(b => b.label.toLowerCase() === data.brandName.toLowerCase());
+        if (matchedBrand) setBrandId(matchedBrand.value);
+      }
+
+      if (data.categoryName) {
+        const matchedType = carTypes.find(t => t.label.toLowerCase() === data.categoryName.toLowerCase());
+        if (matchedType) setVehicleType(matchedType.value);
+      }
+
+      if (data.name) setName(data.name);
+      if (data.shortDescription) setShortDescription(data.shortDescription);
+      if (data.permalink) {
+        setPermalink(data.permalink);
+        setIsPermalinkEdited(true);
+      }
+      if (data.model) setModel(data.model);
+      if (data.year) setYear(data.year.toString());
+      if (data.pricePerDay) setPricePerDay(data.pricePerDay.toString());
+      if (data.fuelType) setFuelType(data.fuelType);
+      if (data.transmission) setTransmission(data.transmission);
+      if (data.seats) setSeats(data.seats.toString());
+      if (data.mileage) setMileage(data.mileage.toString());
+      if (data.description) setContent(data.description);
+
+      setFormErrors({});
+      showToast("Magic Autofill applied successfully!", "success");
+    } catch (error: any) {
+      showToast(error.message || 'AI Autofill failed.', "error");
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
   // Sync price tiers when daily rate changes
   useEffect(() => {
     const daily = parseFloat(pricePerDay) || 0;
@@ -296,10 +425,10 @@ export default function NewCarPage() {
             ctx.imageSmoothingQuality = 'high';
             ctx.drawImage(img, 0, 0, width, height);
           }
-          
-          resolve({ 
+
+          resolve({
             base64: canvas.toDataURL('image/jpeg', 0.85),
-            file: file 
+            file: file
           });
         };
         img.onerror = () => reject('Invalid media payload');
@@ -339,7 +468,7 @@ export default function NewCarPage() {
     const files = Array.from(e.target.files || []);
     const totalCurrent = selectedFiles.length + (mainImage ? 1 : 0);
     const maxLimit = settings.maxImagesPerListing || 5;
-    
+
     if (totalCurrent + files.length > maxLimit) {
       showToast(`Media Capacity Reached: Your current plan allows a maximum of ${maxLimit} images per vehicle.`, "error");
       return;
@@ -404,17 +533,17 @@ export default function NewCarPage() {
   };
 
   const addPickupLocation = (data: any, prc?: number) => {
-    setPickupLocations([...pickupLocations, { 
-      name: "", 
-      address: data.address || "", 
-      latitude: data.lat || latitude, 
-      longitude: data.lng || longitude, 
+    setPickupLocations([...pickupLocations, {
+      name: "",
+      address: data.address || "",
+      latitude: data.lat || latitude,
+      longitude: data.lng || longitude,
       city: data.city || "",
       country: data.country || "",
       postcode: data.postcode || "",
-      price: prc || 0 
+      price: prc || 0
     }]);
-    
+
     setTimeout(() => {
       pickupListRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
     }, 100);
@@ -449,7 +578,7 @@ export default function NewCarPage() {
         errors.price = "Daily rate must be more than 0.";
       }
     }
-    
+
     setFormErrors(errors);
     const firstErrorId = Object.keys(errors)[0];
     if (firstErrorId) {
@@ -464,7 +593,7 @@ export default function NewCarPage() {
 
   const handleNext = () => {
     if (!validateStep(currentStep)) return;
-    
+
     const currentIndex = steps.findIndex(s => s.id === currentStep);
     if (currentIndex < steps.length - 1) {
       setCurrentStep(steps[currentIndex + 1].id);
@@ -489,7 +618,7 @@ export default function NewCarPage() {
     setLoading(true);
     try {
       const images = [];
-      
+
       // Upload Main Image first
       if (mainImage) {
         const { base64 } = await validateAndResizeImage(mainImage);
@@ -578,8 +707,8 @@ export default function NewCarPage() {
       const res = await fetch(`${API_BASE_URL}/cars`, {
         method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${localStorage.getItem('token')}` },
         body: JSON.stringify({
-          name, permalink, content, shortDescription, vehicleType, transmission, fuelType, year, brandId, model, 
-          pricePerDay: parseFloat(pricePerDay), 
+          name, permalink, content, shortDescription, vehicleType, transmission, fuelType, year, brandId, model,
+          pricePerDay: parseFloat(pricePerDay),
           minBookingDays: parseInt(minBookingDays) || 1,
           bookingType,
           securityDeposit: parseFloat(securityDeposit) || 0,
@@ -602,9 +731,9 @@ export default function NewCarPage() {
           chargingType,
           batteryCapacity: parseFloat(batteryCapacity) || undefined,
           range: parseFloat(range) || undefined,
-          location: { country, state, city, address, latitude, longitude }, 
+          location: { country, state, city, address, latitude, longitude },
           pickupLocations,
-          images, 
+          images,
           amenities: selectedAmenities,
           documents: docs,
           seoTitle, seoDescription, seoKeywords, seoImage: finalSeoImage,
@@ -626,7 +755,7 @@ export default function NewCarPage() {
       } else {
         showToast(data.message || "Protocol Failure: An error occurred while publishing the vehicle.", "error");
       }
-    } catch (err: any) { 
+    } catch (err: any) {
       console.error(err);
       showToast(err.message || "Network Error: Could not reach the publishing server.", "error");
     } finally { setLoading(false); }
@@ -682,6 +811,7 @@ export default function NewCarPage() {
           {(currentStep === 1 || showAllSteps) && (
             <section id="identity-hub" className="bg-white dark:bg-slate-900 rounded-app p-10 border border-slate-100 dark:border-white/10 space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500 ">
               <div className="flex items-center gap-5 text-slate-400"><div className="w-12 h-12 bg-slate-50 dark:bg-white/5 rounded-app flex items-center justify-center"><LayoutDashboard size={24} /></div><h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight">Information</h3></div>
+
               <div className="space-y-8">
                 <div className="space-y-2">
                   <div className="flex justify-between items-center px-1">
@@ -760,7 +890,7 @@ export default function NewCarPage() {
                     <p className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase mt-2">Drop gallery files here</p>
                     <input type="file" multiple className="absolute inset-0 opacity-0 cursor-pointer z-10" onChange={handleFileSelect} accept="image/*" />
                   </div>
-                  
+
                   {imagePreviews.length > 0 && (
                     <div className="grid grid-cols-4 md:grid-cols-6 gap-3">
                       {imagePreviews.map((url, i) => (
@@ -775,7 +905,7 @@ export default function NewCarPage() {
                   )}
                 </div>
               </div>
-              
+
               <div className="pt-10 border-t border-slate-100 dark:border-white/10 space-y-8">
                 <div className="flex items-center gap-4 text-slate-400"><FileText size={20} /><h4 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">Compliance Documents</h4></div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -823,7 +953,7 @@ export default function NewCarPage() {
                 <div className="space-y-2"><label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest px-1 flex items-center gap-2"><Zap size={12} /> Charging Type</label><CustomSelect options={["AC Level 1", "AC Level 2", "DC Fast Charge", "CHAdeMO", "CCS", "Tesla Supercharger"]} defaultValue={chargingType} onChange={(v) => setChargingType(String(v))} placeholder="Select Type" /></div>
                 <div className="space-y-2"><label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest px-1">Battery Capacity</label><div className="relative flex items-center h-14 bg-white dark:bg-slate-950 rounded-app border-2 border-slate-100 dark:border-white/10 px-6 focus-within:border-primary transition-all"><Input type="number" placeholder="e.g. 100" value={batteryCapacity} onChange={(e) => setBatteryCapacity(e.target.value)} className="flex-1 h-full bg-transparent border-none shadow-none outline-none p-0 font-bold text-sm focus-visible:ring-0 text-slate-900 dark:text-white" /><span className="text-[10px] font-black text-slate-300 dark:text-slate-700 uppercase shrink-0">kWh</span></div></div>
                 <div className="space-y-2"><label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest px-1">Range</label><div className="relative flex items-center h-14 bg-white dark:bg-slate-950 rounded-app border-2 border-slate-100 dark:border-white/10 px-6 focus-within:border-primary transition-all"><Input type="number" placeholder="e.g. 500" value={range} onChange={(e) => setRange(e.target.value)} className="flex-1 h-full bg-transparent border-none shadow-none outline-none p-0 font-bold text-sm focus-visible:ring-0 text-slate-900 dark:text-white" /><span className="text-[10px] font-black text-slate-300 dark:text-slate-700 uppercase shrink-0">km</span></div></div>
-                
+
                 {(settings?.listings?.customFields || settings?.customFields || [])?.filter((field: any) => !field.isCore && (!field.stepId || field.stepId === 3) && !['name', 'permalink', 'content', 'shortdescription', 'vehicletype', 'transmission', 'fueltype', 'year', 'brandid', 'model', 'priceperday', 'minbookingdays', 'securitydeposit', 'distanceincluded', 'extradistancefee', 'horsepower', 'mileage', 'vin', 'seats', 'doors', 'drivetype', 'fuelefficiency', 'color', 'acceleration', 'chargingtype', 'batterycapacity', 'range'].includes((field.key || '').toLowerCase()))?.map((field: any) => {
                   const [trueLabel, falseLabel] = (field.options || "Yes, No").split(",").map((s: string) => s.trim());
                   return (
@@ -832,18 +962,18 @@ export default function NewCarPage() {
                         {field.label} {field.required && <span className="text-rose-500">*</span>}
                       </label>
                       {field.type === 'select' ? (
-                        <CustomSelect 
-                          options={(field.options || "").split(",").map((o: string) => o.trim()).filter(Boolean)} 
-                          defaultValue={customSpecs[field.key] || ""} 
-                          onChange={(val) => setCustomSpecs(prev => ({ ...prev, [field.key]: String(val) }))} 
+                        <CustomSelect
+                          options={(field.options || "").split(",").map((o: string) => o.trim()).filter(Boolean)}
+                          defaultValue={customSpecs[field.key] || ""}
+                          onChange={(val) => setCustomSpecs(prev => ({ ...prev, [field.key]: String(val) }))}
                           placeholder={field.placeholder || `Select ${field.label}`}
                         />
                       ) : field.type === 'boolean' ? (
                         <div className="h-14 flex items-center px-4 border-2 border-slate-100 dark:border-white/10 rounded-app bg-white dark:bg-slate-950">
-                          <input 
-                            type="checkbox" 
-                            checked={!!customSpecs[field.key]} 
-                            onChange={(e) => setCustomSpecs(prev => ({ ...prev, [field.key]: e.target.checked }))} 
+                          <input
+                            type="checkbox"
+                            checked={!!customSpecs[field.key]}
+                            onChange={(e) => setCustomSpecs(prev => ({ ...prev, [field.key]: e.target.checked }))}
                             className="w-5 h-5 rounded border-slate-300 text-primary focus:ring-primary"
                           />
                           <span className="ml-3 text-xs font-bold text-slate-700 dark:text-slate-300">
@@ -852,8 +982,8 @@ export default function NewCarPage() {
                         </div>
                       ) : field.type === 'image' || field.type === 'file' ? (
                         <div className="space-y-2">
-                          <input 
-                            type="file" 
+                          <input
+                            type="file"
                             accept={field.type === 'image' ? "image/*" : ".pdf,.doc,.docx,.xls,.xlsx,.txt"}
                             onChange={(e) => {
                               if (e.target.files?.[0]) {
@@ -881,8 +1011,8 @@ export default function NewCarPage() {
                         </div>
                       ) : field.type === 'images' ? (
                         <div className="space-y-2">
-                          <input 
-                            type="file" 
+                          <input
+                            type="file"
                             multiple
                             accept="image/*"
                             onChange={(e) => {
@@ -909,7 +1039,7 @@ export default function NewCarPage() {
                           </div>
                         </div>
                       ) : (
-                        <Input 
+                        <Input
                           type={field.type === 'number' ? 'number' : 'text'}
                           placeholder={field.placeholder || `Enter ${field.label}...`}
                           value={customSpecs[field.key] || ""}
@@ -921,7 +1051,7 @@ export default function NewCarPage() {
                   );
                 })}
               </div>
-              
+
               <div className="pt-10 border-t border-slate-100 dark:border-white/10 space-y-10">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4 text-slate-400"><div className="w-10 h-10 bg-slate-50 dark:bg-white/5 rounded-app flex items-center justify-center"><Rocket size={20} /></div><h4 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">Registry Features</h4></div>
@@ -948,7 +1078,7 @@ export default function NewCarPage() {
           {(currentStep === 4 || showAllSteps) && (
             <section id="pricing-module" className="bg-white dark:bg-slate-900 rounded-app p-10 border border-slate-100 dark:border-white/10 space-y-12 animate-in fade-in duration-500 ">
               <div className="flex items-center gap-5 text-slate-400 mb-10"><div className="w-12 h-12 bg-slate-50 dark:bg-white/5 rounded-app flex items-center justify-center"><Zap size={24} /></div><h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight">Pricing</h3></div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 flex items-center gap-2 px-1">{t('dashboard.fleet.daily_rate')} <Badge className="bg-primary text-white border-none text-[8px] font-black uppercase px-3 py-1">Required</Badge></label>
@@ -982,13 +1112,13 @@ export default function NewCarPage() {
 
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 flex items-center gap-2 px-1">Booking Approval Mode <Badge className="bg-primary/10 text-primary border-none text-[8px] font-black uppercase px-3 py-1">Mode</Badge></label>
-                  <CustomSelect 
+                  <CustomSelect
                     options={[
                       { value: 'Instant', label: 'Instant Booking' },
                       { value: 'Request', label: 'Request Booking' }
-                    ]} 
-                    defaultValue={bookingType} 
-                    onChange={(v) => setBookingType(String(v))} 
+                    ]}
+                    defaultValue={bookingType}
+                    onChange={(v) => setBookingType(String(v))}
                   />
                 </div>
               </div>
@@ -1049,17 +1179,17 @@ export default function NewCarPage() {
               </div>
             </section>
           )}
-          
-            {/* Step 6: SEO Section */}
-            {(currentStep === 5 || showAllSteps) && (
+
+          {/* Step 6: SEO Section */}
+          {(currentStep === 5 || showAllSteps) && (
             <section id="location-module" className="bg-white dark:bg-slate-900 rounded-app p-10 border border-slate-100 dark:border-white/10 space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500 ">
               <div className="flex items-center gap-5 text-slate-400"><div className="w-12 h-12 bg-slate-50 dark:bg-white/5 rounded-app flex items-center justify-center"><Navigation size={24} /></div><h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight">Address</h3></div>
               <div className="space-y-6">
                 <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] px-1">Location</label>
-                <LocationPicker 
-                  lat={latitude} 
-                  lng={longitude} 
-                  addressValue={address} 
+                <LocationPicker
+                  lat={latitude}
+                  lng={longitude}
+                  addressValue={address}
                   onChange={(data) => {
                     setLatitude(data.lat);
                     setLongitude(data.lng);
@@ -1091,24 +1221,24 @@ export default function NewCarPage() {
                     <div className="grid grid-cols-1 gap-4">
                       {pickupLocations.map((loc, idx) => (
                         <div key={idx} className="bg-slate-50/50 dark:bg-white/5 border-2 border-slate-100 dark:border-white/10 rounded-app p-6 space-y-4 animate-in slide-in-from-bottom-2 duration-300 relative group">
-                        <button 
-                          type="button"
-                          onClick={() => removePickupLocation(idx)} 
-                          className="absolute top-4 right-4 text-slate-300 hover:text-rose-500 transition-all"
-                        >
-                          <X size={18} />
-                        </button>
-                        <div className="flex items-center gap-6 pr-10">
-                          <div className="w-10 h-10 bg-white dark:bg-slate-950 rounded-full flex items-center justify-center shrink-0 border-2 border-slate-50 dark:border-white/5">
-                            <MapPin size={16} className="text-primary" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest px-1 block mb-2">Address</label>
-                            <p className="text-sm font-bold text-slate-700 dark:text-slate-300 truncate">{loc.address}</p>
+                          <button
+                            type="button"
+                            onClick={() => removePickupLocation(idx)}
+                            className="absolute top-4 right-4 text-slate-300 hover:text-rose-500 transition-all"
+                          >
+                            <X size={18} />
+                          </button>
+                          <div className="flex items-center gap-6 pr-10">
+                            <div className="w-10 h-10 bg-white dark:bg-slate-950 rounded-full flex items-center justify-center shrink-0 border-2 border-slate-50 dark:border-white/5">
+                              <MapPin size={16} className="text-primary" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest px-1 block mb-2">Address</label>
+                              <p className="text-sm font-bold text-slate-700 dark:text-slate-300 truncate">{loc.address}</p>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
                     </div>
                   </>
                 )}
@@ -1127,7 +1257,7 @@ export default function NewCarPage() {
                   </div>
                   <Switch checked={customDeliveryEnabled} onCheckedChange={setCustomDeliveryEnabled} />
                 </div>
-                
+
                 {customDeliveryEnabled && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-slate-50/50 dark:bg-white/5 rounded-app border-2 border-slate-100 dark:border-white/10">
                     <div className="space-y-2">
@@ -1149,88 +1279,88 @@ export default function NewCarPage() {
           )}
 
           {(currentStep === 6 || showAllSteps) && (
-              <section id="seo-config" className="bg-white dark:bg-slate-900 rounded-app p-10 border border-slate-100 dark:border-white/10 space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div className="flex items-center gap-5 text-slate-400">
-                  <div className="w-12 h-12 bg-slate-50 dark:bg-white/5 rounded-app flex items-center justify-center">
-                    <Globe size={24} />
+            <section id="seo-config" className="bg-white dark:bg-slate-900 rounded-app p-10 border border-slate-100 dark:border-white/10 space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="flex items-center gap-5 text-slate-400">
+                <div className="w-12 h-12 bg-slate-50 dark:bg-white/5 rounded-app flex items-center justify-center">
+                  <Globe size={24} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight">SEO Configuration</h3>
+                  <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1">Optimize your listing for search engines</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                <div className="space-y-8">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] px-1">Meta Title</label>
+                    <Input
+                      placeholder="e.g. Rent 2024 Lamborghini Revuelto in Dubai"
+                      value={seoTitle}
+                      onChange={(e) => setSeoTitle(e.target.value)}
+                      className="h-14 border-2 border-slate-100 dark:border-white/10 bg-white dark:bg-slate-950 rounded-app px-6 font-bold text-sm text-slate-900 dark:text-white"
+                    />
                   </div>
-                  <div>
-                    <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight">SEO Configuration</h3>
-                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1">Optimize your listing for search engines</p>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] px-1">Meta Description</label>
+                    <Textarea
+                      placeholder="Professional summary for search engine results..."
+                      value={seoDescription}
+                      onChange={(e) => setSeoDescription(e.target.value)}
+                      rows={4}
+                      className="border-2 border-slate-100 dark:border-white/10 bg-white dark:bg-slate-950 rounded-app px-6 py-4 font-bold text-sm text-slate-900 dark:text-white"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] px-1">Keywords</label>
+                    <Input
+                      placeholder="luxury car, rental, dubai, lamborghini (comma separated)"
+                      value={seoKeywords}
+                      onChange={(e) => setSeoKeywords(e.target.value)}
+                      className="h-14 border-2 border-slate-100 dark:border-white/10 bg-white dark:bg-slate-950 rounded-app px-6 font-bold text-sm text-slate-900 dark:text-white"
+                    />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                  <div className="space-y-8">
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] px-1">Meta Title</label>
-                      <Input 
-                        placeholder="e.g. Rent 2024 Lamborghini Revuelto in Dubai" 
-                        value={seoTitle} 
-                        onChange={(e) => setSeoTitle(e.target.value)} 
-                        className="h-14 border-2 border-slate-100 dark:border-white/10 bg-white dark:bg-slate-950 rounded-app px-6 font-bold text-sm text-slate-900 dark:text-white"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] px-1">Meta Description</label>
-                      <Textarea 
-                        placeholder="Professional summary for search engine results..." 
-                        value={seoDescription} 
-                        onChange={(e) => setSeoDescription(e.target.value)} 
-                        rows={4}
-                        className="border-2 border-slate-100 dark:border-white/10 bg-white dark:bg-slate-950 rounded-app px-6 py-4 font-bold text-sm text-slate-900 dark:text-white"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] px-1">Keywords</label>
-                      <Input 
-                        placeholder="luxury car, rental, dubai, lamborghini (comma separated)" 
-                        value={seoKeywords} 
-                        onChange={(e) => setSeoKeywords(e.target.value)} 
-                        className="h-14 border-2 border-slate-100 dark:border-white/10 bg-white dark:bg-slate-950 rounded-app px-6 font-bold text-sm text-slate-900 dark:text-white"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-8">
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] px-1">Meta Image (OG Image)</label>
-                      <div className="relative aspect-video rounded-app border-2 border-dashed border-slate-100 dark:border-white/10 bg-slate-50/30 dark:bg-white/5 hover:border-primary/30 transition-all overflow-hidden flex flex-col items-center justify-center group">
-                        {seoImagePreview ? (
-                          <>
-                            <img src={seoImagePreview} alt="SEO Preview" className="w-full h-full object-cover" />
-                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                              <button onClick={() => {setSeoImage(null); setSeoImagePreview(null);}} className="p-3 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-rose-500 transition-colors"><Trash2 size={20} /></button>
-                            </div>
-                          </>
-                        ) : (
-                          <div className="text-center p-6">
-                            <CloudUpload size={40} className="mx-auto text-slate-300 dark:text-slate-700 mb-4" />
-                            <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Upload SEO Cover</p>
-                            <p className="text-[8px] font-bold text-slate-300 dark:text-slate-700 uppercase mt-1">Recommended: 1200x630 px</p>
-                            <input type="file" onChange={handleSeoImageSelect} className="absolute inset-0 opacity-0 cursor-pointer" accept="image/*" />
+                <div className="space-y-8">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] px-1">Meta Image (OG Image)</label>
+                    <div className="relative aspect-video rounded-app border-2 border-dashed border-slate-100 dark:border-white/10 bg-slate-50/30 dark:bg-white/5 hover:border-primary/30 transition-all overflow-hidden flex flex-col items-center justify-center group">
+                      {seoImagePreview ? (
+                        <>
+                          <img src={seoImagePreview} alt="SEO Preview" className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <button onClick={() => { setSeoImage(null); setSeoImagePreview(null); }} className="p-3 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-rose-500 transition-colors"><Trash2 size={20} /></button>
                           </div>
-                        )}
-                      </div>
+                        </>
+                      ) : (
+                        <div className="text-center p-6">
+                          <CloudUpload size={40} className="mx-auto text-slate-300 dark:text-slate-700 mb-4" />
+                          <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Upload SEO Cover</p>
+                          <p className="text-[8px] font-bold text-slate-300 dark:text-slate-700 uppercase mt-1">Recommended: 1200x630 px</p>
+                          <input type="file" onChange={handleSeoImageSelect} className="absolute inset-0 opacity-0 cursor-pointer" accept="image/*" />
+                        </div>
+                      )}
                     </div>
+                  </div>
 
-                    <div className="p-6 bg-slate-50/50 dark:bg-white/5 rounded-app border border-slate-100 dark:border-white/10">
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-                        <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">SERP Preview Simulation</p>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-blue-600 dark:text-blue-400 text-lg font-medium hover:underline cursor-pointer truncate">{seoTitle || name || "Vehicle Title Preview"}</p>
-                        <p className="text-emerald-700 dark:text-emerald-500 text-sm truncate">https://carrental.com/vehicles/{permalink || "slug"}</p>
-                        <p className="text-slate-600 dark:text-slate-400 text-sm line-clamp-2">{seoDescription || "Provide a meta description to see how your listing appears in Google search results."}</p>
-                      </div>
+                  <div className="p-6 bg-slate-50/50 dark:bg-white/5 rounded-app border border-slate-100 dark:border-white/10">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                      <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">SERP Preview Simulation</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-blue-600 dark:text-blue-400 text-lg font-medium hover:underline cursor-pointer truncate">{seoTitle || name || "Vehicle Title Preview"}</p>
+                      <p className="text-emerald-700 dark:text-emerald-500 text-sm truncate">https://carrental.com/vehicles/{permalink || "slug"}</p>
+                      <p className="text-slate-600 dark:text-slate-400 text-sm line-clamp-2">{seoDescription || "Provide a meta description to see how your listing appears in Google search results."}</p>
                     </div>
                   </div>
                 </div>
-              </section>
-            )}
+              </div>
+            </section>
+          )}
 
           {customSteps.map((cs: any) => (
             (currentStep === cs.id || showAllSteps) ? (
@@ -1252,11 +1382,11 @@ export default function NewCarPage() {
                             {field.label} {field.required && <span className="text-rose-500">*</span>}
                           </label>
                           {field.type === 'select' ? (
-                            <CustomSelect 
-                              options={(field.options || "").split(",").map((o: string) => o.trim()).filter(Boolean)} 
-                              defaultValue={customSpecs[field.key] || ""} 
-                              onChange={(val) => setCustomSpecs(prev => ({ ...prev, [field.key]: String(val) }))} 
-                              placeholder={field.placeholder || `Select ${field.label}`} 
+                            <CustomSelect
+                              options={(field.options || "").split(",").map((o: string) => o.trim()).filter(Boolean)}
+                              defaultValue={customSpecs[field.key] || ""}
+                              onChange={(val) => setCustomSpecs(prev => ({ ...prev, [field.key]: String(val) }))}
+                              placeholder={field.placeholder || `Select ${field.label}`}
                             />
                           ) : field.type === 'boolean' ? (
                             <div className="flex items-center gap-4 h-14 bg-white dark:bg-slate-950 px-6 rounded-app border-2 border-slate-100 dark:border-white/10">
@@ -1282,12 +1412,12 @@ export default function NewCarPage() {
                               </label>
                             </div>
                           ) : (
-                            <Input 
-                              type={field.type === 'number' ? 'number' : 'text'} 
-                              placeholder={field.placeholder || `Enter ${field.label}`} 
-                              value={customSpecs[field.key] || ""} 
-                              onChange={(e) => setCustomSpecs(prev => ({ ...prev, [field.key]: e.target.value }))} 
-                              className="h-14 border-2 bg-white dark:bg-slate-950 rounded-app px-6 font-bold text-slate-900 dark:text-white focus:border-primary transition-all text-sm border-slate-100 dark:border-white/10" 
+                            <Input
+                              type={field.type === 'number' ? 'number' : 'text'}
+                              placeholder={field.placeholder || `Enter ${field.label}`}
+                              value={customSpecs[field.key] || ""}
+                              onChange={(e) => setCustomSpecs(prev => ({ ...prev, [field.key]: e.target.value }))}
+                              className="h-14 border-2 bg-white dark:bg-slate-950 rounded-app px-6 font-bold text-slate-900 dark:text-white focus:border-primary transition-all text-sm border-slate-100 dark:border-white/10"
                             />
                           )}
                         </div>
@@ -1300,9 +1430,91 @@ export default function NewCarPage() {
         </div>
       </main>
 
+      {/* Floating AI Widget */}
+      <div className="fixed bottom-8 right-8 z-50 flex flex-col items-end">
+        <AnimatePresence>
+          {isAiExpanded && (
+            <motion.div
+              initial={{ opacity: 0, y: 20, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.9 }}
+              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-app shadow-2xl p-6 mb-4 w-80 flex flex-col gap-4"
+            >
+              <div className="flex items-center gap-3 border-b border-slate-100 dark:border-white/10 pb-4">
+                <div className="w-10 h-10 rounded-full flex items-center justify-center shadow-inner overflow-hidden border-2 border-white/20 bg-primary/10">
+                  <img src="/images/ai-bot.webp" alt="AI Assistant" className="w-full h-full object-cover" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-widest">AI Assistant</h4>
+                  <p className="text-[9px] font-bold text-slate-400">Generate listings instantly</p>
+                </div>
+                <button type="button" onClick={() => setIsAiExpanded(false)} className="ml-auto text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
+                  <X size={16} />
+                </button>
+              </div>
+
+              <div className="space-y-3 relative">
+                <Textarea
+                  value={aiPrompt}
+                  onChange={(e) => { handleUserInteraction(); setAiPrompt(e.target.value); }}
+                  onFocus={handleUserInteraction}
+                  placeholder="e.g. 2023 Tesla Model X Plaid..."
+                  className="min-h-[80px] bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-white/10 rounded-app px-4 py-3 font-medium text-slate-700 dark:text-slate-300 w-full focus:ring-primary/50 text-xs"
+                  onKeyDown={(e) => {
+                    handleUserInteraction();
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      if (!isAiLoading && aiPrompt.trim()) handleAiAutofill();
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  onClick={() => { handleUserInteraction(); handleAiAutofill(); }}
+                  disabled={isAiLoading || (!aiPrompt.trim() && !demoSuccess)}
+                  className={cn("w-full h-10 hover:bg-secondary text-white rounded-app font-black uppercase text-[10px] tracking-widest transition-all shadow-lg relative overflow-hidden", demoSuccess ? "bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/20" : "bg-primary shadow-primary/20")}
+                >
+                  {isAiLoading ? "Generating..." : demoSuccess ? <><CheckCircle2 size={16} className="mr-2" /> Generated</> : "Generate Listing"}
+                </Button>
+
+                <AnimatePresence>
+                  {showDemoPointer && (
+                    <motion.div
+                      initial={{ opacity: 0, x: 50, y: 50 }}
+                      animate={{
+                        opacity: 1,
+                        x: 0,
+                        y: 0,
+                        scale: demoClickEffect ? 0.8 : 1
+                      }}
+                      exit={{ opacity: 0, scale: 0.8 }}
+                      transition={{ duration: demoClickEffect ? 0.1 : 1, ease: "easeOut" }}
+                      className="absolute bottom-1 right-12 z-50 text-slate-900 drop-shadow-xl pointer-events-none"
+                    >
+                      <MousePointer2 size={32} className="fill-slate-900" />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <button
+          type="button"
+          onClick={() => { handleUserInteraction(); setIsAiExpanded(!isAiExpanded); }}
+          className="w-16 h-16 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-all relative group p-1"
+        >
+          <div className={cn("w-full h-full rounded-full overflow-hidden shadow-inner flex items-center justify-center border-2 border-primary/20 bg-primary/10", isAiExpanded ? "" : "animate-pulse")}>
+            <img src="/images/ai-bot.webp" alt="AI Bot" className="w-full h-full object-cover" />
+          </div>
+          {!isAiExpanded && <div className="absolute inset-0 rounded-full border-[3px] border-primary animate-ping opacity-50" />}
+        </button>
+      </div>
+
       <div className="max-w-4xl mx-auto px-4 md:px-8 pb-10 md:pb-20 flex items-center justify-between border-t border-slate-50 dark:border-white/10 pt-6 md:pt-10">
-        <Button variant="ghost" onClick={() => { 
-          if(showAllSteps) setShowAllSteps(false); 
+        <Button variant="ghost" onClick={() => {
+          if (showAllSteps) setShowAllSteps(false);
           else {
             const currentIndex = steps.findIndex(s => s.id === currentStep);
             if (currentIndex > 0) setCurrentStep(steps[currentIndex - 1].id);

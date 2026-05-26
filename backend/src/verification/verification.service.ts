@@ -159,7 +159,8 @@ export class VerificationService {
         submission.userId.toString(),
         '✅ Identity Verified!',
         `Your documents have been verified. You can now list your car and book vehicles.${adminNote ? ` Note: ${adminNote}` : ''}`,
-        'success'
+        'success',
+        { type: 'verification', userId: submission.userId.toString() }
       );
 
       // SIMULATED: Send Email Notification (Integrate real MailService here)
@@ -188,7 +189,8 @@ export class VerificationService {
       submission.userId.toString(),
       '❌ Verification Rejected',
       `Your identity verification was rejected. ${adminNote ? `Reason: ${adminNote}` : 'Please resubmit with correct documents.'}`,
-      'error'
+      'error',
+      { type: 'verification', userId: submission.userId.toString() }
     );
 
     // SIMULATED: Send Email Notification

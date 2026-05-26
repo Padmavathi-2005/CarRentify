@@ -760,6 +760,7 @@ const CustomFieldsManager = ({
           <p className="text-[10px] text-[var(--admin-text-muted)] font-bold uppercase tracking-widest">Manage core vehicle attributes and define custom specifications</p>
         </div>
         <Button 
+          type="button"
           onClick={() => {
             const count = allFields.filter(f => !f.isCore).length + 1;
             const newField = { id: `spec_${Date.now()}`, label: `New Specification ${count}`, key: `new_spec_${count}`, type: 'text', required: false, placeholder: '', options: '', stepId: activeStepId };
@@ -833,6 +834,7 @@ const CustomFieldsManager = ({
                   </div>
                   <Input 
                     value={field.label}
+                    disabled={field.isCore}
                     onChange={(e) => {
                       const updated = [...allFields];
                       updated[idx].label = e.target.value;
@@ -841,7 +843,7 @@ const CustomFieldsManager = ({
                       }
                       onChange(updated, customSteps);
                     }}
-                    className="h-8 bg-transparent border-none font-black text-sm p-0 focus-visible:ring-0 w-80"
+                    className={`h-8 bg-transparent border-none font-black text-sm p-0 focus-visible:ring-0 w-80 ${field.isCore ? 'opacity-70 cursor-not-allowed' : ''}`}
                     placeholder="Field Label (e.g. Number of Seats)"
                   />
                   {field.isCore && (
@@ -914,6 +916,7 @@ const CustomFieldsManager = ({
                   <label className="text-[9px] font-black uppercase tracking-widest text-[var(--admin-text-muted)]">Assigned Step</label>
                   <EliteSelect 
                     value={field.stepId}
+                    disabled={field.isCore}
                     onChange={(val) => {
                       const updated = [...allFields];
                       updated[idx].stepId = Number(val);
@@ -943,6 +946,7 @@ const CustomFieldsManager = ({
                   </label>
                   <Input 
                     value={field.type === 'select' || field.type === 'boolean' ? field.options : field.placeholder}
+                    disabled={field.isCore}
                     onChange={(e) => {
                       const updated = [...allFields];
                       if (field.type === 'select' || field.type === 'boolean') {
@@ -952,7 +956,7 @@ const CustomFieldsManager = ({
                       }
                       onChange(updated, customSteps);
                     }}
-                    className="h-8 bg-[var(--admin-bg)] border-none text-[10px] font-bold rounded-app w-full"
+                    className={`h-8 bg-[var(--admin-bg)] border-none text-[10px] font-bold rounded-app w-full ${field.isCore ? 'opacity-70 cursor-not-allowed' : ''}`}
                     placeholder={field.type === 'select' ? 'e.g. Automatic, Manual' : field.type === 'boolean' ? 'e.g. Yes, No' : field.type === 'image' ? 'e.g. Upload high-res photo' : field.type === 'images' ? 'e.g. Upload gallery photos' : field.type === 'file' ? 'e.g. Upload PDF or DOCX' : 'e.g. Enter value...'}
                   />
                 </div>
@@ -2542,6 +2546,7 @@ export default function AdminSettingsView() {
  { id: "cancellation", label: "Cancellation Policy", icon: AlertCircle },
  { id: "payments", label: "Payments", icon: CreditCard },
  { id: "frontend", label: t.settings.tabs.frontend, icon: Layout },
+ { id: "ai", label: "AI Magic Settings", icon: Zap },
  ].map((tab) => {
  const Icon = tab.icon;
  return (
@@ -3949,8 +3954,9 @@ export default function AdminSettingsView() {
  value={
  selectedHeroLang === 'en' 
  ? (link.label || "")
- : ((formData.heroTranslations?.[selectedHeroLang] as any)?.navLabels?.[link.id || `f_${idx}`] || "")
+ : ((formData.heroTranslations?.[selectedHeroLang] as any)?.navLabels?.[link.id || `f_${idx}`] ?? "")
  }
+ placeholder={selectedHeroLang !== 'en' ? (link.label || '') : ''}
  onChange={(e) => {
  if(selectedHeroLang === 'en') {
  const links = [...(formData as any).footerLinks];
@@ -4009,8 +4015,9 @@ export default function AdminSettingsView() {
  value={
  selectedHeroLang === 'en'
  ? (formData.copyright || "")
- : ((formData.heroTranslations?.[selectedHeroLang] as any)?.copyright || "")
+ : ((formData.heroTranslations?.[selectedHeroLang] as any)?.copyright ?? "")
  }
+ placeholder={selectedHeroLang !== 'en' ? (formData.copyright || '') : ''}
  onChange={(e) => {
  if (selectedHeroLang === 'en') {
  handleFieldChange('copyright', e.target.value);
@@ -4069,7 +4076,16 @@ export default function AdminSettingsView() {
  <div className="space-y-2">
  <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--admin-text-muted)] px-1">Heading ({selectedHeroLang})</label>
  <Input 
- value={(formData.heroTranslations?.[selectedHeroLang] as any)?.newsletterTitle || ""}
+ value={
+ selectedHeroLang === 'en'
+ ? ((formData.heroTranslations?.['en'] as any)?.newsletterTitle ?? (formData as any).newsletterTitle ?? "")
+ : ((formData.heroTranslations?.[selectedHeroLang] as any)?.newsletterTitle ?? "")
+ }
+ placeholder={
+ selectedHeroLang !== 'en'
+ ? ((formData.heroTranslations?.['en'] as any)?.newsletterTitle ?? (formData as any).newsletterTitle ?? '')
+ : ''
+ }
  onChange={(e) => {
  const current = { ...(formData.heroTranslations || {}) };
  if (!current[selectedHeroLang]) (current as any)[selectedHeroLang] = {};
@@ -4134,6 +4150,40 @@ export default function AdminSettingsView() {
  </TabsContent>
  <TabsContent value="payments" className="mt-0 p-4 md:p-6 outline-none">
  <PaymentSettingsManager backendUrl={backendUrl} />
+ </TabsContent>
+ <TabsContent value="ai" className="mt-0 p-4 md:p-6 outline-none pb-20">
+  <div className="max-w-2xl space-y-8">
+    <div>
+      <h3 className="text-xl font-black text-[var(--admin-text-main)] mb-2 uppercase tracking-tighter flex items-center gap-2">
+        <Zap size={24} className="text-primary" /> AI Magic Settings
+      </h3>
+      <p className="text-xs font-bold text-[var(--admin-text-muted)] uppercase tracking-widest leading-relaxed">
+        Configure the OpenAI (ChatGPT) API key used for auto-filling car listings. This key is stored securely on the backend and is never exposed to the public.
+      </p>
+    </div>
+    
+    <div className="bg-[var(--admin-card-bg)] rounded-app border border-[var(--admin-border)] p-6 space-y-6">
+      <div className="space-y-3">
+        <label className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--admin-text-main)]">OpenAI (ChatGPT) API Key</label>
+        <div className="relative">
+          <Input
+            type="password"
+            value={(formData as any).ai?.openAiApiKey || (formData as any).openAiApiKey || ""}
+            onChange={(e) => handleFieldChange("ai", { ...((formData as any).ai || {}), openAiApiKey: e.target.value })}
+            placeholder="Paste your API key here (e.g. sk-...)"
+            className="h-12 pl-10 font-mono text-sm bg-[var(--admin-bg)] border-[var(--admin-border)] focus:border-primary focus:ring-primary/20"
+          />
+          <Zap size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--admin-text-muted)]" />
+        </div>
+        <p className="text-[10px] text-[var(--admin-text-muted)] font-bold">
+          Leaving this blank will disable the AI Magic Autofill feature. 
+          {(((formData as any).ai?.openAiApiKey === "********") || ((formData as any).openAiApiKey === "********")) && (
+            <span className="text-primary ml-1">Key is securely configured. Type a new one to overwrite.</span>
+          )}
+        </p>
+      </div>
+    </div>
+  </div>
  </TabsContent>
  </div>
  </div>

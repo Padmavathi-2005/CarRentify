@@ -27,7 +27,8 @@ import {
   Banknote,
   Star,
   BarChart3,
-  LineChart
+  LineChart,
+  Calendar
 } from "lucide-react";
 
 import en from "./locales/en.json";
@@ -64,6 +65,7 @@ const navGroups = [
     key: "group_overview",
     items: [
       { icon: LayoutDashboard, label: "Dashboard", key: "dashboard", href: "/admin" },
+      { icon: Calendar, label: "Bookings", key: "bookings", href: "/admin/bookings" },
       { icon: LineChart, label: "Analysis", key: "analysis", href: "/admin/analysis" },
       { icon: Bell, label: "Notifications", key: "notifications", href: "/admin/notifications" },
       { icon: BarChart3, label: "Reports", key: "reports", href: "/admin/reports" },
@@ -83,7 +85,6 @@ const navGroups = [
     items: [
       { icon: Users, label: "Users", key: "users", href: "/admin/users" },
       { icon: ShieldCheck, label: "Verification", key: "verification", href: "/admin/verification" },
-      { icon: MessageSquare, label: "Messages", key: "messages", href: "/admin/messages" },
     ]
   },
   {
@@ -208,7 +209,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
     const fetchNotifications = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/notifications`, {
+        const res = await fetch(`${API_BASE_URL}/notifications?_t=${Date.now()}`, {
           headers: { Authorization: `Bearer ${authService.getAdminToken()}` }
         });
         if (res.ok) {
@@ -221,33 +222,38 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
     fetchNotifications();
 
-    if (socket) {
-      const handleNewNotif = (newNotif: any) => {
-        setNotifications(prev => [newNotif, ...prev]);
-        setUnreadCount(prev => prev + 1);
-      };
-      socket.on('new_notification', handleNewNotif);
-      return () => {
-        socket.off('new_notification', handleNewNotif);
-      };
-    }
-
-    const handleOutsideClick = (event: MouseEvent) => {
-      if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
-        setShowNotifications(false);
-      }
-    };
-
-    if (showNotifications) {
-      document.addEventListener("mousedown", handleOutsideClick);
-    }
-
-    window.addEventListener('languagesUpdated', fetchDBLanguages);
-    return () => {
-      window.removeEventListener('languagesUpdated', fetchDBLanguages);
-      document.removeEventListener("mousedown", handleOutsideClick);
-    };
-  }, [showNotifications, socket]);
+     if (socket) {
+       const handleNewNotif = (newNotif: any) => {
+         setNotifications(prev => [newNotif, ...prev]);
+         setUnreadCount(prev => prev + 1);
+       };
+       socket.on('new_notification', handleNewNotif);
+       return () => {
+         socket.off('new_notification', handleNewNotif);
+       };
+     }
+ 
+     window.addEventListener('languagesUpdated', fetchDBLanguages);
+     return () => {
+       window.removeEventListener('languagesUpdated', fetchDBLanguages);
+     };
+   }, [socket]);
+ 
+   useEffect(() => {
+     const handleOutsideClick = (event: MouseEvent) => {
+       if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
+         setShowNotifications(false);
+       }
+     };
+ 
+     if (showNotifications) {
+       document.addEventListener("mousedown", handleOutsideClick);
+     }
+ 
+     return () => {
+       document.removeEventListener("mousedown", handleOutsideClick);
+     };
+   }, [showNotifications]);
 
   const handleNotifClick = async (n: any) => {
     if (!n.isRead) {

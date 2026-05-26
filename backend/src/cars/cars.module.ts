@@ -7,6 +7,9 @@ import { Brand, BrandSchema } from '../brands/schemas/brand.schema';
 import { CarType, CarTypeSchema } from '../car-types/schemas/car-type.schema';
 import { Booking, BookingSchema } from '../bookings/schemas/booking.schema';
 import { Review, ReviewSchema } from '../reviews/schemas/review.schema';
+import { SettingsModule } from '../settings/settings.module';
+import { NotificationsModule } from '../notifications/notifications.module';
+import { User, UserSchema } from '../users/schemas/user.schema';
 
 @Module({
   imports: [
@@ -16,7 +19,10 @@ import { Review, ReviewSchema } from '../reviews/schemas/review.schema';
       { name: CarType.name, schema: CarTypeSchema },
       { name: Booking.name, schema: BookingSchema },
       { name: Review.name, schema: ReviewSchema },
+      { name: User.name, schema: UserSchema },
     ]),
+    SettingsModule,
+    NotificationsModule,
   ],
   controllers: [CarsController],
   providers: [CarsService],

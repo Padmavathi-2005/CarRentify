@@ -110,6 +110,7 @@ type Settings = {
     officeLocations?: any[];
     customFields?: any[];
     listings?: { customFields?: any[];[key: string]: any };
+    itemsPerPageLimit?: number;
 };
 
 type SettingsContextType = {

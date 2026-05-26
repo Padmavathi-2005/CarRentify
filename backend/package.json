@@ -21,6 +21,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
+    "@fastify/multipart": "^10.0.0",
     "@fastify/static": "^9.1.0",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.3",
@@ -39,6 +40,7 @@
     "deep-email-validator": "^0.1.21",
     "mongoose": "^9.3.3",
     "nodemailer": "^8.0.4",
+    "openai": "^6.39.0",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "pdfkit": "^0.18.0",

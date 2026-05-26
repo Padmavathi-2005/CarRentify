@@ -519,7 +519,7 @@ export default function Home() {
  }}
  className="w-12 h-12 rounded-app border border-border flex items-center justify-center hover:bg-primary hover:text-white transition-all group"
  >
- <ChevronLeft className="w-5 h-5 text-muted-foreground/60 group-hover:text-white" />
+ <ChevronLeft className="w-5 h-5 text-muted-foreground/60 group-hover:text-white rtl:rotate-180" />
  </button>
  <button
  onMouseEnter={() => isPaused.current = true}
@@ -533,7 +533,7 @@ export default function Home() {
  }}
  className="w-12 h-12 rounded-app bg-primary text-white flex items-center justify-center hover:bg-primary-hover transition-all "
  >
- <ChevronRight className="w-5 h-5" />
+ <ChevronRight className="w-5 h-5 rtl:rotate-180" />
  </button>
  </div>
  )}

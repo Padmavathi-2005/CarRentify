@@ -114,19 +114,16 @@ export default function TripLifecycleManager({ booking, type, onComplete, onCanc
     setIsUploading(fieldId);
     try {
       const uploadPromises = files.map(async (file) => {
-        const base64 = await new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.readAsDataURL(file);
-          reader.onload = () => resolve(reader.result as string);
-        });
-
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('folder', 'registry');
+        
         const res = await fetch(`${API_BASE_URL}/media/upload`, {
           method: "POST",
           headers: {
-            "Content-Type": "application/json",
             Authorization: `Bearer ${authService.getToken()}`
           },
-          body: JSON.stringify({ fileName: file.name, base64 }),
+          body: formData,
         });
 
         if (res.ok) {
@@ -161,13 +158,19 @@ export default function TripLifecycleManager({ booking, type, onComplete, onCanc
 
       // Upload signature if it's a new base64 string
       if (payload.signature && payload.signature.startsWith('data:image')) {
+        const fetchRes = await fetch(payload.signature);
+        const blob = await fetchRes.blob();
+
+        const sigFormData = new FormData();
+        sigFormData.append('file', blob, `signature_${Date.now()}.png`);
+        sigFormData.append('folder', 'signatures');
+
         const sigRes = await fetch(`${API_BASE_URL}/media/upload`, {
           method: "POST",
           headers: {
-            "Content-Type": "application/json",
             Authorization: `Bearer ${authService.getToken()}`
           },
-          body: JSON.stringify({ fileName: `signature_${Date.now()}.png`, base64: payload.signature, folder: 'signatures' }),
+          body: sigFormData,
         });
         if (sigRes.ok) {
           const sigData = await sigRes.json();

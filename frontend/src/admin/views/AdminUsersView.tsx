@@ -26,6 +26,7 @@ import {
  X
 } from "lucide-react";
 import { AdminTranslationContext, useAdminTranslation } from "@/app/admin/AdminTranslationContext";
+import { useSettings } from "@/components/ThemeProvider";
 import { API_BASE_URL, BACKEND_URL } from "@/config/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,9 +55,14 @@ export default function AdminUsersView() {
  const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || "");
  const [currentPage, setCurrentPage] = useState(1);
  const [itemsPerPage, setItemsPerPage] = useState(10);
+ const { settings } = useSettings();
  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
  const [currentUser, setCurrentUser] = useState<any>(null);
+
+ React.useEffect(() => {
+ if (settings?.itemsPerPageLimit) setItemsPerPage(settings.itemsPerPageLimit);
+ }, [settings?.itemsPerPageLimit]);
 
  // New User State
  const [newUser, setNewUser] = useState({ 
@@ -359,15 +365,17 @@ export default function AdminUsersView() {
 
  try {
  setWalletLoading(true);
+ const defaultDesc = walletType === 'credit' ? 'Added by CarRental Platform Admin' : 'Deducted by CarRental Platform Admin';
  await walletService.adminUpdateBalance(
  currentUser._id || currentUser.id,
  Number(walletAmount),
- walletDescription || `Admin ${walletType} adjustment`,
+ walletDescription || defaultDesc,
  walletType
  );
  setIsWalletModalOpen(false);
  setWalletAmount("");
  setWalletDescription("");
+ if (typeof fetchUsers === 'function') fetchUsers();
  alert("Wallet updated successfully!");
  } catch (err) {
  console.error("Wallet update failed:", err);
@@ -1204,11 +1212,10 @@ export default function AdminUsersView() {
  <div>
  <label className="text-[9px] font-black text-[var(--admin-text-muted)] uppercase tracking-widest mb-2 block px-1">Description / Reason</label>
  <Input 
- placeholder="e.g. Booking refund, Manual correction"
+ placeholder="e.g. Added by CarRental Platform Admin"
  className="h-12 rounded-app border-[var(--admin-border)] bg-[var(--admin-bg)] focus:bg-[var(--admin-card-bg)] transition-all font-bold text-xs text-[var(--admin-text-main)]"
  value={walletDescription}
  onChange={(e) => setWalletDescription(e.target.value)}
- required
  />
  </div>
  </div>

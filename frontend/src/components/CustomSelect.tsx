@@ -118,8 +118,19 @@ export default function CustomSelect({
 
   useEffect(() => {
     if (!isOpen || inline) return;
+    
+    const handleScroll = (e: Event) => {
+      if (dropdownRef.current && dropdownRef.current.contains(e.target as Node)) {
+        return;
+      }
+      setIsOpen(false);
+    };
+
+    window.addEventListener("scroll", handleScroll, true);
     window.addEventListener("resize", () => setIsOpen(false));
+    
     return () => {
+      window.removeEventListener("scroll", handleScroll, true);
       window.removeEventListener("resize", () => setIsOpen(false));
     };
   }, [isOpen, inline]);

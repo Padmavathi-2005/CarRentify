@@ -35,6 +35,8 @@ import VehicleFullPreview from "@/components/VehicleFullPreview";
 import { useLocale } from "@/components/LocaleContext";
 import { useAuth } from "@/components/AuthContext";
 import { useToast } from "@/components/Toast";
+import CustomSelect from "@/components/CustomSelect";
+import { useSettings } from "@/components/ThemeProvider";
 
 import { API_BASE_URL, getImageUrl } from "@/config/api";
 
@@ -47,8 +49,17 @@ export default function VendorCarsPage() {
  const [loading, setLoading] = useState(true);
  const isAdmin = user?.role?.toLowerCase() === 'admin';
  const [searchQuery, setSearchQuery] = useState("");
+ const [showFilters, setShowFilters] = useState(false);
+ const [statusFilter, setStatusFilter] = useState("all");
+ const [availabilityFilter, setAvailabilityFilter] = useState("all");
+ const [sortBy, setSortBy] = useState("newest");
  const [currentPage, setCurrentPage] = useState(1);
  const [itemsPerPage, setItemsPerPage] = useState(5);
+ const { settings } = useSettings();
+
+ useEffect(() => {
+ if (settings?.itemsPerPageLimit) setItemsPerPage(settings.itemsPerPageLimit);
+ }, [settings?.itemsPerPageLimit]);
 
  const fetchFleet = async () => {
  try {
@@ -118,14 +129,35 @@ export default function VendorCarsPage() {
  };
 
  const query = searchQuery.toLowerCase();
- const filteredCars = cars.filter(car =>
- car.name?.toLowerCase().includes(query) ||
- car.model?.toLowerCase().includes(query) ||
- car.licensePlate?.toLowerCase().includes(query) ||
- (typeof car.brand === 'object' ? car.brand?.name : car.brand)?.toLowerCase().includes(query) ||
- (typeof car.vehicleType === 'object' ? car.vehicleType?.name : car.vehicleType)?.toLowerCase().includes(query) ||
- car.pricePerDay?.toString().includes(query)
- );
+ const filteredCars = cars.filter(car => {
+    // Search
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      const matchesSearch = car.name?.toLowerCase().includes(query) ||
+        car.model?.toLowerCase().includes(query) ||
+        car.licensePlate?.toLowerCase().includes(query) ||
+        (typeof car.brand === 'object' ? car.brand?.name : car.brand)?.toLowerCase().includes(query) ||
+        (typeof car.vehicleType === 'object' ? car.vehicleType?.name : car.vehicleType)?.toLowerCase().includes(query) ||
+        car.pricePerDay?.toString().includes(query);
+      if (!matchesSearch) return false;
+    }
+    // Status
+    if (statusFilter !== 'all') {
+      const st = car.status || 'pending';
+      if (st.toLowerCase() !== statusFilter) return false;
+    }
+    // Availability
+    if (availabilityFilter !== 'all') {
+      const isAvail = !!car.available;
+      if (availabilityFilter === 'available' && !isAvail) return false;
+      if (availabilityFilter === 'rented' && isAvail) return false;
+    }
+    return true;
+  }).sort((a, b) => {
+    if (sortBy === 'price-low') return (a.pricePerDay || 0) - (b.pricePerDay || 0);
+    if (sortBy === 'price-high') return (b.pricePerDay || 0) - (a.pricePerDay || 0);
+    return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+  });
 
  const totalItems = filteredCars.length;
  const totalPages = Math.ceil(totalItems / itemsPerPage);
@@ -155,7 +187,7 @@ export default function VendorCarsPage() {
  <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
  <Input
  placeholder={t('dashboard.fleet.search_placeholder')}
- className="w-full pl-14 h-14 bg-slate-50 border-none rounded-app focus-visible:ring-primary/10 font-medium text-slate-900"
+ className="w-full pl-14 h-14 bg-slate-50 dark:bg-white/5 border-none rounded-app focus-visible:ring-primary/10 font-medium text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
  value={searchQuery}
  onChange={(e) => {
  setSearchQuery(e.target.value);
@@ -164,16 +196,63 @@ export default function VendorCarsPage() {
  />
  </div>
  <div className="flex items-center gap-3 w-full lg:w-auto">
- <Button variant="outline" className="flex-1 lg:flex-none h-14 px-8 rounded-app border-slate-100 text-slate-600 gap-3 font-bold hover:bg-slate-50">
+ <Button variant={showFilters ? "default" : "outline"} onClick={() => setShowFilters(!showFilters)} className={`flex-1 lg:flex-none h-14 px-8 rounded-app border-slate-100 gap-3 font-bold transition-all ${showFilters ? 'bg-primary text-white hover:bg-primary-hover' : 'text-slate-600 hover:bg-slate-50'}`}>
  <Filter size={20} /> {t('dashboard.fleet.filters')}
  </Button>
  <div className="hidden lg:block h-8 w-px bg-slate-100 mx-2" />
- <p className="hidden lg:block text-slate-400 text-sm font-bold whitespace-nowrap uppercase tracking-widest">{t('dashboard.fleet.vehicles_total', { count: filteredCars.length })}</p>
+ <p className="hidden lg:block text-slate-400 text-sm font-bold whitespace-nowrap uppercase tracking-widest">{t('dashboard.fleet.vehicles_total', { count: filteredCars.length })}: <span className="text-slate-900 ml-1">{filteredCars.length}</span></p>
  </div>
  </div>
 
+ {/* Filter Panel */}
+ <AnimatePresence>
+   {showFilters && (
+     <motion.div initial={{ opacity: 0, height: 0, y: -10 }} animate={{ opacity: 1, height: 'auto', y: 0 }} exit={{ opacity: 0, height: 0, y: -10 }} className="overflow-hidden">
+       <div className="bg-slate-50 border border-slate-100 rounded-app p-6 mt-4 grid grid-cols-1 md:grid-cols-3 gap-6">
+         <div className="space-y-2">
+           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Approval Status</label>
+           <CustomSelect 
+             defaultValue={statusFilter} 
+             onChange={v => { setStatusFilter(v); setCurrentPage(1); }} 
+             options={[
+               { value: 'all', label: 'All Statuses' },
+               { value: 'approved', label: 'Approved' },
+               { value: 'pending', label: 'Pending' },
+               { value: 'rejected', label: 'Rejected' }
+             ]}
+           />
+         </div>
+         <div className="space-y-2">
+           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Availability</label>
+           <CustomSelect 
+             defaultValue={availabilityFilter} 
+             onChange={v => { setAvailabilityFilter(v); setCurrentPage(1); }} 
+             options={[
+               { value: 'all', label: 'All Vehicles' },
+               { value: 'available', label: 'Ready for Rental' },
+               { value: 'rented', label: 'Currently Rented' }
+             ]}
+           />
+         </div>
+         <div className="space-y-2">
+           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Sort By</label>
+           <CustomSelect 
+             defaultValue={sortBy} 
+             onChange={v => { setSortBy(v); setCurrentPage(1); }} 
+             options={[
+               { value: 'newest', label: 'Newest First' },
+               { value: 'price-low', label: 'Price: Low to High' },
+               { value: 'price-high', label: 'Price: High to Low' }
+             ]}
+           />
+         </div>
+       </div>
+     </motion.div>
+   )}
+ </AnimatePresence>
+
  {/* Fleet Cards Grid */}
- <div className="space-y-4">
+ <div className="space-y-4 mt-4">
  {loading ? (
  <div className="h-[400px] flex flex-col items-center justify-center space-y-4 bg-white rounded-app border border-slate-100 ">
  <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin mx-auto mb-4" />
@@ -202,7 +281,7 @@ export default function VendorCarsPage() {
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                     alt={car.name}
                   />
-                  <div className="absolute top-2 left-2 px-2 py-1 bg-white/90 backdrop-blur-md rounded-app text-[8px] font-black uppercase tracking-widest border border-slate-100 flex items-center gap-1 ">
+                  <div className="absolute top-2 left-2 px-2 py-1 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-app text-[8px] font-black uppercase tracking-widest border border-slate-100 dark:border-slate-800 text-slate-900 dark:text-slate-100 flex items-center gap-1">
                     <Zap size={8} fill="currentColor" className="text-primary" /> {typeof car.vehicleType === 'object' ? car.vehicleType?.name : car.vehicleType}
                   </div>
                 </div>
@@ -320,7 +399,7 @@ export default function VendorCarsPage() {
  </div>
 
  {/* Pagination Controls */}
- <div className="bg-slate-50/50 border-t border-slate-100 p-6 rounded-app mt-4 flex flex-col md:flex-row justify-between items-center gap-6">
+ <div className="pt-6 mt-4 flex flex-col md:flex-row justify-between items-center gap-6">
  <div className="flex items-center gap-6">
  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
  {t('dashboard.fleet.showing_range', { start: startIndex + 1, end: Math.min(startIndex + itemsPerPage, totalItems), total: totalItems })}
@@ -329,9 +408,9 @@ export default function VendorCarsPage() {
 
  <div className="flex items-center gap-2">
  <Button
- variant="outline"
+ variant="ghost"
  size="sm"
- className="h-10 px-4 rounded-app border-slate-200 bg-white text-[10px] font-bold uppercase tracking-widest text-slate-600 disabled:opacity-30 hover:bg-slate-50 transition-all"
+ className="h-10 px-4 rounded-app text-[10px] font-bold uppercase tracking-widest text-slate-600 dark:text-slate-400 disabled:opacity-30 hover:bg-slate-50 dark:hover:bg-white/5 transition-all"
  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
  disabled={currentPage === 1}
  >
@@ -345,7 +424,7 @@ export default function VendorCarsPage() {
  onClick={() => setCurrentPage(page)}
  className={`w-10 h-10 rounded-app text-[10px] font-black transition-all ${currentPage === page
  ? 'bg-primary text-white '
- : 'bg-white text-slate-400 hover:bg-slate-50 border border-slate-100'
+ : 'text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-white/5'
  }`}
  >
  {page}
@@ -354,9 +433,9 @@ export default function VendorCarsPage() {
  </div>
 
  <Button
- variant="outline"
+ variant="ghost"
  size="sm"
- className="h-10 px-4 rounded-app border-slate-200 bg-white text-[10px] font-bold uppercase tracking-widest text-slate-600 disabled:opacity-30 hover:bg-slate-50 transition-all"
+ className="h-10 px-4 rounded-app text-[10px] font-bold uppercase tracking-widest text-slate-600 dark:text-slate-400 disabled:opacity-30 hover:bg-slate-50 dark:hover:bg-white/5 transition-all"
  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
  disabled={currentPage === totalPages}
  >

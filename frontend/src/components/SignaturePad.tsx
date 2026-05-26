@@ -17,11 +17,13 @@ export default function SignaturePad({ initialSignature, onSave, title = "Digita
   const [hasDrawn, setHasDrawn] = useState(false);
   const [savedSignature, setSavedSignature] = useState<string | null>(initialSignature || null);
   const [isEditing, setIsEditing] = useState(!initialSignature);
+  const initialized = useRef(false);
 
   useEffect(() => {
-    if (initialSignature) {
+    if (initialSignature && !initialized.current) {
       setSavedSignature(initialSignature);
       setIsEditing(false);
+      initialized.current = true;
     }
   }, [initialSignature]);
 
@@ -39,11 +41,6 @@ export default function SignaturePad({ initialSignature, onSave, title = "Digita
     }
   };
 
-  const useSaved = () => {
-    setIsEditing(false);
-    onSave(savedSignature);
-  };
-
   const drawNew = () => {
     setIsEditing(true);
     setHasDrawn(false);
@@ -57,11 +54,6 @@ export default function SignaturePad({ initialSignature, onSave, title = "Digita
           <h4 className="text-sm font-black text-slate-900 uppercase tracking-widest">{title}</h4>
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{subtitle}</p>
         </div>
-        {savedSignature && isEditing && (
-          <Button variant="ghost" onClick={useSaved} className="h-8 text-[10px] font-black uppercase tracking-widest text-primary hover:bg-primary/5">
-            Use Saved Signature
-          </Button>
-        )}
       </div>
 
       {!isEditing && savedSignature ? (

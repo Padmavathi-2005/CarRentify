@@ -9,6 +9,9 @@ export class NotificationsController {
   @UseGuards(JwtAuthGuard)
   @Get()
   async findAll(@Request() req: any) {
+    if (req.user.role === 'admin') {
+      return this.notificationsService.findAllAdmin();
+    }
     return this.notificationsService.findAll(req.user.userId);
   }
 

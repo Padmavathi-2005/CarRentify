@@ -51,7 +51,7 @@ export const BookingWidget = ({
  </div>
  <div className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-widest">
  <Star size={14} className="fill-amber-400 text-amber-400" />
- <span className="text-foreground">{car.rating || '0.0'}</span>
+ <span className="text-foreground">{car.rating ? Number(car.rating).toFixed(1) : '0.0'}</span>
  <span className="text-muted-foreground/30 mx-0.5">.</span>
  <button className="text-muted-foreground hover:text-primary underline transition-colors">
  {car.reviewCount || 0} reviews

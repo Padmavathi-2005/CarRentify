@@ -24,8 +24,9 @@ export default function AdminWithdrawalsView() {
  const { formatPrice } = useLocale();
  const [requests, setRequests] = useState<any[]>([]);
  const [loading, setLoading] = useState(true);
+ const [fetchError, setFetchError] = useState<string | null>(null);
  const [searchTerm, setSearchTerm] = useState("");
- const [filter, setFilter] = useState("pending"); // pending, approved, rejected
+ const [filter, setFilter] = useState("all"); // all, pending, approved, rejected
  const [selectedRequest, setSelectedRequest] = useState<any>(null);
  const [rejectionReason, setRejectionReason] = useState("");
  const [isRejecting, setIsRejecting] = useState(false);
@@ -36,16 +37,15 @@ export default function AdminWithdrawalsView() {
 
  const fetchRequests = async () => {
  setLoading(true);
+ setFetchError(null);
  try {
  const data = await walletService.getWithdrawalRequests();
+ console.log('[AdminWithdrawals] Fetched', data.length, 'records:', data);
  setRequests(data);
- } catch (err) {
- console.error(err);
- // Fallback to mock data for demonstration if API fails
- setRequests([
- { _id: "1", user: { firstName: "John", lastName: "Doe", email: "john@example.com" }, amount: 500, currency: "USD", status: "pending", createdAt: new Date().toISOString(), bankDetails: { bankName: "Chase", accountName: "John Doe", accountNumber: "****5678" } },
- { _id: "2", user: { firstName: "Jane", lastName: "Smith", email: "jane@example.com" }, amount: 1200, currency: "USD", status: "pending", createdAt: new Date().toISOString(), bankDetails: { bankName: "Bank of America", accountName: "Jane Smith", accountNumber: "****1234" } }
- ]);
+ } catch (err: any) {
+ console.error("Failed to fetch withdrawal requests:", err);
+ setFetchError(err?.message || 'Failed to load withdrawal requests');
+ setRequests([]);
  } finally {
  setLoading(false);
  }
@@ -75,9 +75,10 @@ export default function AdminWithdrawalsView() {
  };
 
  const filteredRequests = requests.filter(req => {
- const matchesSearch = 
- req.user.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
- req.user.email.toLowerCase().includes(searchTerm.toLowerCase());
+ if (!req.user) return false;
+ const matchesSearch = searchTerm === '' ||
+ (req.user.firstName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+ (req.user.email || '').toLowerCase().includes(searchTerm.toLowerCase());
  const matchesFilter = filter === "all" || req.status === filter;
  return matchesSearch && matchesFilter;
  });
@@ -106,10 +107,10 @@ export default function AdminWithdrawalsView() {
  onChange={(e) => setFilter(e.target.value)}
  className="h-11 w-full md:w-40 px-4 bg-white border border-slate-100 rounded-app text-[10px] font-black uppercase tracking-widest outline-none cursor-pointer focus:border-primary transition-all"
  >
- <option value="pending">Pending</option>
- <option value="approved">Approved</option>
- <option value="rejected">Rejected</option>
  <option value="all">All Status</option>
+ <option value="pending">Pending</option>
+ <option value="success">Approved</option>
+ <option value="failed">Rejected</option>
  </select>
  </div>
  </div>
@@ -131,6 +132,14 @@ export default function AdminWithdrawalsView() {
  <tr>
  <td colSpan={5} className="py-20 text-center">
  <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+ </td>
+ </tr>
+ ) : fetchError ? (
+ <tr>
+ <td colSpan={5} className="py-20 text-center">
+ <XCircle className="mx-auto text-rose-300 mb-3" size={40} />
+ <p className="text-[10px] font-black text-rose-400 uppercase tracking-widest mb-4">{fetchError}</p>
+ <button onClick={fetchRequests} className="text-[10px] font-black text-primary uppercase tracking-widest hover:underline">Retry</button>
  </td>
  </tr>
  ) : filteredRequests.length === 0 ? (

@@ -7,6 +7,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from '../users/schemas/user.schema';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { SettingsModule } from '../settings/settings.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { SettingsModule } from '../settings/settings.module';
     }),
     SettingsModule,
     ConfigModule,
+    NotificationsModule,
   ],
   providers: [AuthService, JwtStrategy],
   controllers: [AuthController],
