@@ -426,7 +426,16 @@
       "description": "وصف السيارة",
       "publish_btn": "نشر السيارة",
       "untitled_car": "سيارة بدون عنوان",
-      "update_btn": "تحديث الإدراج"
+      "update_btn": "تحديث الإدراج",
+      "list_your_car": "أدرج سيارتك",
+      "discard": "تجاهل",
+      "save_draft": "حفظ كمسودة",
+      "publish": "نشر",
+      "discard_modal_title": "تجاهل التغييرات؟",
+      "discard_modal_desc": "ستفقد التعديلات غير المحفوظة",
+      "discard_modal_warning": "هل أنت متأكد أنك تريد الخروج؟ ستفقد جميع تفاصيل السيارة والصور التي أضفتها حتى الآن.",
+      "keep_editing": "مواصلة التعديل",
+      "yes_discard": "نعم، تجاهل"
     },
     "messages": {
       "title": "الرسائل",

@@ -57,6 +57,7 @@ import Modal from "@/components/ui/modal";
 import { useAuth } from "@/components/AuthContext";
 import { authService } from "@/services/authService";
 import { useLocale } from "@/components/LocaleContext";
+import VerificationModal from "@/components/VerificationModal";
 
 const LocationPicker = dynamic(() => import("@/components/LocationPicker"), {
  ssr: false,
@@ -69,7 +70,7 @@ interface PriceTier {
  discountPercentage: number;
 }
 
-export default function EditCarPage() {
+export default function AdminEditCarPage() {
  const { t } = useLocale();
  const { showToast } = useToast();
  const { settings } = useSettings();
@@ -708,12 +709,12 @@ export default function EditCarPage() {
      </header>
 
     <main className="max-w-4xl mx-auto px-4 md:px-8 py-6 md:py-10 w-full flex-grow">
-    <Modal isOpen={showDiscardModal} onClose={() => setShowDiscardModal(false)} title="Discard Changes?" description="Unsaved modifications will be lost" icon={<Trash2 size={24} className="text-rose-500" />} className="border-slate-100 dark:border-white/10">
+    <Modal isOpen={showDiscardModal} onClose={() => setShowDiscardModal(false)} title={t('dashboard.fleet.discard_modal_title', { defaultValue: 'Discard Changes?' })} description={t('dashboard.fleet.discard_modal_desc', { defaultValue: 'Unsaved modifications will be lost' })} icon={<Trash2 size={24} className="text-rose-500" />} className="border-slate-100 dark:border-white/10">
      <div className="space-y-8">
-      <p className="text-sm font-bold text-slate-500 dark:text-slate-400 leading-relaxed capitalize">Are you sure you want to discard your changes? All unsaved modifications to this car listing will be lost.</p>
+      <p className="text-sm font-bold text-slate-500 dark:text-slate-400 leading-relaxed capitalize">{t('dashboard.fleet.discard_modal_warning', { defaultValue: "Are you sure you want to exit? All the car details and photos you've added so far will be lost." })}</p>
       <div className="flex items-center gap-4 pt-4 border-t border-slate-50 dark:border-white/10">
-       <Button onClick={() => setShowDiscardModal(false)} variant="ghost" className="flex-1 h-14 rounded-app font-black uppercase text-[10px] tracking-widest text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-white/5">Keep Editing</Button>
-       <Button onClick={() => router.push("/admin/cars")} className="flex-1 h-14 bg-rose-500 hover:bg-rose-600 text-white rounded-app font-black uppercase text-[10px] tracking-widest ">Yes, Discard</Button>
+       <Button onClick={() => setShowDiscardModal(false)} variant="ghost" className="flex-1 h-14 rounded-app font-black uppercase text-[10px] tracking-widest text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-white/5">{t('dashboard.fleet.keep_editing', { defaultValue: 'Keep Editing' })}</Button>
+       <Button onClick={() => router.push("/admin/cars")} className="flex-1 h-14 bg-rose-500 hover:bg-rose-600 text-white rounded-app font-black uppercase text-[10px] tracking-widest ">{t('dashboard.fleet.yes_discard', { defaultValue: 'Yes, Discard' })}</Button>
       </div>
      </div>
     </Modal>

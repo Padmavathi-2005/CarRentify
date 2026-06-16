@@ -727,29 +727,23 @@ export default function EditCarPage() {
         </React.Fragment>
        ))}
       </div>
-       <div className="flex items-center gap-2 lg:gap-3">
-         <Button variant="ghost" onClick={handleCancel} className="h-9 px-2 sm:px-3 lg:px-4 rounded-app font-black text-slate-400 dark:text-slate-500 uppercase text-[8px] tracking-[0.2em] hover:bg-slate-50 dark:hover:bg-white/5 transition-all flex items-center gap-2 border border-transparent active:scale-95"><XCircle size={16} /> <span className="hidden md:inline">Discard</span></Button>
-         {initialStatus === 'draft' ? (
-           <>
-             <Button onClick={() => handleSubmit('draft')} disabled={loading} variant="outline" className="h-9 sm:h-10 px-3 sm:px-4 lg:px-5 border border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5 rounded-app font-black uppercase text-[9px] tracking-widest flex items-center gap-2 transition-all active:scale-95 text-slate-700 dark:text-slate-300 bg-transparent">{loading ? <RefreshCw className="animate-spin" size={14} /> : <Save size={16} />}<span className="hidden sm:inline">Save Draft</span></Button>
-             <Button onClick={() => handleSubmit('pending')} disabled={loading} className="h-9 sm:h-10 px-3 sm:px-4 lg:px-6 bg-primary hover:bg-secondary text-white hover:text-white rounded-app font-black uppercase text-[9px] tracking-widest flex items-center gap-2 sm:gap-3 border-none transition-all active:scale-95">{loading ? <RefreshCw className="animate-spin" size={14} /> : <CheckCircle2 size={16} />}<span className="hidden sm:inline">Publish</span></Button>
-           </>
-         ) : (
-           <Button onClick={() => handleSubmit(initialStatus as any)} disabled={loading} className="h-9 sm:h-10 px-3 sm:px-4 lg:px-6 bg-primary hover:bg-secondary text-white hover:text-white rounded-app font-black uppercase text-[9px] tracking-widest flex items-center gap-2 sm:gap-3 border-none transition-all active:scale-95">{loading ? <RefreshCw className="animate-spin" size={14} /> : <Save size={16} />}<span className="hidden sm:inline">Save Changes</span></Button>
-         )}
-       </div>
-     </header>
+        <div className="flex items-center gap-2 lg:gap-3">
+          <Button variant="ghost" onClick={handleCancel} className="h-9 px-2 sm:px-3 lg:px-4 rounded-app font-black text-slate-400 dark:text-slate-500 uppercase text-[8px] tracking-[0.2em] hover:bg-slate-50 dark:hover:bg-white/5 transition-all flex items-center gap-2 border border-transparent active:scale-95"><XCircle size={16} /> <span className="hidden md:inline">{t('dashboard.fleet.discard', { defaultValue: 'Discard' })}</span></Button>
+          <Button onClick={() => handleSubmit('draft')} disabled={loading} variant="outline" className="h-9 sm:h-10 px-3 sm:px-4 lg:px-5 border border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5 rounded-app font-black uppercase text-[9px] tracking-widest flex items-center gap-2 transition-all active:scale-95 text-slate-700 dark:text-slate-300 bg-transparent">{loading ? <RefreshCw className="animate-spin" size={14} /> : <Save size={16} />}<span className="hidden sm:inline">{t('dashboard.fleet.save_draft', { defaultValue: 'Save Draft' })}</span></Button>
+          <Button onClick={() => handleSubmit('pending')} disabled={loading} className="h-9 sm:h-10 px-3 sm:px-4 lg:px-6 bg-primary hover:bg-secondary text-white hover:text-white rounded-app font-black uppercase text-[9px] tracking-widest flex items-center gap-2 sm:gap-3 border-none transition-all active:scale-95">{loading ? <RefreshCw className="animate-spin" size={14} /> : <CheckCircle2 size={16} />}<span className="hidden sm:inline">{t('dashboard.fleet.update_btn', { defaultValue: 'Update Listing' })}</span></Button>
+        </div>
+      </header>
 
-    <main className="max-w-4xl mx-auto px-4 md:px-8 py-6 md:py-10 w-full flex-grow">
-    <Modal isOpen={showDiscardModal} onClose={() => setShowDiscardModal(false)} title="Discard Changes?" description="Unsaved modifications will be lost" icon={<Trash2 size={24} className="text-rose-500" />} className="border-slate-100 dark:border-white/10">
-     <div className="space-y-8">
-      <p className="text-sm font-bold text-slate-500 dark:text-slate-400 leading-relaxed capitalize">Are you sure you want to discard your changes? All unsaved modifications to this car listing will be lost.</p>
-      <div className="flex items-center gap-4 pt-4 border-t border-slate-50 dark:border-white/10">
-       <Button onClick={() => setShowDiscardModal(false)} variant="ghost" className="flex-1 h-14 rounded-app font-black uppercase text-[10px] tracking-widest text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-white/5">Keep Editing</Button>
-       <Button onClick={() => router.push("/dashboard/cars")} className="flex-1 h-14 bg-rose-500 hover:bg-rose-600 text-white rounded-app font-black uppercase text-[10px] tracking-widest ">Yes, Discard</Button>
-      </div>
-     </div>
-    </Modal>
+      <main className="max-w-4xl mx-auto px-4 md:px-8 py-6 md:py-10 w-full flex-grow">
+        <Modal isOpen={showDiscardModal} onClose={() => setShowDiscardModal(false)} title={t('dashboard.fleet.discard_modal_title', { defaultValue: 'Discard Changes?' })} description={t('dashboard.fleet.discard_modal_desc', { defaultValue: 'Unsaved modifications will be lost' })} icon={<Trash2 size={24} className="text-rose-500" />} className="border-slate-100 dark:border-white/10">
+          <div className="space-y-8">
+            <p className="text-sm font-bold text-slate-500 leading-relaxed capitalize">{t('dashboard.fleet.discard_modal_warning', { defaultValue: "Are you sure you want to exit? All the car details and photos you've added so far will be lost." })}</p>
+            <div className="flex items-center gap-4 pt-4 border-t border-slate-50 dark:border-white/10">
+              <Button onClick={() => setShowDiscardModal(false)} variant="ghost" className="flex-1 h-14 rounded-app font-black uppercase text-[10px] tracking-widest text-slate-400 hover:bg-slate-50 dark:hover:bg-white/5">{t('dashboard.fleet.keep_editing', { defaultValue: 'Keep Editing' })}</Button>
+              <Button onClick={() => router.push("/dashboard/cars")} className="flex-1 h-14 bg-rose-500 hover:bg-rose-600 text-white rounded-app font-black uppercase text-[10px] tracking-widest ">{t('dashboard.fleet.yes_discard', { defaultValue: 'Yes, Discard' })}</Button>
+            </div>
+          </div>
+        </Modal>
 
 
     <div className="space-y-10">
