@@ -10,7 +10,10 @@ import { API_BASE_URL } from "@/config/api";
 const resolveAsset = (path: string | null | undefined) => {
   if (!path) return null;
   if (path.startsWith('http') || path.startsWith('data:')) return path;
-  return `${API_BASE_URL.replace('/api', '')}${path}`;
+  if (path.startsWith('/images/') || path.startsWith('images/')) {
+    return `${API_BASE_URL.replace('/api', '')}${path.startsWith('/') ? '' : '/'}${path}`;
+  }
+  return path;
 };
 
 const Footer = () => {
@@ -18,9 +21,14 @@ const Footer = () => {
   const { language, t } = useLocale();
   const { showToast } = useToast();
   const currentYear = new Date().getFullYear();
+  const [mounted, setMounted] = useState(false);
   const [dynamicPages, setDynamicPages] = useState<any[]>([]);
   const [email, setEmail] = useState("");
   const [newsStatus, setNewsStatus] = useState("");
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleSubscribe = async () => {
     if (!email) return;
@@ -70,7 +78,9 @@ const Footer = () => {
             <Link href="/" className="inline-block mb-4">
               <div className="bg-transparent dark:bg-white dark:px-3 dark:py-1 dark:rounded-app transition-all inline-block">
                 <img
-                  src={settings.theme === 'dark'
+                  src={!mounted
+                    ? "/logo.png"
+                    : settings.theme === 'dark'
                     ? (resolveAsset(settings.logoLight) || "/logo.png")
                     : (resolveAsset(settings.logoDark) || "/logo.png")}
                   alt={settings.siteName || "CarRental"}

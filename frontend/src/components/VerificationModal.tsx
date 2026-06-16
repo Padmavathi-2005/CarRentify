@@ -112,29 +112,8 @@ export default function VerificationModal({
         ];
         const verificationFields = settings.verification?.fields && settings.verification.fields.length > 0 ? settings.verification.fields : defaultVerifFields;
 
-  // Explicitly add driver license number field if not present
-  if (!verificationFields.find((f: any) => f.id === 'driverLicense')) {
-    verificationFields.push({
-      id: 'driverLicense',
-      name: 'Driver License Number',
-      type: 'text',
-      required: true,
-      description: 'Enter your driver\'s license number'
-    });
-  }
-
-  // Explicitly add expiry date field if not present
-  if (!verificationFields.find((f: any) => f.id === 'licenseExpiryDate')) {
-    verificationFields.push({
-      id: 'licenseExpiryDate',
-      name: 'License Expiry Date',
-      type: 'date',
-      required: true,
-      description: 'Enter the expiration date printed on your driver\'s license'
-    });
-  }
-
-  setFields(verificationFields);
+        const activeFields = verificationFields.filter((f: any) => f.required !== false);
+        setFields(activeFields);
  }
 
  if (statusRes.ok) {
@@ -303,25 +282,25 @@ export default function VerificationModal({
  <div className="flex items-center justify-center py-16">
  <Loader2 className="animate-spin text-slate-900" size={32} />
  </div>
- ) : status === "approved" || status === "rejected" ? (
+ ) : status === "approved" || status === "rejected" || status === "action_required" ? (
  <div>
  <AnimatePresence>
- <motion.div 
- initial={{ opacity: 0, y: -10 }}
- animate={{ opacity: 1, y: 0 }}
- transition={{ duration: 0.4 }}
- className={`rounded-app p-6 mb-6 flex items-start gap-4 ${status === 'approved' ? 'bg-emerald-50 border border-emerald-100' : 'bg-rose-50 border border-rose-100'}`}
- >
- {status === 'approved' ? <CheckCircle2 className="text-emerald-500 shrink-0 mt-0.5" size={20} /> : <XCircle className="text-rose-500 shrink-0 mt-0.5" size={20} />}
- <div>
- <p className={`text-[11px] font-black uppercase tracking-widest mb-1 ${status === 'approved' ? 'text-emerald-600' : 'text-rose-600'}`}>
- {status === 'approved' ? t('dashboard.verification.verified') : t('dashboard.verification.rejected_reupload')}
- </p>
- <p className={`text-sm font-bold ${status === 'approved' ? 'text-emerald-500/80' : 'text-rose-500/80'}`}>
- {status === 'approved' ? t('dashboard.verification.confirmed_desc') : (myStatus?.adminNote || t('dashboard.verification.rejected'))}
- </p>
- </div>
- </motion.div>
+  <motion.div 
+  initial={{ opacity: 0, y: -10 }}
+  animate={{ opacity: 1, y: 0 }}
+  transition={{ duration: 0.4 }}
+  className={`rounded-app p-6 mb-6 flex items-start gap-4 ${status === 'approved' ? 'bg-emerald-50 border border-emerald-100' : status === 'action_required' ? 'bg-amber-50 border border-amber-100' : 'bg-rose-50 border border-rose-100'}`}
+  >
+  {status === 'approved' ? <CheckCircle2 className="text-emerald-500 shrink-0 mt-0.5" size={20} /> : status === 'action_required' ? <AlertCircle className="text-amber-500 shrink-0 mt-0.5" size={20} /> : <XCircle className="text-rose-500 shrink-0 mt-0.5" size={20} />}
+  <div>
+  <p className={`text-[11px] font-black uppercase tracking-widest mb-1 ${status === 'approved' ? 'text-emerald-600' : status === 'action_required' ? 'text-amber-600' : 'text-rose-600'}`}>
+  {status === 'approved' ? t('dashboard.verification.verified') : status === 'action_required' ? 'Action Required' : t('dashboard.verification.rejected_reupload')}
+  </p>
+  <p className={`text-sm font-bold ${status === 'approved' ? 'text-emerald-500/80' : status === 'action_required' ? 'text-amber-600/80' : 'text-rose-500/80'}`}>
+  {status === 'approved' ? t('dashboard.verification.confirmed_desc') : status === 'action_required' ? "Your driver's license is missing or expired. Please update your documents to proceed." : (myStatus?.adminNote || t('dashboard.verification.rejected'))}
+  </p>
+  </div>
+  </motion.div>
  </AnimatePresence>
 
  {false && status === 'approved' ? (

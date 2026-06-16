@@ -111,6 +111,8 @@ type Settings = {
     customFields?: any[];
     listings?: { customFields?: any[];[key: string]: any };
     itemsPerPageLimit?: number;
+    testimonials?: any[];
+    accessories?: any[];
 };
 
 type SettingsContextType = {
@@ -301,9 +303,15 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
             setSettings(updated);
             applySettings(updated);
 
-            // Persist theme to localStorage for instant loading
+            // Persist theme and colors to localStorage for instant loading
             if (newSettings.theme) {
                 localStorage.setItem('theme', newSettings.theme);
+            }
+            if (newSettings.primaryColor) {
+                localStorage.setItem('primaryColor', newSettings.primaryColor);
+            }
+            if (newSettings.secondaryColor) {
+                localStorage.setItem('secondaryColor', newSettings.secondaryColor);
             }
 
             // Simulate API call to DB
@@ -323,8 +331,26 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
     // Sync with localStorage on mount
     useEffect(() => {
         const savedTheme = localStorage.getItem('theme');
+        const savedPrimary = localStorage.getItem('primaryColor');
+        const savedSecondary = localStorage.getItem('secondaryColor');
+        
+        const merged = { ...settings };
+        let shouldUpdate = false;
+        
         if (savedTheme === 'dark' || savedTheme === 'light') {
-            const merged = { ...settings, theme: savedTheme as 'dark' | 'light' };
+            merged.theme = savedTheme as 'dark' | 'light';
+            shouldUpdate = true;
+        }
+        if (savedPrimary) {
+            merged.primaryColor = savedPrimary;
+            shouldUpdate = true;
+        }
+        if (savedSecondary) {
+            merged.secondaryColor = savedSecondary;
+            shouldUpdate = true;
+        }
+        
+        if (shouldUpdate) {
             setSettings(merged);
             applySettings(merged);
         }

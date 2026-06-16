@@ -40,6 +40,7 @@ import { useSocket } from "@/components/SocketProvider";
 import { useRouter, usePathname } from "next/navigation";
 import CustomSelect from "@/components/CustomSelect";
 import { API_BASE_URL } from "@/config/api";
+import { useToast } from "@/components/Toast";
 import { chatService } from "@/services/chatService";
 
 const resolveAsset = (path: string | null | undefined) => {
@@ -78,6 +79,8 @@ const Header = ({
  setCurrency: setSelectedCurrency,
  languages
  } = useLocale();
+
+ const { showToast } = useToast();
 
  const [currencies, setCurrencies] = useState<any[]>([]);
  const [showNotifications, setShowNotifications] = useState(false);
@@ -127,6 +130,7 @@ const Header = ({
  if (socket) {
  const handleNewNotif = (newNotif: any) => {
  setNotifications(prev => [newNotif, ...prev]);
+ showToast(newNotif.title, newNotif.type === 'error' ? 'error' : (newNotif.type === 'success' ? 'success' : 'info'));
  };
 
  const handleNewMessage = () => {
@@ -317,9 +321,11 @@ const Header = ({
  target={link.target || "_self"}
  className="hover:text-primary dark:hover:text-white transition-colors cursor-pointer uppercase tracking-widest text-[11px] font-black"
  >
- {t(`nav.${link.label.toLowerCase()}`) !== `nav.${link.label.toLowerCase()}` 
- ? t(`nav.${link.label.toLowerCase()}`) 
- : link.label}
+ {settings.heroTranslations?.[selectedLanguage]?.navLabels?.[link.id] ||
+  settings.heroTranslations?.['en']?.navLabels?.[link.id] ||
+  (t(`nav.${link.label.toLowerCase()}`) !== `nav.${link.label.toLowerCase()}` 
+  ? t(`nav.${link.label.toLowerCase()}`) 
+  : link.label)}
  </Link>
  ))
  )}
@@ -760,9 +766,11 @@ const Header = ({
   onClick={() => setIsMobileMenuOpen(false)}
   className="text-[13px] font-black text-foreground/80 hover:text-primary transition-colors uppercase tracking-tight"
   >
-  {t(`nav.${link.label.toLowerCase()}`) !== `nav.${link.label.toLowerCase()}` 
-  ? t(`nav.${link.label.toLowerCase()}`) 
-  : link.label}
+  {settings.heroTranslations?.[selectedLanguage]?.navLabels?.[link.id] ||
+   settings.heroTranslations?.['en']?.navLabels?.[link.id] ||
+   (t(`nav.${link.label.toLowerCase()}`) !== `nav.${link.label.toLowerCase()}` 
+   ? t(`nav.${link.label.toLowerCase()}`) 
+   : link.label)}
   </Link>
   ))}
   

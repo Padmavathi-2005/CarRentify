@@ -20,9 +20,9 @@ export const HostSection = ({ car, reviews }: { car: any, reviews: any[] }) => {
   return (
     <div className="space-y-8">
       <h2 className="text-xl font-bold text-foreground tracking-tight uppercase">About the Host</h2>
-      <div className="bg-card border border-border dark:border-white/10 rounded-app p-8 flex flex-col md:flex-row gap-8 items-start ">
-        <div className="flex flex-col items-center text-center gap-4 min-w-[140px]">
-          <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-border dark:border-white/10 flex items-center justify-center bg-muted/30">
+      <div className="bg-muted/10 border border-border/50 rounded-2xl p-6 md:p-8">
+        <div className="flex flex-col md:flex-row gap-6 items-center md:items-start text-center md:text-left">
+          <div className="w-20 h-20 md:w-24 md:h-24 rounded-full overflow-hidden border-2 border-border/50 bg-background flex shrink-0 items-center justify-center shadow-sm">
             {vendorImage ? (
               <img
                 src={vendorImage}
@@ -30,41 +30,43 @@ export const HostSection = ({ car, reviews }: { car: any, reviews: any[] }) => {
                 alt={vendorName}
               />
             ) : (
-              <span className="text-2xl font-bold text-primary uppercase tracking-widest">
+              <span className="text-2xl font-black text-primary uppercase tracking-widest">
                 {vendorName.charAt(0)}
               </span>
             )}
           </div>
-          <div className="space-y-4">
-            <h3 className="text-xl font-bold text-foreground tracking-tight leading-none">{vendorName}</h3>
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Certified Host</p>
-            <div className="pt-2">
+          
+          <div className="flex flex-col flex-1 gap-2 items-center sm:items-start justify-center pt-1">
+            <div className="flex flex-col sm:flex-row items-center gap-2 md:gap-3">
+              <h3 className="text-2xl font-black text-foreground tracking-tight leading-none">{vendorName}</h3>
+              {vendor?.isVerified ? (
+                <span className="bg-primary/10 text-primary text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-md">Verified Identity</span>
+              ) : (
+                <span className="bg-muted text-muted-foreground text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-md">Unverified</span>
+              )}
+            </div>
+            
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 text-center sm:text-left">
+              Professional Host since {joinYear}
+            </p>
+            
+            <div className="flex flex-wrap gap-3 justify-center sm:justify-start mb-2">
+              <div className="flex items-center gap-2 bg-background border border-border/40 px-3 py-1.5 rounded-lg shadow-sm">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Rating</span>
+                <div className="flex items-center gap-1">
+                  <span className="text-sm font-black text-foreground">{avgRating}</span>
+                  {reviews.length > 0 && <Star size={12} className="text-amber-400 fill-amber-400" />}
+                </div>
+              </div>
+            </div>
+            
+            <div className="mt-2 shrink-0">
               <Link href={`/profile/${vendor?.slug || vendor?._id || vendor}`}>
-                <Button variant="ghost" className="h-8 px-4 text-[9px] font-bold uppercase tracking-widest hover:bg-primary hover:text-white border border-primary/10 rounded-app transition-all">
+                <Button variant="outline" className="h-10 px-6 text-[10px] font-black uppercase tracking-widest hover:bg-primary hover:text-white border-border/50 rounded-xl transition-all shadow-sm bg-background w-full sm:w-auto">
                   View Host Profile
                 </Button>
               </Link>
             </div>
-          </div>
-        </div>
-        <div className="flex-1 w-full grid grid-cols-2 gap-6 pt-2">
-          <div className="space-y-1">
-            <span className="text-2xl font-bold text-foreground">Verified</span>
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Identity Status</p>
-          </div>
-          <div className="space-y-1">
-            <div className="flex items-center gap-1.5">
-              <span className="text-2xl font-bold text-foreground">
-                {avgRating}
-              </span>
-              {reviews.length > 0 && <Star size={16} className="text-amber-400 fill-amber-400" />}
-            </div>
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Host Rating</p>
-          </div>
-          <div className="col-span-2 pt-4 border-t border-border/50">
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-              Professional Host since {joinYear}
-            </p>
           </div>
         </div>
       </div>
@@ -82,11 +84,11 @@ export const ThingsToKnow = ({ car, t }: { car: any, t: any }) => {
           <div className="grid grid-cols-1 gap-4">
             <div className="flex items-center gap-3 text-foreground/80">
               <Clock size={16} className="text-primary" />
-              <span className="text-sm font-bold">Pickup available after: <span className="font-bold">{formatTimeDisplay(car?.pickupTime) || '09:00 AM'}</span></span>
+              <span className="text-sm font-bold">Pickup available after: <span className="font-bold">{(!car?.pickupTime || formatTimeDisplay(car?.pickupTime) === '--:--') ? '09:00 AM' : formatTimeDisplay(car?.pickupTime)}</span></span>
             </div>
             <div className="flex items-center gap-3 text-foreground/80">
               <Clock size={16} className="text-primary" />
-              <span className="text-sm font-bold">Return by: <span className="font-bold">{formatTimeDisplay(car?.returnTime) || '08:00 PM'}</span></span>
+              <span className="text-sm font-bold">Return by: <span className="font-bold">{(!car?.returnTime || formatTimeDisplay(car?.returnTime) === '--:--') ? '08:00 PM' : formatTimeDisplay(car?.returnTime)}</span></span>
             </div>
           </div>
         </div>

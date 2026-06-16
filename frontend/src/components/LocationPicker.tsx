@@ -300,7 +300,7 @@ export default function LocationPicker({
           onBlur={() => setTimeout(() => setIsFocused(false), 200)}
           placeholder={`Search address...`}
           className={cn(
-            "w-full h-14 bg-white border-2 border-slate-100 rounded-app pl-12 text-sm font-bold text-slate-700 outline-none focus:border-primary transition-all truncate",
+            "w-full h-14 bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-white/10 rounded-app pl-12 text-sm font-bold text-slate-700 dark:text-white outline-none focus:border-primary transition-all truncate",
             onAddLocation ? "pr-[280px]" : "pr-44"
           )}
         />
@@ -319,7 +319,7 @@ export default function LocationPicker({
             onClick={handleGetLocation}
             disabled={isLocating}
             title="Get Current Location"
-            className="h-10 w-10 flex items-center justify-center bg-slate-50 border border-slate-100 text-slate-400 rounded-app hover:text-primary hover:bg-white transition-all disabled:opacity-50 active:scale-95"
+            className="h-10 w-10 flex items-center justify-center bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 text-slate-400 rounded-app hover:text-primary dark:hover:text-primary hover:bg-white dark:hover:bg-white/10 transition-all disabled:opacity-50 active:scale-95"
           >
             {isLocating ? (
               <Loader2 size={16} className="animate-spin" />
@@ -340,7 +340,7 @@ export default function LocationPicker({
                 }
               }}
               disabled={!currentLocationData}
-              className="h-10 px-4 bg-slate-100 text-slate-900 text-[10px] font-black uppercase tracking-widest rounded-app hover:bg-primary hover:text-white transition-all active:scale-95 disabled:opacity-30"
+              className="h-10 px-4 bg-slate-100 dark:bg-white/10 text-slate-900 dark:text-white text-[10px] font-black uppercase tracking-widest rounded-app hover:bg-primary dark:hover:bg-primary hover:text-white transition-all active:scale-95 disabled:dark:bg-slate-800 disabled:dark:text-slate-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Add Location
             </button>
@@ -359,7 +359,7 @@ export default function LocationPicker({
 
         {/* Autocomplete Suggestions */}
         {(showSuggestions || isSearching) && (
-          <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-100 rounded-app shadow-2xl z-[1000] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+          <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-900 border border-slate-100 dark:border-white/10 rounded-app shadow-2xl z-[1000] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             {isSearching && (
               <div className="p-4 flex items-center justify-center text-slate-400 gap-3">
                 <Loader2 size={16} className="animate-spin text-primary" />
@@ -376,8 +376,8 @@ export default function LocationPicker({
                   <MapPin size={14} className="text-slate-400 group-hover:text-primary" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[11px] font-black text-slate-900 leading-tight mb-1 truncate">{s.display_name.split(',')[0]}</p>
-                  <p className="text-[10px] font-bold text-slate-400 truncate">{s.display_name}</p>
+                  <p className="text-[11px] font-black text-slate-900 dark:text-slate-200 leading-tight mb-1 truncate">{s.display_name.split(',')[0]}</p>
+                  <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 truncate">{s.display_name}</p>
                 </div>
                 {onAddLocation && (
                   <button

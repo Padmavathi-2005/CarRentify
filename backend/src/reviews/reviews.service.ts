@@ -19,11 +19,21 @@ export class ReviewsService {
     return await newReview.save();
   }
 
+  async getFeaturedReviews(): Promise<Review[]> {
+    return await this.reviewModel
+      .find({ rating: { $gte: 3 } })
+      .populate('user', 'firstName lastName displayName profileImage')
+      .populate('car', 'name images slug brandName model')
+      .sort({ rating: -1, createdAt: -1 })
+      .limit(6)
+      .exec();
+  }
+
   async findByCar(carId: string): Promise<Review[]> {
     return await this.reviewModel
       .find({ car: new Types.ObjectId(carId) })
-      .populate('user', 'name profileImage') // Get reviewer details
-      .sort({ createdAt: -1 })
+      .populate('user', 'firstName lastName displayName profileImage') // Get reviewer details
+      .sort({ rating: -1, createdAt: -1 })
       .exec();
   }
 
@@ -66,7 +76,7 @@ export class ReviewsService {
     return await this.reviewModel
       .find({ car: { $in: carIds } })
       .populate('user', 'name profileImage') // Get reviewer details
-      .populate('car', 'name images') // Get car details
+      .populate('car', 'name images slug brandName model') // Get car details
       .sort({ createdAt: -1 })
       .exec();
   }

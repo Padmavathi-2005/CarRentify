@@ -13,22 +13,22 @@ export class Car {
   @Prop({ required: false, unique: true, sparse: true })
   permalink: string;
 
-  @Prop({ type: Types.ObjectId, ref: 'Brand', required: true })
+  @Prop({ type: Types.ObjectId, ref: 'Brand', required: function(this: any) { return this.status !== 'draft'; } })
   brand: Brand;
 
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   vendor: Types.ObjectId;
 
-  @Prop({ required: true })
+  @Prop({ required: function(this: any) { return this.status !== 'draft'; } })
   model: string;
 
-  @Prop({ required: true })
+  @Prop({ required: function(this: any) { return this.status !== 'draft'; } })
   year: number;
 
   @Prop({ required: true, default: 'Day' })
   rentalType: string;
 
-  @Prop({ required: true })
+  @Prop({ required: function(this: any) { return this.status !== 'draft'; } })
   pricePerDay: number;
 
   @Prop({
@@ -43,7 +43,7 @@ export class Car {
   })
   priceTiers: { days: number; pricePerDay: number; discountPercentage?: number }[];
 
-  @Prop({ type: [String], required: true })
+  @Prop({ type: [String], required: function(this: any) { return this.status !== 'draft'; } })
   images: string[];
 
   @Prop({ default: true })
@@ -68,7 +68,7 @@ export class Car {
     longitude?: number;
   };
 
-  @Prop({ type: Types.ObjectId, ref: 'CarType', required: true })
+  @Prop({ type: Types.ObjectId, ref: 'CarType', required: function(this: any) { return this.status !== 'draft'; } })
   vehicleType: Types.ObjectId;
 
   @Prop()
@@ -206,9 +206,12 @@ export class Car {
   @Prop({
     required: true,
     default: 'pending',
-    enum: ['pending', 'approved', 'rejected'],
+    enum: ['pending', 'approved', 'rejected', 'draft'],
   })
   status: string;
+
+  @Prop()
+  rejectionReason?: string;
 }
 
 export const CarSchema = SchemaFactory.createForClass(Car);

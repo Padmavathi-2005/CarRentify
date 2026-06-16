@@ -57,8 +57,8 @@ export class AuthController {
       }
     }
 
-    // 4. Find existing or create new
-    let user = await this.userModel.findOne({ email });
+    // 4. Find existing or create new (Case Insensitive)
+    let user = await this.userModel.findOne({ email: new RegExp('^' + email + '$', 'i') });
     const hashedPassword = password
       ? await bcrypt.hash(password, 12)
       : undefined;
@@ -131,16 +131,17 @@ export class AuthController {
 
   @Post('login')
   async login(@Body() body: any) {
-    const { email, password } = body;
+    let { email, password } = body;
+    if (email) email = email.trim();
 
-    // Check if user exists
-    const exists = await this.userModel.findOne({ email });
+    // Check if user exists (Case Insensitive)
+    const exists = await this.userModel.findOne({ email: new RegExp('^' + email + '$', 'i') });
     if (!exists) {
       // Detect as new user for onboarding
       return { onboarding: true, email };
     }
-
-    const user = await this.authService.validateUser(email, password, false);
+    // Pass the actual database email to authService so it matches perfectly
+    const user = await this.authService.validateUser(exists.email, password, false);
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
     }

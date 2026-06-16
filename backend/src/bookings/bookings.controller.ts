@@ -31,13 +31,27 @@ export class BookingsController {
   @Header('Content-Type', 'application/pdf')
   @Header('Content-Disposition', 'attachment; filename="rental-agreement.pdf"')
   async getAgreementPdf(@Param('id') id: string) {
-    const pdfDoc = await this.bookingsService.generateAgreementPdf(id);
-    return new StreamableFile(pdfDoc as any);
+    try {
+      const pdfDoc = await this.bookingsService.generateAgreementPdf(id);
+      return new StreamableFile(pdfDoc as any);
+    } catch (error) {
+      console.error('PDF Generation Error:', error);
+      throw error;
+    }
   }
 
   @Get('availability/:carId')
   async getAvailability(@Param('carId') carId: string) {
     return this.bookingsService.getCarAvailability(carId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get()
+  async getAllBookings(@Request() req: any) {
+    if (req.user?.role !== 'admin') {
+      throw new NotFoundException('Unauthorized');
+    }
+    return this.bookingsService.getAllBookings();
   }
 
   @UseGuards(JwtAuthGuard)
@@ -50,6 +64,29 @@ export class BookingsController {
   @Get('vendor-bookings')
   async getVendorBookings(@Request() req: any) {
     return this.bookingsService.getVendorBookings(req.user.userId);
+  }
+
+  @Get('debug/claims')
+  async debugClaims() {
+    return this.bookingsService.debugClaims();
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('admin/claims')
+  async getAdminClaims(@Request() req: any) {
+    if (req.user?.role !== 'admin') {
+      throw new NotFoundException('Unauthorized');
+    }
+    return this.bookingsService.getAdminClaims();
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('admin/claims/:id/status')
+  async updateClaimStatus(@Param('id') id: string, @Body() body: any, @Request() req: any) {
+    if (req.user?.role !== 'admin') {
+      throw new NotFoundException('Unauthorized');
+    }
+    return this.bookingsService.updateClaimStatus(id, req.user.userId, body.status, body.notes);
   }
 
   @UseGuards(JwtAuthGuard)

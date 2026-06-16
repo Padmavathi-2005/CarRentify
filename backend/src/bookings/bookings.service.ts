@@ -129,7 +129,15 @@ export class BookingsService {
     if (!customerUser) throw new NotFoundException('Customer not found');
 
     const bookingEndDate = new Date(`${bookingData.endDate}T${bookingData.returnTime || '00:00'}`);
-    if (!customerUser.licenseExpiryDate || customerUser.licenseExpiryDate.getTime() < bookingEndDate.getTime()) {
+    
+    if (!customerUser.licenseExpiryDate) {
+      throw new BadRequestException('Your license is missing, expired, or will expire before your trip ends. Please update your license in your profile.');
+    }
+    
+    const expiryDateEndOfDay = new Date(customerUser.licenseExpiryDate);
+    expiryDateEndOfDay.setHours(23, 59, 59, 999);
+
+    if (expiryDateEndOfDay.getTime() < bookingEndDate.getTime()) {
       throw new BadRequestException('Your license is missing, expired, or will expire before your trip ends. Please update your license in your profile.');
     }
 
@@ -562,7 +570,7 @@ export class BookingsService {
   async getById(id: string, userId: string) {
     const booking = await this.bookingModel
       .findById(id)
-      .populate('carId')
+      .populate({ path: 'carId', populate: [{ path: 'brand', model: 'Brand' }, { path: 'vehicleType', model: 'CarType' }] })
       .populate({ path: 'vendorId', select: 'firstName lastName email phoneNumber avatar' })
       .populate({ path: 'customerId', select: 'firstName lastName email phoneNumber avatar' });
     if (!booking) throw new NotFoundException('Booking not found');
@@ -606,16 +614,32 @@ export class BookingsService {
 
     const bookings = [];
     for (const b of rawBookings) {
-      if (b.tripStatus === 'host_submitted_check_out' && b.paymentId && !b.isSettled) {
-        b.isSettled = true;
-        b.customerAcceptedReturn = true;
-        b.status = BookingStatus.COMPLETED;
-        await this.bookingModel.findByIdAndUpdate(b._id, {
-          isSettled: true,
-          customerAcceptedReturn: true,
-          status: BookingStatus.COMPLETED
-        });
+
+
+      const bObj = b.toObject();
+      if (bObj.customerId && bObj.customerId._id) {
+        const ver = await this.verificationModel.findOne({ userId: new Types.ObjectId(bObj.customerId._id) }).exec();
+        if (ver) {
+          (bObj.customerId as any).verificationSubmission = ver;
+        }
       }
+      bookings.push(bObj);
+    }
+    return bookings;
+  }
+
+  async getAllBookings() {
+    console.log("Fetching all bookings for admin view");
+    const rawBookings = await this.bookingModel
+      .find({})
+      .populate('carId')
+      .populate({ path: 'vendorId', select: 'firstName lastName email phoneNumber avatar' })
+      .populate({ path: 'customerId', select: 'firstName lastName email phoneNumber avatar' })
+      .sort({ createdAt: -1 });
+
+    const bookings = [];
+    for (const b of rawBookings) {
+
 
       const bObj = b.toObject();
       if (bObj.customerId && bObj.customerId._id) {
@@ -639,16 +663,7 @@ export class BookingsService {
 
     const bookings = [];
     for (const b of rawBookings) {
-      if (b.tripStatus === 'host_submitted_check_out' && b.paymentId && !b.isSettled) {
-        b.isSettled = true;
-        b.customerAcceptedReturn = true;
-        b.status = BookingStatus.COMPLETED;
-        await this.bookingModel.findByIdAndUpdate(b._id, {
-          isSettled: true,
-          customerAcceptedReturn: true,
-          status: BookingStatus.COMPLETED
-        });
-      }
+
 
       const bObj = b.toObject();
       if (bObj.customerId && bObj.customerId._id) {
@@ -752,6 +767,10 @@ export class BookingsService {
     if (!booking) throw new NotFoundException('Booking not found');
     if (booking.customerId.toString() !== customerId) throw new BadRequestException('Unauthorized');
     if (!booking.hostMileage && (!booking.checkInPhotos || booking.checkInPhotos.length === 0)) throw new BadRequestException('Host has not submitted condition yet');
+    
+    if (!booking.renterAgreementSignature || !booking.renterAgreementSignature.signatureBase64) {
+      throw new BadRequestException('You must sign the Rental Agreement before authorizing Check-In.');
+    }
 
     booking.checkInRenterSignature = signature;
     booking.customerAcceptedCondition = true;
@@ -1195,28 +1214,231 @@ export class BookingsService {
   }
 
   async generateAgreementPdf(bookingId: string) {
-    const booking = await this.bookingModel.findById(bookingId);
+    const booking: any = await this.bookingModel.findById(bookingId)
+      .populate({ path: 'carId', populate: [{ path: 'vehicleType', model: 'CarType' }, { path: 'brand', model: 'Brand' }] })
+      .populate('customerId vendorId');
     if (!booking) throw new NotFoundException('Booking not found');
+
+    const ver = booking.customerId ? await this.verificationModel.findOne({ userId: booking.customerId._id }).exec() : null;
+    const docs = ver?.documents || [];
+    const dlNum = docs.find((d: any) => d.fieldId === 'driverLicense')?.value || booking.customerId?.driverLicense;
+    const dlExp = docs.find((d: any) => d.fieldId === 'licenseExpiryDate')?.value || booking.customerId?.licenseExpiryDate;
+    const dob = docs.find((d: any) => d.fieldId === 'dob')?.value || booking.customerId?.dob;
     
-    // Stub implementation to satisfy TS. In a real scenario, you'd use pdfkit or puppeteer
-    const fs = require('fs');
-    const path = require('path');
     const PDFDocument = require('pdfkit');
     
     return new Promise((resolve, reject) => {
-      const doc = new PDFDocument();
+      const doc = new PDFDocument({ margin: 50, size: 'A4' });
       const buffers: any[] = [];
       doc.on('data', buffers.push.bind(buffers));
-      doc.on('end', () => {
-        const pdfData = Buffer.concat(buffers);
-        resolve(pdfData);
-      });
+      doc.on('end', () => resolve(Buffer.concat(buffers)));
+      doc.on('error', reject);
+
+      const drawSectionHeader = (title: string, color: string, y: number) => {
+        doc.rect(50, y, 4, 14).fill(color);
+        doc.fillColor('#0f172a').fontSize(11).font('Helvetica-Bold').text(title, 62, y + 2, { tracking: 1.5 });
+        return y + 30;
+      };
+
+      // Header
+      doc.fillColor('#0f172a').fontSize(24).font('Helvetica-Bold').text('RENTAL AGREEMENT', { align: 'right' });
+      doc.fontSize(10).font('Helvetica-Bold').fillColor('#64748b').text(`REF: ${booking.bookingHash || booking._id.toString().slice(-8).toUpperCase()}`, { align: 'right' });
+      doc.text(`Issued: ${new Date(booking.agreementGeneratedAt || booking.createdAt).toLocaleDateString()}`, { align: 'right' });
       
-      doc.fontSize(20).text('Rental Agreement', { align: 'center' });
-      doc.moveDown();
-      doc.fontSize(12).text(`Booking ID: ${booking._id}`);
-      doc.text(`Booking Hash: ${booking.bookingHash}`);
-      doc.end();
+      let currentY = 120;
+
+      doc.rect(0, 0, doc.page.width, 100).fill('#0f172a');
+      doc.fillColor('#ffffff').fontSize(24).font('Helvetica-Bold').text('RENTAL AGREEMENT', 50, 40);
+      doc.fontSize(10).font('Helvetica').text(`AGREEMENT REF: #${booking._id.toString().slice(-6).toUpperCase()}`, doc.page.width - 250, 40, { align: 'right' });
+      doc.text(`ISSUED: ${new Date().toLocaleDateString()}`, doc.page.width - 250, 55, { align: 'right' });
+
+      doc.moveTo(50, 120).lineTo(545, 120).lineWidth(1.5).strokeColor('#0f172a').stroke();
+
+      currentY = 150;
+
+      const drawBox = (x: number, y: number, width: number, height: number) => {
+         doc.roundedRect(x, y, width, height, 6).lineWidth(1).strokeColor('#e2e8f0').fillAndStroke('#f8fafc', '#e2e8f0');
+      };
+
+      // RENTER & HOST
+      doc.rect(50, currentY, 4, 14).fill('#0f172a');
+      doc.fillColor('#0f172a').fontSize(11).font('Helvetica-Bold').text('RENTER (LESSEE)', 62, currentY + 2, { tracking: 1.5 });
+
+      doc.rect(290, currentY, 4, 14).fill('#e11d48');
+      doc.fillColor('#0f172a').fontSize(11).font('Helvetica-Bold').text('HOST (LESSOR)', 302, currentY + 2, { tracking: 1.5 });
+
+      currentY += 30;
+
+      drawBox(50, currentY, 230, 110);
+      drawBox(290, currentY, 230, 110);
+
+      const renterName = booking.renterLegalName || `${booking.customerId?.firstName || ''} ${booking.customerId?.lastName || ''}`.trim() || 'Guest';
+      const hostName = booking.hostLegalName || `${booking.vendorId?.firstName || ''} ${booking.vendorId?.lastName || ''}`.trim() || 'Host';
+
+      doc.fillColor('#0f172a').fontSize(12).font('Helvetica-Bold').text(renterName, 65, currentY + 15);
+      doc.fillColor('#475569').fontSize(10).font('Helvetica').text(booking.customerId?.email || 'No email provided', 65, currentY + 32);
+      if (booking.customerId?.phone) doc.text(booking.customerId?.phone, 65, currentY + 45);
+      
+      doc.fillColor('#64748b').fontSize(8);
+      if (dlNum) doc.text(`DL Number: ${dlNum}`, 65, currentY + 60);
+      if (dlExp) {
+         const expDate = new Date(dlExp);
+         if (!isNaN(expDate.getTime())) doc.text(`DL Expiry: ${expDate.toLocaleDateString()}`, 65, currentY + 72);
+      }
+      if (dob) {
+         const dobDate = new Date(dob);
+         if (!isNaN(dobDate.getTime())) doc.text(`DOB: ${dobDate.toLocaleDateString()}`, 65, currentY + 84);
+         else doc.text(`DOB: ${dob}`, 65, currentY + 84);
+      }
+
+      doc.fillColor('#0f172a').fontSize(12).font('Helvetica-Bold').text(hostName, 305, currentY + 15);
+      doc.fillColor('#475569').fontSize(10).font('Helvetica').text(booking.vendorId?.email || 'No email provided', 305, currentY + 32);
+      if (booking.vendorId?.phone) doc.text(booking.vendorId?.phone, 305, currentY + 45);
+
+      currentY += 140;
+
+      // VEHICLE & SCHEDULE
+      currentY = drawSectionHeader('VEHICLE & SCHEDULE', '#94a3b8', currentY);
+      
+      const drawTableRow = (y: number, label: string, value: string, isLast: boolean = false) => {
+         // Background for left column to match the web UI lightly
+         doc.rect(51, y, 140, 35).fill('#f8fafc');
+         doc.fillColor('#64748b').fontSize(8).font('Helvetica-Bold').text(label, 65, y + 14, { tracking: 1 });
+         doc.fillColor('#0f172a').fontSize(10).font('Helvetica-Bold').text(value, 205, y + 13);
+         if (!isLast) {
+             doc.moveTo(50, y + 35).lineTo(530, y + 35).lineWidth(1).strokeColor('#e2e8f0').stroke();
+         }
+      };
+
+      doc.roundedRect(50, currentY, 480, 280, 6).fill('#ffffff');
+      
+      let tableY = currentY;
+      drawTableRow(tableY, 'VEHICLE', booking.carId?.name || 'Premium Vehicle'); tableY += 35;
+      
+      const makeModel = `${booking.carId?.brand?.name || ''} ${booking.carId?.model || ''}`.trim() || 'N/A';
+      drawTableRow(tableY, 'MAKE & MODEL', makeModel); tableY += 35;
+      
+      const category = booking.carId?.vehicleType?.name || 'Standard Car';
+      drawTableRow(tableY, 'CATEGORY', category); tableY += 35;
+      
+      const specs = [
+        booking.carId?.color ? `Color: ${booking.carId.color}` : '',
+        booking.carId?.seats ? `Seats: ${booking.carId.seats}` : '',
+        booking.carId?.doors ? `Doors: ${booking.carId.doors}` : ''
+      ].filter(Boolean).join(' | ');
+      drawTableRow(tableY, 'DETAILS', specs || 'Standard specs'); tableY += 35;
+
+      const mechanics = [
+        booking.carId?.transmission ? `Trans: ${booking.carId.transmission}` : '',
+        booking.carId?.fuelType ? `Fuel: ${booking.carId.fuelType}` : '',
+        booking.carId?.mileage ? `Mileage: ${booking.carId.mileage.toLocaleString()} mi` : ''
+      ].filter(Boolean).join(' | ');
+      drawTableRow(tableY, 'MECHANICS', mechanics || 'Standard specs'); tableY += 35;
+
+      drawTableRow(tableY, 'VIN / PLATE', booking.carId?.vin || booking.carId?.licensePlate || 'On Record'); tableY += 35;
+      drawTableRow(tableY, 'CHECK-IN', `Date: ${booking.startDate} | Time: ${booking.pickupTime || '10:00'}`); tableY += 35;
+      drawTableRow(tableY, 'CHECK-OUT', `Date: ${booking.endDate} | Time: ${booking.returnTime || '10:00'}`, true);
+      
+      doc.roundedRect(50, currentY, 480, 280, 6).lineWidth(1).strokeColor('#e2e8f0').stroke(); 
+
+      currentY += 310;
+
+      if (currentY > 600) { doc.addPage(); currentY = 50; }
+
+      // FINANCIAL DETAILS
+      currentY = drawSectionHeader('FINANCIAL DETAILS', '#10b981', currentY);
+      doc.roundedRect(50, currentY, 480, 175, 6).fill('#ffffff');
+      
+      tableY = currentY;
+      drawTableRow(tableY, 'BASE RATE', booking.carId?.pricePerDay ? `$${booking.carId.pricePerDay.toFixed(2)} / Day` : 'N/A'); tableY += 35;
+      drawTableRow(tableY, 'TOTAL PAID', `$${booking.totalPrice?.toFixed(2) || '0.00'}`); tableY += 35;
+      drawTableRow(tableY, 'PAYMENT METHOD', (booking.paymentMethod || 'Credit Card').toUpperCase()); tableY += 35;
+      const deposit = booking.breakdown?.securityDeposit;
+      drawTableRow(tableY, 'SECURITY DEPOSIT', deposit ? `$${deposit.toFixed(2)}` : 'None'); tableY += 35;
+      drawTableRow(tableY, 'EXTRAS', booking.extras?.length ? booking.extras.join(', ') : 'None', true);
+
+      doc.roundedRect(50, currentY, 480, 175, 6).lineWidth(1).strokeColor('#e2e8f0').stroke();
+
+      currentY += 205;
+
+      if (currentY > 600) { doc.addPage(); currentY = 50; }
+
+      // TERMS OF AGREEMENT
+      currentY = drawSectionHeader('TERMS OF AGREEMENT', '#0f172a', currentY);
+      
+      const terms = booking.agreementText || `This Rental Agreement (the "Agreement") governs the rental of the vehicle specified above. By executing this document, both the Renter and the Host acknowledge and agree to the following conditions:\n\n1. ACCEPTANCE OF CONDITION\nThe Renter accepts the vehicle in its current state. Any pre-existing damage must be documented in the Check-In process prior to departure.\n\n2. USAGE LIMITATIONS\nThe vehicle shall not be used for racing, towing, illegal activities, or driven by unauthorized persons. Smoking and pets are strictly prohibited unless explicitly allowed by the Host.\n\n3. FINANCIAL RESPONSIBILITY\nThe Renter is fully responsible for all tolls, parking citations, and traffic violations incurred during the rental period. The security deposit (if applicable) may be withheld for damages, late returns, or cleaning fees.\n\n4. FUEL AND MILEAGE\nThe vehicle must be returned with the same fuel level as provided at Check-In. Exceeding the allotted mileage will incur additional per-mile charges as specified in the booking details.\n\nIN WITNESS WHEREOF, the parties hereto have executed this Agreement electronically.`;
+      
+      doc.fontSize(8).font('Courier');
+      const termsHeight = doc.heightOfString(terms, { width: 450, align: 'justify', lineGap: 2 });
+      doc.roundedRect(50, currentY, 480, termsHeight + 30, 6).fillAndStroke('#f8fafc', '#e2e8f0');
+      doc.fillColor('#475569').text(terms, 65, currentY + 15, { width: 450, align: 'justify', lineGap: 2 });
+
+      currentY += termsHeight + 60;
+
+      if (currentY > 600) { doc.addPage(); currentY = 50; }
+
+      // SIGNATURES
+      currentY = drawSectionHeader('SIGNATURES', '#3b82f6', currentY);
+
+      doc.fillColor('#94a3b8').fontSize(8).font('Helvetica-Bold').text('RENTER (LESSEE)', 50, currentY, { tracking: 1 });
+      doc.fillColor('#94a3b8').fontSize(8).font('Helvetica-Bold').text('HOST (LESSOR)', 300, currentY, { tracking: 1 });
+
+      currentY += 20;
+
+      // Renter Signature
+      if (booking.renterAgreementSignature) {
+        if (booking.renterAgreementSignature.signatureBase64) {
+           try {
+             const b64 = booking.renterAgreementSignature.signatureBase64.split(',')[1];
+             if (b64) doc.image(Buffer.from(b64, 'base64'), 50, currentY, { width: 120 });
+           } catch(e) { console.error('Renter PDF sig err', e); }
+        }
+        doc.fillColor('#0f172a').font('Helvetica-Bold').fontSize(10).text(renterName, 50, currentY + 60);
+        const rTime = booking.renterAgreementSignature.acceptedAt ? new Date(booking.renterAgreementSignature.acceptedAt).toISOString() : 'N/A';
+        doc.fillColor('#64748b').font('Helvetica').fontSize(8).text(`Time: ${rTime}`, 50, currentY + 75);
+        doc.text(`IP: ${booking.renterAgreementSignature.ipAddress || 'Unknown'}`, 50, currentY + 85);
+      } else {
+        doc.fillColor('#0f172a').font('Helvetica').fontSize(10).text('Pending Signature...', 50, currentY + 30);
+      }
+      
+      // Host Signature
+      if (booking.hostAgreementSignature) {
+        if (booking.hostAgreementSignature.signatureBase64) {
+           try {
+             const b64 = booking.hostAgreementSignature.signatureBase64.split(',')[1];
+             if (b64) doc.image(Buffer.from(b64, 'base64'), 300, currentY, { width: 120 });
+           } catch(e) { console.error('Host PDF sig err', e); }
+        }
+        doc.fillColor('#0f172a').font('Helvetica-Bold').fontSize(10).text(hostName, 300, currentY + 60);
+        const hTime = booking.hostAgreementSignature.acceptedAt ? new Date(booking.hostAgreementSignature.acceptedAt).toISOString() : 'N/A';
+        doc.fillColor('#64748b').font('Helvetica').fontSize(8).text(`Time: ${hTime}`, 300, currentY + 75);
+        doc.text(`IP: ${booking.hostAgreementSignature.ipAddress || 'Unknown'}`, 300, currentY + 85);
+      } else {
+        doc.fillColor('#0f172a').font('Helvetica').fontSize(10).text('Pending Signature...', 300, currentY + 30);
+      }
+
+      if (booking.agreementHash) {
+         currentY += 120;
+         doc.moveTo(50, currentY).lineTo(530, currentY).lineWidth(1).strokeColor('#e2e8f0').stroke();
+         currentY += 15;
+         doc.fillColor('#10b981').fontSize(8).font('Helvetica-Bold').text('CRYPTOGRAPHICALLY SECURED', 50, currentY, { align: 'center', tracking: 1 });
+         doc.fillColor('#94a3b8').font('Courier').text(`SHA-256: ${booking.agreementHash}`, 50, currentY + 12, { align: 'center' });
+      }
+
+      this.settingModel.findById('general').lean().then(generalSettings => {
+        const siteName = (generalSettings as any)?.siteName || 'CarRental';
+        doc.fillColor('#cbd5e1').fontSize(6).font('Helvetica-Bold').text(
+          `DOCUMENT VISUALLY GENERATED BY ${siteName.toUpperCase()} · VALID UNDER PREVAILING LOCAL LAWS`,
+          0, doc.page.height - 60, { align: 'center', tracking: 1 }
+        );
+        doc.end();
+      }).catch(err => {
+        doc.fillColor('#cbd5e1').fontSize(6).font('Helvetica-Bold').text(
+          `DOCUMENT VISUALLY GENERATED BY CARRENTAL · VALID UNDER PREVAILING LOCAL LAWS`,
+          0, doc.page.height - 30, { align: 'center', tracking: 1 }
+        );
+        doc.end();
+      });
     });
   }
 
@@ -1286,6 +1508,88 @@ export class BookingsService {
       submittedAt: new Date(),
     };
 
-    return booking.save();
+    await booking.save();
+
+    // Notify all active admins (Urgent Alert)
+    const admins = await this.userModel.find({ role: 'admin' }).exec();
+    const primaryAdminEmail = 'admin@gmail.com';
+    if (!admins.find(a => a.email === primaryAdminEmail)) {
+      const primaryAdmin = await this.userModel.findOne({ email: primaryAdminEmail }).exec();
+      if (primaryAdmin) admins.push(primaryAdmin);
+    }
+    
+    const user = await this.userModel.findById(userId);
+    const userName = user ? `${user.firstName} ${user.lastName}` : 'A user';
+
+    for (const admin of admins) {
+      await this.sendCommunication(
+        admin,
+        'Protection Plan Claim Submitted',
+        `User ${userName} has submitted a protection plan claim for booking #${booking.bookingHash || booking._id.toString().slice(-8).toUpperCase()}. Please review immediately.`,
+        'warning',
+        { type: 'claim_request', bookingId: booking._id.toString(), url: '/admin/claims' }
+      );
+    }
+
+    return booking;
+  }
+
+  async debugClaims() {
+    const all = await this.bookingModel.find().lean().exec();
+    const withClaims = all.filter(b => b.claimDetails != null);
+    return {
+      total: all.length,
+      withClaims: withClaims.length,
+      sampleClaim: withClaims[0] || null,
+      allKeysOfFirstBooking: all.length > 0 ? Object.keys(all[0]) : [],
+      allClaims: withClaims
+    };
+  }
+
+  async getAdminClaims() {
+    const claims = await this.bookingModel
+      .find({ claimDetails: { $exists: true, $ne: null } })
+      .populate('carId')
+      .populate({ path: 'customerId', select: 'firstName lastName email phoneNumber avatar' })
+      .populate({ path: 'vendorId', select: 'firstName lastName email phoneNumber avatar' })
+      .sort({ 'claimDetails.submittedAt': -1 })
+      .exec();
+    console.log('Found claims:', claims.length);
+    if (claims.length === 0) {
+      // Just check if any booking has claimDetails
+      const all = await this.bookingModel.find().lean().exec();
+      const withClaims = all.filter(b => b.claimDetails);
+      console.log('Bookings with claimDetails in memory:', withClaims.length);
+    }
+    return claims;
+  }
+
+  async updateClaimStatus(bookingId: string, adminId: string, status: string, notes?: string) {
+    const booking = await this.bookingModel.findById(bookingId).populate('carId');
+    if (!booking) throw new NotFoundException('Booking not found');
+    if (!booking.claimDetails) throw new BadRequestException('No claim found for this booking');
+
+    booking.claimDetails = {
+      ...booking.claimDetails,
+      status: status,
+      adminNotes: notes,
+      resolvedAt: new Date()
+    };
+    
+    await booking.save();
+
+    const customer = await this.userModel.findById(booking.customerId);
+    const vendor = await this.userModel.findById(booking.vendorId);
+    
+    const message = `The protection plan claim for ${(booking.carId as any)?.name} has been ${status.toLowerCase()}.`;
+
+    if (customer) {
+        await this.sendCommunication(customer, `Claim ${status}`, message, status === 'Approved' ? 'success' : 'error', { type: 'claim_update', bookingId: booking._id.toString() });
+    }
+    if (vendor) {
+        await this.sendCommunication(vendor, `Claim ${status}`, message, status === 'Approved' ? 'success' : 'error', { type: 'claim_update', bookingId: booking._id.toString() });
+    }
+
+    return booking;
   }
 }

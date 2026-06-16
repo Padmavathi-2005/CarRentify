@@ -185,7 +185,12 @@ export class SettingsService implements OnModuleInit {
         if (value !== null && typeof value === 'object' && !Array.isArray(value) && !(value instanceof Date)) {
           // Check if this key matches a known section name — if so, flatten its children
           if (this.defaultSections[key as keyof typeof this.defaultSections]) {
-            Object.assign(flatDto, value);
+            const sectionKeys = Object.keys(this.defaultSections[key as keyof typeof this.defaultSections]);
+            if (sectionKeys.length === 1 && sectionKeys[0] === key) {
+              flatDto[key] = value;
+            } else {
+              Object.assign(flatDto, value);
+            }
           } else {
             flatDto[key] = value;
           }

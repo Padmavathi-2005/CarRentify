@@ -60,7 +60,6 @@
   background-color: var(--admin-card-bg) !important;
   color: var(--admin-text-main) !important;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
-  border: 1px solid var(--admin-border) !important;
   border-radius: 12px !important;
   position: relative;
   z-index: 10;
@@ -78,29 +77,29 @@ input:focus::placeholder {
 }
 
 /* Fix for dark mode input visibility */
-.dark input, .dark textarea {
-  border: 1px solid rgba(255, 255, 255, 0.4) !important;
-  color: #ffffff !important;
-  background-color: rgba(15, 23, 42, 0.5) !important; /* Slightly lighter than pure black for depth */
+.dark input, .dark textarea, .dark select {
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  color: #f1f5f9 !important;
+  background-color: var(--admin-card-bg) !important;
 }
 
-.dark input:focus, .dark textarea:focus {
-  border-color: #ffffff !important;
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1) !important;
-  background-color: rgba(15, 23, 42, 0.8) !important;
+.dark select option {
+  background-color: var(--admin-card-bg) !important;
+  color: #f1f5f9 !important;
+}
+
+.dark input:focus, .dark textarea:focus, .dark select:focus {
+  border-color: rgba(255, 255, 255, 0.4) !important;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.05) !important;
+  background-color: var(--admin-card-bg) !important;
 }
 
 .dark label {
-  color: #ffffff !important;
-  opacity: 0.9;
-  font-weight: 800 !important;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  color: #cbd5e1 !important;
+  opacity: 1;
+  font-weight: 700 !important;
 }
 
-.dark button:not(.bg-primary) {
-  border: 1px solid rgba(255, 255, 255, 0.3) !important;
-}
-
-.dark button:hover:not(.bg-primary) {
-  border-color: rgba(255, 255, 255, 0.6) !important;
+.dark button:not(.bg-primary):not(.admin-nav-btn):not(.admin-logout-btn):not([class*="rounded-full"]):not(.border-primary\/30) {
+  border-color: rgba(255, 255, 255, 0.1) !important;
 }

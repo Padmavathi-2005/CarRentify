@@ -49,6 +49,7 @@ input[type="button"] {
 }
 
 .dark {
+  color-scheme: dark;
   --background: 224 71.4% 4.1%;
   --foreground: 210 20% 98%;
   --card: 224 71.4% 4.1%;
@@ -307,8 +308,8 @@ html.dark,
   .text-slate-500,
   .text-slate-600,
   .text-muted-foreground {
-    color: #94a3b8 !important;
-    /* slate-400 */
+    color: #cbd5e1 !important;
+    /* slate-300 - brighter for dark mode readability */
     opacity: 1 !important;
   }
 
@@ -334,6 +335,29 @@ html.dark,
   .bg-slate-900 {
     background-color: #0f172a !important;
     /* slate-900 */
+  }
+
+  /* Make inputs aware of dark mode for native icons */
+  .dark input {
+    color-scheme: dark;
+  }
+  
+  /* Force native date picker calendar icons to be white in dark mode */
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 0.8;
+  }
+  
+  input[type="date"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+  }
+
+  /* Ensure admin sidebar nav buttons have NO border in dark mode */
+  .admin-nav-btn,
+  .admin-logout-btn {
+    border: none !important;
+    box-shadow: none !important;
+    outline: none !important;
   }
 }
 

@@ -33,11 +33,13 @@ export default function CheckoutPage({ params }: { params: any }) {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<React.ReactNode>("");
+  const [isLicenseError, setIsLicenseError] = useState(false);
 
   useEffect(() => {
     const fetchBooking = async () => {
       try {
+        setIsLicenseError(false);
         const token = localStorage.getItem('token');
         const res = await fetch(`${API_BASE_URL}/bookings/my-bookings`, {
           headers: { 'Authorization': `Bearer ${token}` }
@@ -55,7 +57,12 @@ export default function CheckoutPage({ params }: { params: any }) {
         setUser(profile);
 
         if (foundBooking && (!profile.licenseExpiryDate || new Date(profile.licenseExpiryDate).getTime() < new Date(foundBooking.endDate).getTime())) {
-          setError(t('checkout.final_valuation.license_expired') || "Your driver's license is missing or will expire before this trip ends. Please update it in your profile.");
+          setError(
+            <span>
+              Your driver's license is missing or will expire before this trip ends. Please <Link href="/dashboard/profile" className="underline hover:text-slate-900">update it in your profile</Link>.
+            </span>
+          );
+          setIsLicenseError(true);
         }
       } catch (err) { setError("Network error synchronizing telemetry."); }
       finally { setLoading(false); }
@@ -114,7 +121,7 @@ export default function CheckoutPage({ params }: { params: any }) {
        <p className="text-slate-500 font-bold mb-8 max-w-sm mx-auto">{error || t('checkout.final_valuation.registry_error')}</p>
        <div className="flex gap-4 justify-center">
          <Link href="/dashboard/bookings"><Button className="bg-slate-900 hover:bg-black text-white px-10 h-14 rounded-app font-bold uppercase tracking-widest text-[10px]">{t('checkout.final_valuation.back_dashboard')}</Button></Link>
-         {error.includes('license') && (
+         {isLicenseError && (
            <Link href="/dashboard/profile?updateLicense=true"><Button className="bg-primary hover:bg-secondary text-white px-10 h-14 rounded-app font-bold uppercase tracking-widest text-[10px]">Update License</Button></Link>
          )}
        </div>

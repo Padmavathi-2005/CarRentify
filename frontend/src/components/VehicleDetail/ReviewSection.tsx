@@ -30,6 +30,7 @@ interface Review {
 
 const ReviewCard = ({ review, isLatest = false }: { review: Review, isLatest?: boolean }) => {
   const { settings } = useSettings();
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const formatDate = (dateStr: string) => {
     return formatDateDisplay(dateStr, settings.defaultDateFormat);
@@ -39,9 +40,8 @@ const ReviewCard = ({ review, isLatest = false }: { review: Review, isLatest?: b
     <div 
       className={`transition-all duration-300 ${isLatest ? 'bg-card border border-border dark:border-white/20 rounded-app p-6 md:p-8' : 'pb-8 border-b border-border/50 last:border-0 last:pb-0'}`}
     >
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* Left Column: Profile, Rating, Comment */}
-        <div className="lg:col-span-7 space-y-4">
+      <div className="flex flex-col gap-6">
+        <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className={`rounded-full overflow-hidden bg-muted border border-border shrink-0 ${isLatest ? 'w-12 h-12' : 'w-10 h-10'}`}>
@@ -77,50 +77,59 @@ const ReviewCard = ({ review, isLatest = false }: { review: Review, isLatest?: b
               "{review.comment || 'No comment provided.'}"
             </p>
           </div>
+
+          <button 
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="text-[10px] font-bold uppercase tracking-widest text-primary flex items-center gap-1 hover:opacity-80 transition-opacity mt-2"
+          >
+            {isExpanded ? 'Hide Details' : 'Show Detailed Ratings'} 
+            <ChevronRight size={14} className={`transform transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+          </button>
         </div>
 
-        {/* Right Column: Detailed Ratings */}
-        <div className="lg:col-span-5 bg-muted/20 p-5 rounded-xl border border-border/50">
-          <h5 className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-4">Detailed Ratings</h5>
-          <div className="grid grid-cols-2 gap-y-4 gap-x-2">
-            <div className="flex justify-between items-center pr-2 border-r border-border/50">
-              <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5"><Sparkles size={10}/> Clean</span>
-              <div className="flex items-center gap-1 mr-2">
-                <span className="text-xs font-black text-foreground">{review.vehicleCleanliness || 5}</span><Star size={10} className="text-amber-400 fill-amber-400" /> 
+        {isExpanded && (
+          <div className="bg-muted/10 p-5 rounded-2xl border border-border/50 mt-4 animate-in fade-in slide-in-from-top-2 duration-300">
+            <h5 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-4 px-1">Detailed Ratings Breakdown</h5>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              <div className="flex justify-between items-center bg-background rounded-xl p-3 border border-border/40 shadow-sm">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2"><Sparkles size={12} className="text-primary/70"/> Clean</span>
+                <div className="flex items-center gap-1.5 bg-primary/5 px-2 py-0.5 rounded-md">
+                  <span className="text-sm font-black text-foreground">{review.vehicleCleanliness || review.rating || 5}</span><Star size={12} className="text-amber-400 fill-amber-400" /> 
+                </div>
               </div>
-            </div>
-            <div className="flex justify-between items-center pl-2">
-              <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5"><CheckCircle2 size={10}/> Accur</span>
-              <div className="flex items-center gap-1">
-                <span className="text-xs font-black text-foreground">{review.listingAccuracy || 5}</span><Star size={10} className="text-amber-400 fill-amber-400" /> 
+              <div className="flex justify-between items-center bg-background rounded-xl p-3 border border-border/40 shadow-sm">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2"><CheckCircle2 size={12} className="text-primary/70"/> Accuracy</span>
+                <div className="flex items-center gap-1.5 bg-primary/5 px-2 py-0.5 rounded-md">
+                  <span className="text-sm font-black text-foreground">{review.listingAccuracy || review.rating || 5}</span><Star size={12} className="text-amber-400 fill-amber-400" /> 
+                </div>
               </div>
-            </div>
-            <div className="flex justify-between items-center pr-2 border-r border-border/50">
-              <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5"><Key size={10}/> Pick</span>
-              <div className="flex items-center gap-1 mr-2">
-                <span className="text-xs font-black text-foreground">{review.pickupExperience || 5}</span><Star size={10} className="text-amber-400 fill-amber-400" /> 
+              <div className="flex justify-between items-center bg-background rounded-xl p-3 border border-border/40 shadow-sm">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2"><Key size={12} className="text-primary/70"/> Pickup</span>
+                <div className="flex items-center gap-1.5 bg-primary/5 px-2 py-0.5 rounded-md">
+                  <span className="text-sm font-black text-foreground">{review.pickupExperience || review.rating || 5}</span><Star size={12} className="text-amber-400 fill-amber-400" /> 
+                </div>
               </div>
-            </div>
-            <div className="flex justify-between items-center pl-2">
-              <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5"><Tag size={10}/> Val</span>
-              <div className="flex items-center gap-1">
-                <span className="text-xs font-black text-foreground">{review.valueForMoney || 5}</span><Star size={10} className="text-amber-400 fill-amber-400" /> 
+              <div className="flex justify-between items-center bg-background rounded-xl p-3 border border-border/40 shadow-sm">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2"><Tag size={12} className="text-primary/70"/> Value</span>
+                <div className="flex items-center gap-1.5 bg-primary/5 px-2 py-0.5 rounded-md">
+                  <span className="text-sm font-black text-foreground">{review.valueForMoney || review.rating || 5}</span><Star size={12} className="text-amber-400 fill-amber-400" /> 
+                </div>
               </div>
-            </div>
-            <div className="flex justify-between items-center pr-2 border-r border-border/50">
-              <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5"><MessageSquare size={10}/> Host</span>
-              <div className="flex items-center gap-1 mr-2">
-                <span className="text-xs font-black text-foreground">{review.hostCommunication || 5}</span><Star size={10} className="text-amber-400 fill-amber-400" /> 
+              <div className="flex justify-between items-center bg-background rounded-xl p-3 border border-border/40 shadow-sm">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2"><MessageSquare size={12} className="text-primary/70"/> Host</span>
+                <div className="flex items-center gap-1.5 bg-primary/5 px-2 py-0.5 rounded-md">
+                  <span className="text-sm font-black text-foreground">{review.hostCommunication || review.rating || 5}</span><Star size={12} className="text-amber-400 fill-amber-400" /> 
+                </div>
               </div>
-            </div>
-            <div className="flex justify-between items-center pl-2">
-              <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5"><MapPin size={10}/> Loc</span>
-              <div className="flex items-center gap-1">
-                <span className="text-xs font-black text-foreground">{review.vehicleLocation || 5}</span><Star size={10} className="text-amber-400 fill-amber-400" /> 
+              <div className="flex justify-between items-center bg-background rounded-xl p-3 border border-border/40 shadow-sm">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2"><MapPin size={12} className="text-primary/70"/> Location</span>
+                <div className="flex items-center gap-1.5 bg-primary/5 px-2 py-0.5 rounded-md">
+                  <span className="text-sm font-black text-foreground">{review.vehicleLocation || review.rating || 5}</span><Star size={12} className="text-amber-400 fill-amber-400" /> 
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
@@ -158,12 +167,12 @@ export const ReviewSection = ({ reviews }: { reviews: Review[] }) => {
  const latestReview = reviews[0];
 
  const categoryAverages = {
- cleanliness: (reviews.reduce((acc, r) => acc + (r.vehicleCleanliness || 0), 0) / reviews.length).toFixed(1),
- accuracy: (reviews.reduce((acc, r) => acc + (r.listingAccuracy || 0), 0) / reviews.length).toFixed(1),
- pickupExperience: (reviews.reduce((acc, r) => acc + (r.pickupExperience || 0), 0) / reviews.length).toFixed(1),
- communication: (reviews.reduce((acc, r) => acc + (r.hostCommunication || 0), 0) / reviews.length).toFixed(1),
- location: (reviews.reduce((acc, r) => acc + (r.vehicleLocation || 0), 0) / reviews.length).toFixed(1),
- value: (reviews.reduce((acc, r) => acc + (r.valueForMoney || 0), 0) / reviews.length).toFixed(1),
+ cleanliness: (reviews.reduce((acc, r) => acc + (r.vehicleCleanliness || r.rating || 0), 0) / reviews.length).toFixed(1),
+ accuracy: (reviews.reduce((acc, r) => acc + (r.listingAccuracy || r.rating || 0), 0) / reviews.length).toFixed(1),
+ pickupExperience: (reviews.reduce((acc, r) => acc + (r.pickupExperience || r.rating || 0), 0) / reviews.length).toFixed(1),
+ communication: (reviews.reduce((acc, r) => acc + (r.hostCommunication || r.rating || 0), 0) / reviews.length).toFixed(1),
+ location: (reviews.reduce((acc, r) => acc + (r.vehicleLocation || r.rating || 0), 0) / reviews.length).toFixed(1),
+ value: (reviews.reduce((acc, r) => acc + (r.valueForMoney || r.rating || 0), 0) / reviews.length).toFixed(1),
  };
 
  const categories = [

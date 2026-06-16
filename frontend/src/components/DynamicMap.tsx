@@ -216,11 +216,11 @@ export default function DynamicMap({
 
             return (
               <Marker key={i} position={[opt.lat, opt.lng]} icon={icon as L.Icon} draggable={false}>
-                <Popup minWidth={120}>
-                  <div className="space-y-1">
-                     <span className="font-black text-[10px] uppercase tracking-widest text-primary">{opt.type === 'host' ? 'Host Location' : opt.type === 'predefined' ? 'Delivery Point' : 'Custom Location'}</span>
-                     <p className="text-[10px] font-bold text-slate-600 truncate max-w-[150px]">{opt.name}</p>
-                     {opt.price ? <p className="text-[10px] font-black text-emerald-600">+${opt.price} Delivery Fee</p> : null}
+                <Popup minWidth={180} className="custom-map-popup">
+                  <div style={{ padding: '10px 14px', minWidth: 180 }}>
+                     <span style={{ display: 'block', fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--primary-brand-color)', borderBottom: '1px solid var(--accent-muted)', paddingBottom: '6px', marginBottom: '6px' }}>{opt.type === 'host' ? 'Host Location' : opt.type === 'predefined' ? 'Pickup & Drop Location' : 'Custom Location'}</span>
+                     <p style={{ fontSize: '11px', fontWeight: 600, color: '#374151', margin: 0, maxWidth: 190, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', lineHeight: '1.5' }}>{opt.name}</p>
+                     {opt.price ? <p style={{ fontSize: '10px', fontWeight: 900, color: '#059669', marginTop: 6, marginBottom: 0 }}>+${opt.price} Delivery Fee</p> : null}
                   </div>
                 </Popup>
               </Marker>
@@ -231,20 +231,20 @@ export default function DynamicMap({
         </MapContainer>
       )}
 
-      {/* Master Control Overlay Toggle Button (Mobile Only) */}
-      {!isLoading && isMobile && (
+      {/* Master Control Overlay Toggle Button */}
+      {!isLoading && !isOverlayVisible && (
         <button
-          onClick={() => setIsOverlayVisible(!isOverlayVisible)}
-          className="absolute top-4 right-4 z-[1001] w-10 h-10 rounded-app bg-card/90 backdrop-blur-md border border-border shadow-xl flex items-center justify-center text-primary transition-all active:scale-95"
+          onClick={() => setIsOverlayVisible(true)}
+          className="absolute top-4 right-4 md:top-8 md:right-8 z-[1001] w-10 h-10 md:w-12 md:h-12 rounded-app bg-card/90 backdrop-blur-md border border-border shadow-xl flex items-center justify-center text-primary transition-all hover:scale-105 active:scale-95"
         >
-          {isOverlayVisible ? <X size={20} /> : <Navigation2 size={20} fill="currentColor" />}
+          <Navigation2 size={20} className="md:w-6 md:h-6" fill="currentColor" />
         </button>
       )}
 
       {/* Master Control Overlay */}
       {!isLoading && (
         <AnimatePresence>
-          {(isOverlayVisible || !isMobile) && (
+          {isOverlayVisible && (
             <motion.div 
               initial={isMobile ? { opacity: 0, x: 20, scale: 0.95 } : { opacity: 1 }}
               animate={{ opacity: 1, x: 0, scale: 1 }}
@@ -254,18 +254,15 @@ export default function DynamicMap({
               <div className="bg-card/95 backdrop-blur-xl p-4 md:p-8 rounded-app border border-border dark:border-white/30 space-y-4 md:space-y-6 shadow-2xl">
                 <div className="flex items-center justify-between border-b border-border/50 pb-3 md:pb-4">
                   <div className="space-y-0.5 md:space-y-1">
-                    <h4 className="text-[9px] md:text-[10px] font-black text-foreground uppercase tracking-widest">Routing Logistics</h4>
+                    <h4 className="text-[9px] md:text-[10px] font-black text-foreground uppercase tracking-widest">Pickup & Drop Location</h4>
                     <p className="text-[7px] md:text-[8px] font-black text-muted-foreground uppercase tracking-widest">Exclusive Access Points Only</p>
                   </div>
-                  <div className="hidden md:flex w-7 h-7 md:w-8 md:h-8 rounded-app bg-primary/10 items-center justify-center text-primary border border-primary/20">
-                    <Navigation2 size={12} className="md:w-[14px] md:h-[14px]" fill="currentColor" />
-                  </div>
-                  {/* Close Button inside overlay for mobile */}
                   <button 
                     onClick={() => setIsOverlayVisible(false)}
-                    className="md:hidden w-7 h-7 rounded-app bg-muted/40 flex items-center justify-center text-muted-foreground"
+                    className="flex w-7 h-7 md:w-8 md:h-8 rounded-app bg-primary/10 hover:bg-primary/20 items-center justify-center text-primary border border-primary/20 transition-all active:scale-95"
+                    title="Collapse Overlay"
                   >
-                    <X size={14} />
+                    <Navigation2 size={12} className="md:w-[14px] md:h-[14px] rotate-180" fill="currentColor" />
                   </button>
                 </div>
               
@@ -287,11 +284,11 @@ export default function DynamicMap({
                         onClick={() => setIsPickupOpen(!isPickupOpen)}
                         className={`relative flex items-center justify-between h-10 md:h-12 bg-muted/40 border rounded-app px-3 md:px-4 cursor-pointer transition-all duration-300 z-20 ${isPickupOpen ? 'bg-card border-primary ring-4 ring-primary/10 ' : 'border-border hover:border-primary/30 hover:bg-card'}`}
                       >
-                        <div className="flex items-center gap-2 md:gap-3">
-                          <MapPin size={14} className={isPickupOpen ? "text-primary" : "text-muted-foreground"} />
-                          <span className="text-xs md:text-sm font-black text-foreground">{pickup.name}</span>
+                        <div className="flex items-center gap-2 md:gap-3 flex-1 min-w-0 pr-2">
+                          <MapPin size={14} className={`shrink-0 ${isPickupOpen ? "text-primary" : "text-muted-foreground"}`} />
+                          <span className="text-xs md:text-sm font-black text-foreground truncate">{pickup.name}</span>
                         </div>
-                        <ChevronDown size={12} className={`text-muted-foreground/40 transition-transform duration-500 ${isPickupOpen ? 'rotate-180 text-primary' : ''}`} />
+                        <ChevronDown size={12} className={`shrink-0 text-muted-foreground/40 transition-transform duration-500 ${isPickupOpen ? 'rotate-180 text-primary' : ''}`} />
                       </div>
                       
                       <AnimatePresence>
@@ -355,11 +352,11 @@ export default function DynamicMap({
                         onClick={() => setIsReturnOpen(!isReturnOpen)}
                         className={`relative flex items-center justify-between h-10 md:h-12 bg-muted/40 border rounded-app px-3 md:px-4 cursor-pointer transition-all duration-300 z-20 ${isReturnOpen ? 'bg-card border-destructive/40 ring-4 ring-destructive/10 ' : 'border-border hover:border-destructive/40 hover:bg-card'}`}
                       >
-                        <div className="flex items-center gap-2 md:gap-3">
-                          <MapPin size={14} className={isReturnOpen ? "text-destructive" : "text-muted-foreground"} />
-                          <span className="text-xs md:text-sm font-black text-foreground">{returnLoc?.name || pickup.name}</span>
+                        <div className="flex items-center gap-2 md:gap-3 flex-1 min-w-0 pr-2">
+                          <MapPin size={14} className={`shrink-0 ${isReturnOpen ? "text-destructive" : "text-muted-foreground"}`} />
+                          <span className="text-xs md:text-sm font-black text-foreground truncate">{returnLoc?.name || pickup.name}</span>
                         </div>
-                        <ChevronDown size={12} className={`text-muted-foreground/40 transition-transform duration-500 ${isReturnOpen ? 'rotate-180 text-destructive' : ''}`} />
+                        <ChevronDown size={12} className={`shrink-0 text-muted-foreground/40 transition-transform duration-500 ${isReturnOpen ? 'rotate-180 text-destructive' : ''}`} />
                       </div>
                       
                       <AnimatePresence>

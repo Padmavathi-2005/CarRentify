@@ -210,6 +210,8 @@ export default function NewCarPage() {
       demoActiveRef.current = false;
       setShowDemoPointer(false);
       setDemoSuccess(false);
+      setIsAiExpanded(false);
+      setAiPrompt("");
     }
   };
 
@@ -279,9 +281,9 @@ export default function NewCarPage() {
   const [latitude, setLatitude] = useState(12.9249);
   const [longitude, setLongitude] = useState(78.1306);
   const [address, setAddress] = useState("");
-  const [country, setCountry] = useState("India");
-  const [state, setState] = useState("Tamil Nadu");
-  const [city, setCity] = useState("Madurai");
+  const [country, setCountry] = useState("");
+  const [state, setState] = useState("");
+  const [city, setCity] = useState("");
   const [pickupLocations, setPickupLocations] = useState<any[]>([]);
   const [customDeliveryEnabled, setCustomDeliveryEnabled] = useState(false);
   const [customDeliveryMaxDistance, setCustomDeliveryMaxDistance] = useState("5");
@@ -606,15 +608,26 @@ export default function NewCarPage() {
 
   const handleCancel = () => setShowDiscardModal(true);
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (status: 'pending' | 'draft' = 'pending') => {
     // Final Global Validation
-    if (!validateStep(1)) { setCurrentStep(1); setShowAllSteps(false); return; }
-    if (!validateStep(2)) { setCurrentStep(2); setShowAllSteps(false); return; }
-    if (!validateStep(5)) { setCurrentStep(5); setShowAllSteps(false); return; }
-    if (!validateStep(5)) { setCurrentStep(5); setShowAllSteps(false); return; }
+    if (status !== 'draft') {
+      if (!validateStep(1)) { setCurrentStep(1); setShowAllSteps(false); return; }
+      if (!validateStep(2)) { setCurrentStep(2); setShowAllSteps(false); return; }
+      if (!validateStep(5)) { setCurrentStep(5); setShowAllSteps(false); return; }
+      if (!validateStep(5)) { setCurrentStep(5); setShowAllSteps(false); return; }
 
-    if (parseFloat(horsepower) < 0) { setFormErrors(prev => ({ ...prev, horsepower: "Horsepower cannot be negative." })); return; }
-    if (parseFloat(mileage) < 0) { setFormErrors(prev => ({ ...prev, mileage: "Mileage cannot be negative." })); return; }
+      if (parseFloat(horsepower) < 0) { setFormErrors(prev => ({ ...prev, horsepower: "Horsepower cannot be negative." })); return; }
+      if (parseFloat(mileage) < 0) { setFormErrors(prev => ({ ...prev, mileage: "Mileage cannot be negative." })); return; }
+    } else {
+      // For draft, only a title (name) is required
+      if (!name.trim()) {
+        setFormErrors({ name: "Title is required to save a draft." });
+        setCurrentStep(1); setShowAllSteps(false);
+        document.getElementById("name-input")?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+    }
+
     setLoading(true);
     try {
       const images = [];
@@ -707,49 +720,64 @@ export default function NewCarPage() {
       const res = await fetch(`${API_BASE_URL}/cars`, {
         method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${localStorage.getItem('token')}` },
         body: JSON.stringify({
-          name, permalink, content, shortDescription, vehicleType, transmission, fuelType, year, brandId, model,
-          pricePerDay: parseFloat(pricePerDay),
-          minBookingDays: parseInt(minBookingDays) || 1,
+          name, 
+          permalink: permalink || undefined, 
+          content: content || undefined, 
+          shortDescription: shortDescription || undefined, 
+          vehicleType: vehicleType || undefined, 
+          transmission: transmission || undefined, 
+          fuelType: fuelType || undefined, 
+          year: year ? parseInt(year) : undefined, 
+          brandId: brandId || undefined, 
+          model: model || undefined,
+          pricePerDay: pricePerDay ? parseFloat(pricePerDay) : undefined,
+          minBookingDays: minBookingDays ? (parseInt(minBookingDays) || 1) : undefined,
           bookingType,
-          securityDeposit: parseFloat(securityDeposit) || 0,
-          currency: currencyId,
-          distanceIncluded: parseFloat(distanceIncluded),
-          extraDistanceFee: parseFloat(extraDistanceFee),
+          securityDeposit: securityDeposit ? parseFloat(securityDeposit) : undefined,
+          currency: currencyId || undefined,
+          distanceIncluded: distanceIncluded ? parseFloat(distanceIncluded) : undefined,
+          extraDistanceFee: extraDistanceFee ? parseFloat(extraDistanceFee) : undefined,
           priceTiers,
           extras,
-          horsepower: parseFloat(horsepower) || 0,
-          mileage: parseFloat(mileage) || 0,
-          vin,
-          seats: parseInt(seats) || 0,
-          doors: parseInt(doors) || 0,
-          driveType,
-          fuelEfficiency,
+          horsepower: horsepower ? parseFloat(horsepower) : undefined,
+          mileage: mileage ? parseFloat(mileage) : undefined,
+          vin: vin || undefined,
+          seats: seats ? parseInt(seats) : undefined,
+          doors: doors ? parseInt(doors) : undefined,
+          driveType: driveType || undefined,
+          fuelEfficiency: fuelEfficiency || undefined,
           isUsed,
-          condition,
-          color,
-          acceleration: parseFloat(acceleration) || undefined,
-          chargingType,
-          batteryCapacity: parseFloat(batteryCapacity) || undefined,
-          range: parseFloat(range) || undefined,
-          location: { country, state, city, address, latitude, longitude },
+          condition: condition || undefined,
+          color: color || undefined,
+          acceleration: acceleration ? parseFloat(acceleration) : undefined,
+          chargingType: chargingType || undefined,
+          batteryCapacity: batteryCapacity ? parseFloat(batteryCapacity) : undefined,
+          range: range ? parseFloat(range) : undefined,
+          location: (address || city || state || country) ? { country, state, city, address, latitude, longitude } : undefined,
           pickupLocations,
           images,
           amenities: selectedAmenities,
           documents: docs,
-          seoTitle, seoDescription, seoKeywords, seoImage: finalSeoImage,
+          seoTitle: seoTitle || undefined, seoDescription: seoDescription || undefined, seoKeywords: seoKeywords || undefined, seoImage: finalSeoImage || undefined,
           customSpecs: finalCustomSpecs,
           customDelivery: {
             enabled: customDeliveryEnabled,
-            maxDistance: parseFloat(customDeliveryMaxDistance) || 5,
-            price: parseFloat(customDeliveryPrice) || 0
-          }
+            maxDistance: customDeliveryMaxDistance ? parseFloat(customDeliveryMaxDistance) : 5,
+            price: customDeliveryPrice ? parseFloat(customDeliveryPrice) : 0
+          },
+          status
         }),
       });
 
       const data = await res.json();
 
       if (res.ok) {
-        showToast("Car added in carrental platform. Awaiting Administrative Review.", "success");
+        showToast(
+          status === 'draft' 
+            ? "Car saved as draft successfully!" 
+            : "Car added in carrental platform. Awaiting Administrative Review.", 
+          "success"
+        );
         setUserType("host");
         router.push("/dashboard/cars");
       } else {
@@ -771,7 +799,7 @@ export default function NewCarPage() {
   if (verificationStatus !== 'approved') return <VerificationModal isOpen={true} onClose={() => router.push('/dashboard')} status={verificationStatus || 'not_submitted'} />;
 
   return (
-    <div className="bg-white dark:bg-slate-950 text-slate-900 dark:text-white font-sans h-auto min-h-0 flex flex-col transition-all duration-700">
+    <div onKeyDown={handleUserInteraction} onClick={handleUserInteraction} onPointerDown={handleUserInteraction} className="bg-white dark:bg-slate-950 text-slate-900 dark:text-white font-sans h-auto min-h-0 flex flex-col transition-all duration-700">
       <header className="sticky top-0 z-[100] bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border-b border-slate-100 dark:border-white/10 px-4 lg:px-10 py-4 lg:py-5 flex items-center justify-between">
         <div className="flex items-center gap-2 md:gap-4 lg:gap-6">
           <Link href="/dashboard/cars">
@@ -791,7 +819,8 @@ export default function NewCarPage() {
         </div>
         <div className="flex items-center gap-2 lg:gap-3">
           <Button variant="ghost" onClick={handleCancel} className="h-9 px-2 sm:px-3 lg:px-4 rounded-app font-black text-slate-400 dark:text-slate-500 uppercase text-[8px] tracking-[0.2em] hover:bg-slate-50 dark:hover:bg-white/5 transition-all flex items-center gap-2 border border-transparent active:scale-95"><XCircle size={16} /> <span className="hidden md:inline">Discard</span></Button>
-          <Button onClick={handleSubmit} disabled={loading} className="h-9 sm:h-10 px-3 sm:px-4 lg:px-6 bg-primary hover:bg-secondary text-white hover:text-white rounded-app font-black uppercase text-[9px] tracking-widest flex items-center gap-2 sm:gap-3 border-none transition-all active:scale-95">{loading ? <RefreshCw className="animate-spin" size={14} /> : <CheckCircle2 size={16} />}<span className="hidden sm:inline">Publish</span></Button>
+          <Button onClick={() => handleSubmit('draft')} disabled={loading} variant="outline" className="h-9 sm:h-10 px-3 sm:px-4 lg:px-5 border border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5 rounded-app font-black uppercase text-[9px] tracking-widest flex items-center gap-2 transition-all active:scale-95 text-slate-700 dark:text-slate-300 bg-transparent">{loading ? <RefreshCw className="animate-spin" size={14} /> : <Save size={16} />}<span className="hidden sm:inline">Save Draft</span></Button>
+          <Button onClick={() => handleSubmit('pending')} disabled={loading} className="h-9 sm:h-10 px-3 sm:px-4 lg:px-6 bg-primary hover:bg-secondary text-white hover:text-white rounded-app font-black uppercase text-[9px] tracking-widest flex items-center gap-2 sm:gap-3 border-none transition-all active:scale-95">{loading ? <RefreshCw className="animate-spin" size={14} /> : <CheckCircle2 size={16} />}<span className="hidden sm:inline">Publish</span></Button>
         </div>
       </header>
 
@@ -1148,9 +1177,9 @@ export default function NewCarPage() {
                           <div className="space-y-6">
                             <div className="grid grid-cols-2 gap-6">
                               <div className="space-y-2"><label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest px-1">Min Days</label><Input type="number" value={tier.days} onChange={(e) => updatePriceTier(index, 'days', parseInt(e.target.value) || 0)} className="h-12 bg-white dark:bg-slate-950 border-2 border-slate-100 dark:border-white/10 rounded-app font-bold text-slate-900 dark:text-white" /></div>
-                              <div className="space-y-2"><label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest px-1">Discount %</label><div className="relative flex items-center h-12 bg-white dark:bg-slate-950 rounded-app border-2 border-slate-100 dark:border-white/10 px-5"><input type="number" value={tier.discountPercentage} onChange={(e) => updatePriceTier(index, 'discountPercentage', parseFloat(e.target.value) || 0)} className="w-full bg-transparent text-sm font-black text-slate-900 dark:text-white outline-none border-none focus:ring-0 p-0" /><span className="text-[10px] font-black text-slate-300 dark:text-slate-700 uppercase">%</span></div></div>
+                              <div className="space-y-2"><label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest px-1">Discount %</label><div className="relative flex items-center h-12 bg-white dark:bg-slate-950 rounded-app border-2 border-slate-100 dark:border-white/10 px-5"><input type="number" value={tier.discountPercentage} onChange={(e) => updatePriceTier(index, 'discountPercentage', parseFloat(e.target.value) || 0)} className="w-full bg-transparent text-sm font-black text-slate-900 dark:text-white outline-none border-none focus:ring-0 p-0" /><span className="text-[10px] font-black text-slate-300 dark:text-slate-400 uppercase">%</span></div></div>
                             </div>
-                            <div className="pt-4 border-t border-slate-100 dark:border-white/10 flex items-center justify-between"><p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase">Discounted Rate</p><p className="text-xl font-black text-primary tracking-tighter">{getCurrencySymbol()}{metrics.currentDiscountedPrice}<span className="text-[10px] text-slate-300 dark:text-slate-700 ml-2">/DAY</span></p></div>
+                            <div className="pt-4 border-t border-slate-100 dark:border-white/10 flex items-center justify-between"><p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase">Discounted Rate</p><p className="text-xl font-black text-primary tracking-tighter">{getCurrencySymbol()}{metrics.currentDiscountedPrice}<span className="text-[10px] text-slate-300 dark:text-slate-400 ml-2">/DAY</span></p></div>
                           </div>
                         </div>
                       );
@@ -1520,11 +1549,14 @@ export default function NewCarPage() {
             if (currentIndex > 0) setCurrentStep(steps[currentIndex - 1].id);
           }
         }} disabled={currentStep === 1 && !showAllSteps} className="h-14 px-8 rounded-app font-black uppercase text-[10px] tracking-widest text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-white/5 disabled:opacity-0 transition-all flex items-center gap-3"><ArrowLeft size={18} /> Back</Button>
-        {!showAllSteps ? (
-          <Button onClick={handleNext} className="h-14 px-10 bg-primary hover:bg-secondary text-white hover:text-white rounded-app font-black uppercase text-[10px] tracking-widest flex items-center gap-4 transition-all active:scale-95 border-none">{currentStep === steps[steps.length - 1].id ? 'Complete' : 'Next'} <ArrowRight size={18} /></Button>
-        ) : (
-          <Button onClick={handleSubmit} disabled={loading} className="h-14 px-10 bg-primary hover:bg-secondary text-white hover:text-white rounded-app font-black uppercase text-[10px] tracking-widest flex items-center gap-4 border-none transition-all active:scale-95">{loading ? <RefreshCw className="animate-spin" size={16} /> : <CheckCircle2 size={16} />} Publish</Button>
-        )}
+        <div className="flex items-center gap-4">
+          <Button onClick={() => handleSubmit('draft')} disabled={loading} variant="outline" className="h-14 px-8 border border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5 rounded-app font-black uppercase text-[10px] tracking-widest flex items-center gap-3 transition-all active:scale-95 text-slate-700 dark:text-slate-300 bg-transparent">{loading ? <RefreshCw className="animate-spin" size={16} /> : <Save size={18} />} Save Draft</Button>
+          {!showAllSteps ? (
+            <Button onClick={handleNext} className="h-14 px-10 bg-primary hover:bg-secondary text-white hover:text-white rounded-app font-black uppercase text-[10px] tracking-widest flex items-center gap-4 transition-all active:scale-95 border-none">{currentStep === steps[steps.length - 1].id ? 'Complete' : 'Next'} <ArrowRight size={18} /></Button>
+          ) : (
+            <Button onClick={() => handleSubmit('pending')} disabled={loading} className="h-14 px-10 bg-primary hover:bg-secondary text-white hover:text-white rounded-app font-black uppercase text-[10px] tracking-widest flex items-center gap-4 border-none transition-all active:scale-95">{loading ? <RefreshCw className="animate-spin" size={16} /> : <CheckCircle2 size={16} />} Publish</Button>
+          )}
+        </div>
       </div>
     </div>
   );

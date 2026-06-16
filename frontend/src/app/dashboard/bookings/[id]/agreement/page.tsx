@@ -34,20 +34,53 @@ export default function AgreementPage() {
       const alreadyAccepted = isCustomer ? !!order.renterAgreementSignature : !!order.hostAgreementSignature;
       
       if (!alreadyAccepted) {
-        const params = new URLSearchParams(window.location.search);
-        if (params.get('promptSign') === 'true') {
-          setIsSignatureModalOpen(true);
-          window.history.replaceState({}, '', window.location.pathname);
-        }
+        setIsSignatureModalOpen(true);
       }
     }
   }, [loading, order, user]);
 
 
 
-  const fetchOrderDetails = async () => {
+  const finalizePayment = async (params: URLSearchParams) => {
+    const gateway = params.get('gateway');
+    const tokenParam = params.get('token');
+    const sessionId = params.get('session_id');
+    const typeParam = params.get('type');
+    const token = authService.getToken();
+    
+    try {
+      if (gateway === 'paypal' && tokenParam) {
+        await fetch(`${API_BASE_URL}/payments/capture-paypal/${tokenParam}`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ bookingId: id, type: typeParam })
+        });
+      } else if (sessionId) {
+        await fetch(`${API_BASE_URL}/payments/finalize-stripe/${sessionId}`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ bookingId: id, type: typeParam })
+        });
+      }
+    } catch (err) {
+      console.error("Finalize error:", err);
+    }
+  };
+
+  const fetchOrderDetails = async (forceFinalize = false) => {
     try {
       setLoading(true);
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('success') === 'true' || forceFinalize) {
+        await finalizePayment(params);
+        // Clear success params from URL so it doesn't run again on refresh
+        const newUrl = new URL(window.location.href);
+        newUrl.searchParams.delete('success');
+        newUrl.searchParams.delete('session_id');
+        newUrl.searchParams.delete('gateway');
+        newUrl.searchParams.delete('token');
+        window.history.replaceState({}, '', newUrl.toString());
+      }
       const token = authService.getToken();
       const res = await fetch(`${API_BASE_URL}/bookings/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -62,6 +95,20 @@ export default function AgreementPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchOrderDetails();
+  }, [id]);
+
+  useEffect(() => {
+    if (order && user) {
+      const isCustomer = user._id === order.customerId?._id;
+      const hasAccepted = isCustomer ? order.renterAgreementSignature : order.hostAgreementSignature;
+      if (!hasAccepted) {
+        setIsSignatureModalOpen(true);
+      }
+    }
+  }, [order, user]);
 
   const handleDownloadPDF = async () => {
     setIsPdfGenerating(true);
@@ -162,7 +209,7 @@ export default function AgreementPage() {
             <button
               onClick={handleDownloadPDF}
               disabled={isPdfGenerating}
-              className={`px-6 py-2.5 \${isPdfGenerating ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-slate-900 hover:bg-black text-white'} font-black uppercase tracking-widest text-[10px] rounded-app flex items-center gap-2 transition-all shadow-md`}
+              className={`px-6 py-2.5 ${isPdfGenerating ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-primary hover:bg-primary-hover text-white'} font-black uppercase tracking-widest text-[10px] rounded-app flex items-center gap-2 transition-all shadow-md`}
             >
               <Download size={14} /> {isPdfGenerating ? 'Processing...' : 'Export as PDF'}
             </button>
@@ -209,6 +256,22 @@ export default function AgreementPage() {
                 <p className="text-lg text-slate-900 font-black">{order.renterLegalName || `${order.customerId?.firstName} ${order.customerId?.lastName}`}</p>
                 <p>{order.customerId?.email}</p>
                 {order.customerId?.phone && <p>{order.customerId?.phone}</p>}
+                {(() => {
+                  const docs = order.customerId?.verificationSubmission?.documents || [];
+                  const dlNum = docs.find((d: any) => d.fieldId === 'driverLicense')?.value || order.customerId?.driverLicense;
+                  const dlExp = docs.find((d: any) => d.fieldId === 'licenseExpiryDate')?.value || order.customerId?.licenseExpiryDate;
+                  const dob = docs.find((d: any) => d.fieldId === 'dob')?.value || order.customerId?.dob;
+
+                  if (!dlNum && !dlExp && !dob) return null;
+                  
+                  return (
+                    <div className="mt-3 pt-3 border-t border-slate-200 space-y-1">
+                      {dlNum && <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">DL Number: <span className="text-slate-900">{dlNum}</span></p>}
+                      {dlExp && <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">DL Expiry: <span className="text-slate-900">{new Date(dlExp).toLocaleDateString()}</span></p>}
+                      {dob && <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">DOB: <span className="text-slate-900">{new Date(dob).toLocaleDateString()}</span></p>}
+                    </div>
+                  );
+                })()}
               </div>
             </div>
             
@@ -238,16 +301,44 @@ export default function AgreementPage() {
                   <td className="py-3 px-4 font-bold text-slate-900">{order.carId?.name || "Premium Vehicle"}</td>
                 </tr>
                 <tr className="border-b border-slate-100">
+                  <th className="py-3 px-4 bg-slate-50 font-black text-slate-500 uppercase tracking-widest text-[10px]">Make & Model</th>
+                  <td className="py-3 px-4 font-bold text-slate-900">{order.carId?.brand?.name || ''} {order.carId?.model || 'N/A'}</td>
+                </tr>
+                <tr className="border-b border-slate-100">
+                  <th className="py-3 px-4 bg-slate-50 font-black text-slate-500 uppercase tracking-widest text-[10px]">Category</th>
+                  <td className="py-3 px-4 font-bold text-slate-900">{order.carId?.vehicleType?.name || 'Standard Car'}</td>
+                </tr>
+                <tr className="border-b border-slate-100">
+                  <th className="py-3 px-4 bg-slate-50 font-black text-slate-500 uppercase tracking-widest text-[10px]">Details</th>
+                  <td className="py-3 px-4 font-bold text-slate-900">
+                    {[
+                      order.carId?.color ? `Color: ${order.carId.color}` : '',
+                      order.carId?.seats ? `Seats: ${order.carId.seats}` : '',
+                      order.carId?.doors ? `Doors: ${order.carId.doors}` : ''
+                    ].filter(Boolean).join(' | ') || 'Standard specs'}
+                  </td>
+                </tr>
+                <tr className="border-b border-slate-100">
+                  <th className="py-3 px-4 bg-slate-50 font-black text-slate-500 uppercase tracking-widest text-[10px]">Mechanics</th>
+                  <td className="py-3 px-4 font-bold text-slate-900">
+                    {[
+                      order.carId?.transmission ? `Trans: ${order.carId.transmission}` : '',
+                      order.carId?.fuelType ? `Fuel: ${order.carId.fuelType}` : '',
+                      order.carId?.mileage ? `Mileage: ${order.carId.mileage.toLocaleString()} mi` : ''
+                    ].filter(Boolean).join(' | ') || 'Standard specs'}
+                  </td>
+                </tr>
+                <tr className="border-b border-slate-100">
                   <th className="py-3 px-4 bg-slate-50 font-black text-slate-500 uppercase tracking-widest text-[10px]">VIN / Plate</th>
-                  <td className="py-3 px-4 font-bold text-slate-900">{order.carId?.vin || "On Record"}</td>
+                  <td className="py-3 px-4 font-bold text-slate-900">{order.carId?.vin || order.carId?.licensePlate || "On Record"}</td>
                 </tr>
                 <tr className="border-b border-slate-100">
-                  <th className="py-3 px-4 bg-slate-50 font-black text-slate-500 uppercase tracking-widest text-[10px]">Rental Period</th>
-                  <td className="py-3 px-4 font-bold text-slate-900">{order.startDate} to {order.endDate}</td>
+                  <th className="py-3 px-4 bg-slate-50 font-black text-slate-500 uppercase tracking-widest text-[10px]">Check-In</th>
+                  <td className="py-3 px-4 font-bold text-slate-900">Date: {order.startDate} | Time: {order.pickupTime || '10:00'}</td>
                 </tr>
                 <tr className="border-b border-slate-100">
-                  <th className="py-3 px-4 bg-slate-50 font-black text-slate-500 uppercase tracking-widest text-[10px]">Logistics</th>
-                  <td className="py-3 px-4 font-bold text-slate-900">Pickup @ {order.pickupTime} | Return @ {order.returnTime}</td>
+                  <th className="py-3 px-4 bg-slate-50 font-black text-slate-500 uppercase tracking-widest text-[10px]">Check-Out</th>
+                  <td className="py-3 px-4 font-bold text-slate-900">Date: {order.endDate} | Time: {order.returnTime || '10:00'}</td>
                 </tr>
               </tbody>
             </table>
@@ -261,6 +352,10 @@ export default function AgreementPage() {
             </div>
             <table className="w-full text-left text-sm border-collapse">
               <tbody>
+                <tr className="border-b border-slate-100">
+                  <th className="py-3 px-4 bg-slate-50 font-black text-slate-500 uppercase tracking-widest text-[10px] w-1/3">Base Rate</th>
+                  <td className="py-3 px-4 font-bold text-slate-900">{order.carId?.pricePerDay ? `$${order.carId.pricePerDay.toFixed(2)} / Day` : 'N/A'}</td>
+                </tr>
                 <tr className="border-b border-slate-100">
                   <th className="py-3 px-4 bg-slate-50 font-black text-slate-500 uppercase tracking-widest text-[10px] w-1/3">Total Paid</th>
                   <td className="py-3 px-4 font-bold text-slate-900">${order.totalPrice.toFixed(2)}</td>
@@ -385,6 +480,8 @@ IN WITNESS WHEREOF, the parties hereto have executed this Agreement electronical
           isOpen={isSignatureModalOpen} 
           onClose={() => setIsSignatureModalOpen(false)} 
           onSubmit={handleSignatureSubmit} 
+          agreementText={order.agreementText}
+          isMandatory={!hasAccepted}
         />
       </div>
     </div>

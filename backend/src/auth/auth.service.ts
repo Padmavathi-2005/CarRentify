@@ -44,7 +44,7 @@ export class AuthService implements OnModuleInit {
   }
 
   async validateUser(email: string, pass: string, isAdminAction: boolean = false): Promise<any> {
-    const user = await this.userModel.findOne({ email });
+    const user = await this.userModel.findOne({ email: new RegExp('^' + email + '$', 'i') });
 
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
@@ -139,7 +139,7 @@ export class AuthService implements OnModuleInit {
     const expires = Date.now() + 10 * 60 * 1000; // 10 minutes
 
     await this.userModel.updateOne(
-      { email },
+      { email: new RegExp('^' + email + '$', 'i') },
       { $set: { otpCode: otp, otpExpires: expires } },
     );
 
@@ -190,7 +190,7 @@ export class AuthService implements OnModuleInit {
   }
 
   async verifyOTP(email: string, code: string) {
-    const user = await this.userModel.findOne({ email });
+    const user = await this.userModel.findOne({ email: new RegExp('^' + email + '$', 'i') });
     if (!user || user.otpCode !== code || user.otpExpires < Date.now()) {
       throw new BadRequestException('Invalid or expired OTP');
     }
@@ -203,7 +203,7 @@ export class AuthService implements OnModuleInit {
   }
 
   async forgotPassword(email: string) {
-    const user = await this.userModel.findOne({ email });
+    const user = await this.userModel.findOne({ email: new RegExp('^' + email + '$', 'i') });
     if (!user) {
       // For security, don't reveal if user exists or not
       return { message: 'If an account exists, a reset code has been sent.' };
@@ -256,7 +256,7 @@ export class AuthService implements OnModuleInit {
 
   async resetPassword(body: any) {
     const { email, code, newPassword } = body;
-    const user = await this.userModel.findOne({ email });
+    const user = await this.userModel.findOne({ email: new RegExp('^' + email + '$', 'i') });
 
     if (!user || user.otpCode !== code || user.otpExpires < Date.now()) {
       throw new BadRequestException('Invalid or expired reset code');

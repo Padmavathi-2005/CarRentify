@@ -187,9 +187,9 @@ export default function EditCarPage() {
  const [latitude, setLatitude] = useState(12.9249);
  const [longitude, setLongitude] = useState(78.1306);
  const [address, setAddress] = useState("");
- const [country, setCountry] = useState("India");
- const [state, setState] = useState("Tamil Nadu");
- const [city, setCity] = useState("Madurai");
+  const [country, setCountry] = useState("");
+  const [state, setState] = useState("");
+  const [city, setCity] = useState("");
  const [pickupLocations, setPickupLocations] = useState<any[]>([]);
  const [customDeliveryEnabled, setCustomDeliveryEnabled] = useState(false);
  const [customDeliveryMaxDistance, setCustomDeliveryMaxDistance] = useState("5");
@@ -644,7 +644,7 @@ export default function EditCarPage() {
      chargingType,
      batteryCapacity: parseFloat(batteryCapacity) || undefined,
      range: parseFloat(range) || undefined,
-     location: { country, state, city, address, latitude, longitude }, 
+     location: (address || city || state || country) ? { country, state, city, address, latitude, longitude } : undefined, 
      pickupLocations,
      amenities: selectedAmenities, 
      seoTitle, 

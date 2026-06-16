@@ -5,6 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import { Booking, BookingDocument, BookingStatus } from '../bookings/schemas/booking.schema';
 import { PaymentGateway, PaymentGatewayDocument } from '../settings/schemas/payment-gateway.schema';
 import { Setting, SettingDocument } from '../settings/schemas/setting.schema';
+import { Currency, CurrencyDocument } from '../settings/schemas/currency.schema';
 import Stripe from 'stripe';
 import { BookingsService } from '../bookings/bookings.service';
 
@@ -14,6 +15,7 @@ export class PaymentsService {
     @InjectModel(Booking.name) private bookingModel: Model<BookingDocument>,
     @InjectModel(PaymentGateway.name) private gatewayModel: Model<PaymentGatewayDocument>,
     @InjectModel(Setting.name) private settingModel: Model<SettingDocument>,
+    @InjectModel(Currency.name) private currencyModel: Model<CurrencyDocument>,
     private readonly configService: ConfigService,
     private readonly bookingsService: BookingsService,
   ) {}
@@ -81,7 +83,22 @@ export class PaymentsService {
     }
     const rawAmount = isSettlement ? calculatedSettlement : ((booking.baseAmount || booking.totalPrice) - (booking.couponDiscount || 0));
     
-    const defaultCurrency = (settings as any)?.defaultCurrency || 'USD';
+    let defaultCurrency = 'USD';
+    const defaultCurrencySetting = (settings as any)?.defaultCurrency;
+    
+    if (defaultCurrencySetting) {
+      const settingStr = defaultCurrencySetting.toString();
+      if (settingStr.length === 24) {
+        const currencyObj = await this.currencyModel.findById(settingStr);
+        if (currencyObj) {
+          defaultCurrency = currencyObj.code;
+        }
+      } else if (typeof defaultCurrencySetting === 'object' && defaultCurrencySetting.code) {
+        defaultCurrency = defaultCurrencySetting.code;
+      } else {
+        defaultCurrency = settingStr;
+      }
+    }
     
     // Always convert to default currency for gateway
     const amountToPay = rawAmount / rate;

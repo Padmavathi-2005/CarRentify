@@ -238,7 +238,7 @@ export default function CustomSelect({
               >
                 <div className="flex items-center gap-3">
                   {(hasIcons || optIcon) && (
-                    <div className="w-4 h-4 flex items-center justify-center shrink-0">
+                    <div className="w-4 h-4 flex items-center justify-center shrink-0 text-inherit">
                       {optIcon}
                     </div>
                   )}
@@ -276,7 +276,7 @@ export default function CustomSelect({
           isOpen && "border-primary bg-white ring-0 outline-none"
         )}
       >
-        <div className="flex items-center gap-3 overflow-hidden">
+        <div className="flex items-center gap-3 overflow-hidden text-foreground dark:text-slate-200">
           {icon || getIcon(selected)}
             <span
               className={cn(

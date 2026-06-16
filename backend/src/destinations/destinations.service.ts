@@ -46,7 +46,13 @@ export class DestinationsService {
     if (dest?.image) {
       // Clean up uploaded file
       const filePath = path.join(process.cwd(), 'public', dest.image);
-      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+      if (fs.existsSync(filePath)) {
+        try {
+          fs.unlinkSync(filePath);
+        } catch (err) {
+          console.warn('Failed to delete image file:', err);
+        }
+      }
     }
     await this.destinationModel.findByIdAndDelete(id).exec();
   }

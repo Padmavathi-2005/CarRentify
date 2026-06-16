@@ -377,10 +377,9 @@ export default function AdminBrandsView() {
   setCurrentPage(1);
   }}
   >
-  <option value={5}>5</option>
-  <option value={10}>10</option>
-  <option value={20}>20</option>
-  <option value={50}>50</option>
+  {[...new Set([5, 10, 20, 50, settings?.itemsPerPageLimit || 10])].sort((a,b)=>a-b).map(opt => (
+    <option key={opt} value={opt}>{opt}</option>
+  ))}
   </select>
   </div>
   <p className="text-[9px] font-bold text-[var(--admin-text-muted)] uppercase tracking-widest">

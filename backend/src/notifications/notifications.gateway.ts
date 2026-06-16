@@ -10,7 +10,8 @@ import { Server, Socket } from 'socket.io';
 @WebSocketGateway({
   path: process.env.API_PREFIX ? `/${process.env.API_PREFIX}/socket.io` : '/socket.io',
   cors: {
-    origin: '*',
+    origin: true,
+    credentials: true,
   },
 })
 export class NotificationsGateway
@@ -19,30 +20,26 @@ export class NotificationsGateway
   @WebSocketServer()
   server: Server;
 
-  private connectedUsers: Map<string, string> = new Map(); // userId -> socketId
-
   handleConnection(client: Socket) {
-    const userId = client.handshake.query.userId as string;
-    if (userId) {
-      this.connectedUsers.set(userId, client.id);
-      console.log(`User ${userId} connected with socket ${client.id}`);
-    }
-  }
-
-  handleDisconnect(client: Socket) {
-    for (const [userId, socketId] of this.connectedUsers.entries()) {
-      if (socketId === client.id) {
-        this.connectedUsers.delete(userId);
-        console.log(`User ${userId} disconnected`);
-        break;
+    const userIdQuery = client.handshake.query.userId as string;
+    if (userIdQuery) {
+      const userIds = userIdQuery.split(',');
+      for (const userId of userIds) {
+        if (userId) {
+          client.join(`user_${userId}`);
+          console.log(`User ${userId} joined room user_${userId} on socket ${client.id}`);
+        }
       }
     }
   }
 
+  handleDisconnect(client: Socket) {
+    console.log(`Client ${client.id} disconnected`);
+  }
+
   sendNotification(userId: string, event: string, data: any) {
-    const socketId = this.connectedUsers.get(userId);
-    if (socketId) {
-      this.server.to(socketId).emit(event, data);
-    }
+    const rawData = data && typeof data.toJSON === 'function' ? data.toJSON() : data;
+    const payload = typeof rawData === 'object' && rawData !== null ? { ...rawData, targetUserId: userId } : rawData;
+    this.server.to(`user_${userId}`).emit(event, payload);
   }
 }

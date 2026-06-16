@@ -11,6 +11,7 @@ import {
   Menu,
   X,
   ShieldCheck,
+  ShieldAlert,
   FileText,
   Wallet,
   Globe,
@@ -66,6 +67,7 @@ const navGroups = [
     items: [
       { icon: LayoutDashboard, label: "Dashboard", key: "dashboard", href: "/admin" },
       { icon: Calendar, label: "Bookings", key: "bookings", href: "/admin/bookings" },
+      { icon: ShieldAlert, label: "Claims", key: "claims", href: "/admin/claims" },
       { icon: LineChart, label: "Analysis", key: "analysis", href: "/admin/analysis" },
       { icon: Bell, label: "Notifications", key: "notifications", href: "/admin/notifications" },
       { icon: BarChart3, label: "Reports", key: "reports", href: "/admin/reports" },
@@ -154,8 +156,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  const deepMerge = (target: any, source: any) => {
+    const result = { ...target };
+    for (const key in source) {
+      if (source[key] instanceof Object && !Array.isArray(source[key])) {
+        result[key] = deepMerge(result[key] || {}, source[key]);
+      } else {
+        result[key] = source[key];
+      }
+    }
+    return result;
+  };
+
   const loadTranslations = (code: string) => {
-    setT(locales[code] || en);
+    setT(deepMerge(en, locales[code] || {}));
   };
 
   useEffect(() => {
@@ -197,12 +211,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     // Fetch dynamic languages from database
     const fetchDBLanguages = () => {
       fetch(`${API_BASE_URL}/languages`)
-        .then(res => res.json())
+        .then(res => {
+          if (!res.ok) throw new Error("Failed to fetch");
+          return res.json();
+        })
         .then(data => {
           // Filter out English if it exists in DB to avoid duplicates
-          setDbLanguages(data.filter((l: any) => l.name.toLowerCase() !== 'english'));
+          const dbLangs = data.filter((l: any) => l.code !== 'en' && l.isEnabled !== false);
+          setDbLanguages(dbLangs);
         })
-        .catch(err => console.error("Lang fetch error:", err));
+        .catch(err => {
+          console.warn("[AdminLayout] Could not fetch languages from DB:", err.message);
+        });
     };
 
     fetchDBLanguages();
@@ -381,7 +401,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   ? pathname === '/admin'
                   : pathname === item.href || pathname.startsWith(item.href + "/");
                 return (
-                  <Link key={item.label} href={item.href} onClick={() => { if (window.innerWidth < 1024) setIsSidebarOpen(false); }}>
+                  <Link key={item.label} href={item.href} onClick={() => { if (window.innerWidth < 1024) setIsSidebarOpen(false); }} className="block mb-1">
                     <button
                       className={`admin-nav-btn ${isActive ? 'active' : ''}`}
                     >

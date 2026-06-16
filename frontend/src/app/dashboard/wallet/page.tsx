@@ -25,13 +25,15 @@ import { Button } from "@/components/ui/button";
 import { walletService } from "@/services/walletService";
 import { useAuth } from "@/components/AuthContext";
 import { useLocale } from "@/components/LocaleContext";
+import { useSettings } from "@/components/ThemeProvider";
 import { jsPDF } from 'jspdf';
 import { toPng } from 'html-to-image';
 
-export default function WalletPage() {
- const { user } = useAuth();
- const { t, formatPrice, formatCurrency, currencies, currency: userCurrencyCode } = useLocale();
- const userCurrency = currencies.find(c => c.code === userCurrencyCode) || { symbol: '$' };
+ export default function WalletPage() {
+  const { user } = useAuth();
+  const { settings } = useSettings();
+  const { t, formatPrice, formatCurrency, currencies, currency: userCurrencyCode } = useLocale();
+  const userCurrency = currencies.find(c => c.code === userCurrencyCode) || { symbol: '$' };
  const [balance, setBalance] = useState({ balance: 0, currency: "USD" });
  const [stats, setStats] = useState({ totalEarnings: 0, pendingPayouts: 0, pendingEarnings: 0 });
  const [transactions, setTransactions] = useState([]);
@@ -225,14 +227,19 @@ export default function WalletPage() {
  }
  };
 
- const handleWithdraw = async (e: React.FormEvent) => {
- e.preventDefault();
- if (!amountToWithdraw || isNaN(Number(amountToWithdraw))) return;
- if (Number(amountToWithdraw) > balance.balance) {
- alert("Insufficient balance");
- return;
- }
- if (!payoutMethod) {
+  const handleWithdraw = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (!amountToWithdraw || isNaN(Number(amountToWithdraw))) return;
+  const minAmount = settings?.minWithdrawalAmount || 0;
+  if (Number(amountToWithdraw) < minAmount) {
+  alert(`Minimum withdrawal amount is ${formatPrice(minAmount)}`);
+  return;
+  }
+  if (Number(amountToWithdraw) > balance.balance) {
+  alert("Insufficient balance");
+  return;
+  }
+  if (!payoutMethod) {
  alert("Please add a payout method first");
  setIsWithdrawing(false);
  setIsManagingPayout(true);
@@ -713,22 +720,26 @@ export default function WalletPage() {
  setAmountToWithdraw(val);
  }}
  placeholder="0.00"
- className={`w-full h-20 bg-slate-50 border-2 rounded-app pl-14 pr-10 text-3xl font-black text-slate-900 placeholder:text-slate-200 focus:bg-white transition-all outline-none ${
- amountToWithdraw && parseFloat(amountToWithdraw) > balance.balance ? 'border-rose-500 bg-rose-50/30' : 'border-slate-50 focus:border-primary'
+ className={`w-full h-20 bg-slate-50 dark:bg-slate-900/50 border-2 rounded-app pl-14 pr-10 text-3xl font-black text-slate-900 dark:text-white placeholder:text-slate-200 dark:placeholder:text-slate-700 focus:bg-white dark:focus:bg-slate-900 transition-all outline-none ${
+ amountToWithdraw && (parseFloat(amountToWithdraw) > balance.balance || parseFloat(amountToWithdraw) < (settings?.minWithdrawalAmount || 0)) ? 'border-rose-500 bg-rose-50/30 dark:bg-rose-500/10' : 'border-slate-50 dark:border-white/10 focus:border-primary'
  }`}
  autoFocus
  />
  </div>
  <div className="flex justify-between px-2">
- <span className={`text-[10px] font-bold uppercase tracking-widest ${amountToWithdraw && parseFloat(amountToWithdraw) > balance.balance ? 'text-rose-500' : 'text-slate-400'}`}>
- {amountToWithdraw && parseFloat(amountToWithdraw) > balance.balance ? 'Amount exceeds available balance' : `Available: ${formatPrice(balance.balance)}`}
+ <span className={`text-[10px] font-bold uppercase tracking-widest ${(amountToWithdraw && parseFloat(amountToWithdraw) > balance.balance) || (amountToWithdraw && parseFloat(amountToWithdraw) < (settings?.minWithdrawalAmount || 0)) ? 'text-rose-500' : 'text-slate-400'}`}>
+ {amountToWithdraw && parseFloat(amountToWithdraw) > balance.balance 
+   ? 'Amount exceeds available balance' 
+   : amountToWithdraw && parseFloat(amountToWithdraw) < (settings?.minWithdrawalAmount || 0)
+     ? `Minimum: ${formatPrice(settings?.minWithdrawalAmount || 0)}`
+     : `Available: ${formatPrice(balance.balance)}`}
  </span>
  <button type="button" onClick={() => setAmountToWithdraw(balance.balance.toString())} className="text-[10px] font-black text-primary uppercase tracking-widest hover:underline">Withdraw All</button>
  </div>
  </div>
 
  {!payoutMethod && !isAddingBankInWithdraw && (
- <div className="p-8 text-center flex flex-col items-center gap-4 border-2 border-dashed border-slate-200 rounded-app bg-slate-50/50">
+ <div className="p-8 text-center flex flex-col items-center gap-4 border-2 border-dashed border-slate-200 dark:border-white/10 rounded-app bg-slate-50/50 dark:bg-white/5">
  <Banknote className="text-slate-300" size={32} />
  <div className="space-y-1">
  <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest leading-relaxed">
@@ -813,7 +824,7 @@ export default function WalletPage() {
 
  <Button 
  type="submit"
- disabled={!amountToWithdraw || parseFloat(amountToWithdraw) <= 0 || parseFloat(amountToWithdraw) > balance.balance || !payoutMethod}
+ disabled={!amountToWithdraw || parseFloat(amountToWithdraw) <= 0 || parseFloat(amountToWithdraw) > balance.balance || parseFloat(amountToWithdraw) < (settings?.minWithdrawalAmount || 0) || !payoutMethod}
  className="w-full h-16 rounded-app bg-primary hover:bg-primary-hover text-white transition-all font-black uppercase tracking-widest text-xs disabled:opacity-50"
  >
  Confirm Withdrawal

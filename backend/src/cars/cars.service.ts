@@ -85,8 +85,7 @@ export class CarsService implements OnModuleInit {
                priceTiers: processedTiers.length > 0 ? processedTiers : tiers,
                distanceIncluded: (car as any).distanceIncluded || 200,
                extraDistanceFee: (car as any).extraDistanceFee || 0.50,
-               permalink: permalink,
-               status: 'approved'
+               permalink: permalink
             },
             $unset: {
                pricePerHour: "",
@@ -106,6 +105,7 @@ export class CarsService implements OnModuleInit {
   }
 
   private validatePricing(data: any) {
+    if (data.status === 'draft') return; // Skip validation for drafts
     const { pricePerDay, priceTiers } = data;
     
     if (Array.isArray(priceTiers) && priceTiers.length > 0) {
@@ -164,12 +164,22 @@ export class CarsService implements OnModuleInit {
 
     const doc: any = {
       ...rest,
-      brand: brandId,
-      vehicleType: vehicleType,
-      vendor: vendorId,
+      vendor: new Types.ObjectId(vendorId),
       available: true,
-      status: 'pending',
+      status: createCarDto.status || 'pending',
     };
+
+    if (brandId && typeof brandId === 'string' && brandId.trim()) {
+      doc.brand = new Types.ObjectId(brandId);
+    } else if (brandId && typeof brandId === 'object') {
+      doc.brand = brandId;
+    }
+
+    if (vehicleType && typeof vehicleType === 'string' && vehicleType.trim()) {
+      doc.vehicleType = new Types.ObjectId(vehicleType);
+    } else if (vehicleType && typeof vehicleType === 'object') {
+      doc.vehicleType = vehicleType;
+    }
 
     try {
       this.validatePricing(doc);
@@ -221,7 +231,8 @@ export class CarsService implements OnModuleInit {
   async findAll(isAdmin: boolean = false): Promise<any[]> {
     const query: any = {};
     if (isAdmin) {
-      // Admin sees everything
+      // Admin sees everything except drafts
+      query.status = { $ne: 'draft' };
     } else {
       query.status = 'approved';
     }
@@ -460,13 +471,40 @@ export class CarsService implements OnModuleInit {
     return updatedCar;
   }
 
-  async updateStatus(id: string, status: 'approved' | 'rejected' | 'pending'): Promise<Car> {
+  async updateStatus(id: string, status: 'approved' | 'rejected' | 'pending', rejectionReason?: string): Promise<Car> {
     const updatedCar = await this.carModel
-      .findByIdAndUpdate(id, { status }, { returnDocument: 'after' })
+      .findByIdAndUpdate(id, { status, rejectionReason }, { returnDocument: 'after' })
       .exec();
     if (!updatedCar) {
       throw new NotFoundException(`Car with ID ${id} not found`);
     }
+
+    // Send notification to the car vendor
+    try {
+      const vendorId = (updatedCar as any).vendor?.toString();
+      if (vendorId) {
+        if (status === 'approved') {
+          await this.notificationsService.create(
+            vendorId,
+            '🎉 Car Listing Approved!',
+            `Your car "${updatedCar.name}" has been approved and is now live on the platform.`,
+            'success',
+            { type: 'car_status', carId: updatedCar._id.toString(), status: 'approved', url: '/dashboard/cars' }
+          );
+        } else if (status === 'rejected') {
+          await this.notificationsService.create(
+            vendorId,
+            '❌ Car Listing Rejected',
+            `Your car "${updatedCar.name}" was not approved.${rejectionReason ? ` Reason: ${rejectionReason}` : ''}`,
+            'error',
+            { type: 'car_status', carId: updatedCar._id.toString(), status: 'rejected', rejectionReason, url: '/dashboard/cars' }
+          );
+        }
+      }
+    } catch (err) {
+      console.error('[CarsService] Failed to send status notification:', err);
+    }
+
     return updatedCar;
   }
 
@@ -479,8 +517,15 @@ export class CarsService implements OnModuleInit {
   }
 
   async findByVendor(vendorId: string): Promise<Car[]> {
+    // Support both ObjectId and string stored vendor fields
+    const query: any = {
+      $or: [
+        { vendor: new Types.ObjectId(vendorId) },
+        { vendor: vendorId }
+      ]
+    };
     return this.carModel
-      .find({ vendor: new Types.ObjectId(vendorId) })
+      .find(query)
       .populate('brand')
       .populate('vehicleType')
       .exec();

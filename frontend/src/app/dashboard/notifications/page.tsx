@@ -24,6 +24,7 @@ import { useAuth } from "@/components/AuthContext";
 import { API_BASE_URL } from "@/config/api";
 import { authService } from "@/services/authService";
 import { useLocale } from "@/components/LocaleContext";
+import { useSettings } from "@/components/ThemeProvider";
 
 import { useRouter } from "next/navigation";
 
@@ -35,8 +36,9 @@ export default function NotificationsPage() {
  const [loading, setLoading] = useState(true);
  const [filter, setFilter] = useState<'all' | 'unread'>('all');
  const [expandedId, setExpandedId] = useState<string | null>(null);
- const [currentPage, setCurrentPage] = useState(1);
- const ITEMS_PER_PAGE = 8;
+  const { settings } = useSettings();
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = settings?.itemsPerPageLimit || 8;
 
  const fetchNotifications = async () => {
  try {
@@ -178,16 +180,16 @@ export default function NotificationsPage() {
           </p>
         </div>
         <div className="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto">
-          <div className="bg-slate-50 p-1.5 rounded-app border border-slate-100 flex items-center gap-1 w-full sm:w-auto">
+          <div className="bg-slate-50 dark:bg-slate-900/50 p-1.5 rounded-app border border-slate-100 dark:border-white/10 flex items-center gap-1 w-full sm:w-auto">
             <button 
               onClick={() => { setFilter('all'); setCurrentPage(1); }}
-              className={`flex-1 sm:flex-none px-4 md:px-6 py-2.5 rounded-app text-[10px] font-black uppercase tracking-widest transition-all ${filter === 'all' ? 'bg-white text-primary border border-slate-100' : 'text-slate-400 hover:text-slate-600'}`}
+              className={`flex-1 sm:flex-none px-4 md:px-6 py-2.5 rounded-app text-[10px] font-black uppercase tracking-widest transition-all ${filter === 'all' ? 'bg-white dark:bg-slate-800 text-primary border border-slate-100 dark:border-white/10' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
             >
               {t('notifications.all')}
             </button>
             <button 
               onClick={() => { setFilter('unread'); setCurrentPage(1); }}
-              className={`flex-1 sm:flex-none px-4 md:px-6 py-2.5 rounded-app text-[10px] font-black uppercase tracking-widest transition-all ${filter === 'unread' ? 'bg-white text-primary border border-slate-100' : 'text-slate-400 hover:text-slate-600'}`}
+              className={`flex-1 sm:flex-none px-4 md:px-6 py-2.5 rounded-app text-[10px] font-black uppercase tracking-widest transition-all ${filter === 'unread' ? 'bg-white dark:bg-slate-800 text-primary border border-slate-100 dark:border-white/10' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
             >
               {t('notifications.unread')}
             </button>
@@ -196,7 +198,7 @@ export default function NotificationsPage() {
             variant="ghost" 
             onClick={markAllRead}
             disabled={notifications.every(n => n.isRead)}
-            className="h-12 w-full sm:w-auto px-6 bg-white border border-slate-100 rounded-app text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-primary transition-all"
+            className="h-12 w-full sm:w-auto px-6 bg-white dark:bg-transparent border border-slate-100 dark:border-white/10 rounded-app text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-primary transition-all"
           >
             {t('notifications.mark_all_read')}
           </Button>
@@ -219,14 +221,14 @@ export default function NotificationsPage() {
               onClick={() => handleViewDetails(n)}
               className={`p-4 md:p-6 rounded-app border transition-all cursor-pointer group flex flex-col sm:flex-row items-start gap-4 md:gap-6 relative overflow-hidden ${
                 n.isRead 
-                  ? 'bg-white border-slate-100/50 hover:border-slate-200' 
-                  : 'bg-primary/5 border-primary/10 hover:border-primary/20 ring-1 ring-primary/5'
+                  ? 'bg-white dark:bg-transparent border-slate-100/50 dark:border-white/10 hover:border-slate-200 dark:hover:border-white/20' 
+                  : 'bg-primary/5 dark:bg-primary/10 border-primary/10 dark:border-primary/20 hover:border-primary/20 dark:hover:border-primary/30 ring-1 ring-primary/5'
               }`}
             >
               <div className={`w-10 h-10 md:w-14 md:h-14 rounded-app shrink-0 flex items-center justify-center relative z-10
-                ${n.type === 'success' ? 'bg-emerald-50 text-emerald-500' : 
-                  n.type === 'error' ? 'bg-rose-50 text-rose-500' : 
-                  n.type === 'warning' ? 'bg-amber-50 text-amber-500' : 'bg-primary/10 text-primary'}
+                ${n.type === 'success' ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500 dark:text-emerald-400' : 
+                  n.type === 'error' ? 'bg-rose-50 dark:bg-rose-500/10 text-rose-500 dark:text-rose-400' : 
+                  n.type === 'warning' ? 'bg-amber-50 dark:bg-amber-500/10 text-amber-500 dark:text-amber-400' : 'bg-primary/10 text-primary'}
               `}>
                 {n.type === 'success' ? <CheckCircle2 className="w-5 h-5 md:w-6 md:h-6" /> : 
                   n.type === 'error' ? <Trash2 className="w-5 h-5 md:w-6 md:h-6" /> : 
@@ -234,9 +236,9 @@ export default function NotificationsPage() {
               </div>
               <div className="flex-1 min-w-0 w-full relative z-10">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
-                  <h3 className={`text-base md:text-lg font-black tracking-tight transition-colors ${n.isRead ? 'text-slate-700 group-hover:text-slate-900' : 'text-slate-900'}`}>{n.title}</h3>
+                  <h3 className={`text-base md:text-lg font-black tracking-tight transition-colors ${n.isRead ? 'text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white' : 'text-slate-900 dark:text-white'}`}>{n.title}</h3>
                   <div className="flex items-center justify-between sm:justify-end gap-3">
-                    <span className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-2 md:px-3 py-1 rounded-full whitespace-nowrap">{formatTime(n.createdAt)}</span>
+                    <span className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 dark:bg-white/5 px-2 md:px-3 py-1 rounded-full whitespace-nowrap">{formatTime(n.createdAt)}</span>
                     <div className={`w-2 h-2 rounded-full ${n.isRead ? 'bg-transparent' : 'bg-primary animate-pulse'}`} />
                   </div>
                 </div>

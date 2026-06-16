@@ -92,7 +92,9 @@ export default function CarsPage() {
 
  const fetchCars = async () => {
   try {
-   const res = await fetch(`${API_BASE_URL}/cars`);
+   const token = localStorage.getItem("admin_token") || localStorage.getItem("token");
+   const headers: Record<string, string> = token ? { "Authorization": `Bearer ${token}` } : {};
+   const res = await fetch(`${API_BASE_URL}/cars/all/admin_view`, { headers });
    const data = await res.json();
    setCars(Array.isArray(data) ? data : []);
   } catch (err) {
@@ -111,28 +113,64 @@ export default function CarsPage() {
  };
 
  const handleDelete = async (id: string) => {
- console.log("Attempting to delete ID:", id);
- if (!id) {
- alert("Invalid Vehicle ID. Cannot perform deletion.");
- return;
- }
- if (!window.confirm("Are you sure you want to delete this vehicle from your records?")) return;
- try {
- const res = await fetch(`${API_BASE_URL}/cars/${id}`, {
- method: 'DELETE',
- });
- if (res.ok) {
- alert("Vehicle deleted successfully");
- fetchCars();
- } else {
- const error = await res.json();
- alert(`Delete failed: ${error.message || 'Server error'}`);
- }
- } catch (err) {
- console.error("Delete failed:", err);
- alert("Network error: Could not reach server to delete vehicle");
- }
- };
+  console.log("Attempting to delete ID:", id);
+  if (!id) {
+  alert("Invalid Vehicle ID. Cannot perform deletion.");
+  return;
+  }
+  if (!window.confirm("Are you sure you want to delete this vehicle from your records?")) return;
+   try {
+   const token = localStorage.getItem("admin_token") || localStorage.getItem("token");
+   const headers: Record<string, string> = token ? { "Authorization": `Bearer ${token}` } : {};
+   const res = await fetch(`${API_BASE_URL}/cars/${id}`, {
+   method: 'DELETE',
+   headers
+   });
+  if (res.ok) {
+  alert("Vehicle deleted successfully");
+  fetchCars();
+  } else {
+  const error = await res.json();
+  alert(`Delete failed: ${error.message || 'Server error'}`);
+  }
+  } catch (err) {
+  console.error("Delete failed:", err);
+  alert("Network error: Could not reach server to delete vehicle");
+  }
+  };
+
+  const handleUpdateStatus = async (id: string, status: string) => {
+    let rejectionReason = "";
+    if (status === 'rejected') {
+      rejectionReason = window.prompt("Please provide a reason for rejecting this vehicle:") || "";
+      if (!rejectionReason.trim()) {
+        alert("Rejection reason is required.");
+        return;
+      }
+    }
+    
+    try {
+      const token = localStorage.getItem("admin_token") || localStorage.getItem("token");
+      const headers: Record<string, string> = token ? { 
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json"
+      } : { "Content-Type": "application/json" };
+      const res = await fetch(`${API_BASE_URL}/cars/${id}/status`, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({ status, rejectionReason })
+      });
+      if (res.ok) {
+        fetchCars();
+      } else {
+        const error = await res.json();
+        alert(`Status update failed: ${error.message || 'Server error'}`);
+      }
+    } catch (err) {
+      console.error("Status update failed:", err);
+      alert("Network error: Could not reach server to update status");
+    }
+  };
 
   // 1. Search & Tier Filter
   const filteredCars = (Array.isArray(cars) ? cars : []).filter(car => {
@@ -361,7 +399,8 @@ export default function CarsPage() {
   <th className="p-5 text-[10px] font-black uppercase tracking-[0.2em] text-[var(--admin-text-muted)]">Details</th>
   <th className="p-5 text-[10px] font-black uppercase tracking-[0.2em] text-[var(--admin-text-muted)]">Plate</th>
   <th className="p-5 text-[10px] font-black uppercase tracking-[0.2em] text-[var(--admin-text-muted)]">Rates</th>
-  <th className="p-5 text-[10px] font-black uppercase tracking-[0.2em] text-[var(--admin-text-muted)]">Status</th>
+  <th className="p-5 text-[10px] font-black uppercase tracking-[0.2em] text-[var(--admin-text-muted)]">Availability</th>
+  <th className="p-5 text-[10px] font-black uppercase tracking-[0.2em] text-[var(--admin-text-muted)]">Approval</th>
   <th className="p-5 text-[10px] font-black uppercase tracking-[0.2em] text-[var(--admin-text-muted)] text-right">Actions</th>
   </tr>
   </thead>
@@ -432,6 +471,37 @@ export default function CarsPage() {
   car.available ? 'bg-emerald-500 ' : 'bg-rose-500 '
   }`} />
   <span className="text-[9px] font-black uppercase tracking-widest text-[var(--admin-text-muted)]">{car.available ? 'Available' : 'Booked'}</span>
+  </div>
+  </td>
+  <td className="p-5">
+  <div className="flex flex-col gap-2">
+    <div className={`inline-flex items-center justify-center px-2 py-1 rounded-full text-[8px] font-black uppercase tracking-widest w-max ${
+      car.status === 'approved' ? 'bg-emerald-500/10 text-emerald-500' :
+      car.status === 'rejected' ? 'bg-rose-500/10 text-rose-500' :
+      'bg-amber-500/10 text-amber-500'
+    }`}>
+      {car.status || 'pending'}
+    </div>
+    <div className="flex items-center gap-1 mt-1">
+      {car.status !== 'approved' && (
+        <Button 
+          size="sm" 
+          onClick={() => handleUpdateStatus(car._id || car.id, 'approved')}
+          className="h-6 px-2 text-[8px] font-black uppercase tracking-widest bg-emerald-500 hover:bg-emerald-600 text-white rounded-app"
+        >
+          Approve
+        </Button>
+      )}
+      {car.status !== 'rejected' && (
+        <Button 
+          size="sm" 
+          onClick={() => handleUpdateStatus(car._id || car.id, 'rejected')}
+          className="h-6 px-2 text-[8px] font-black uppercase tracking-widest bg-rose-500 hover:bg-rose-600 text-white rounded-app"
+        >
+          Reject
+        </Button>
+      )}
+    </div>
   </div>
   </td>
   <td className="p-5 text-right">
@@ -524,10 +594,9 @@ export default function CarsPage() {
   setCurrentPage(1);
   }}
   >
-  <option value={5}>5</option>
-  <option value={10}>10</option>
-  <option value={20}>20</option>
-  <option value={50}>50</option>
+  {[...new Set([5, 10, 20, 50, settings?.itemsPerPageLimit || 10])].sort((a,b)=>a-b).map(opt => (
+    <option key={opt} value={opt}>{opt}</option>
+  ))}
   </select>
   </div>
   <p className="text-[9px] font-bold text-[var(--admin-text-muted)] uppercase tracking-widest">

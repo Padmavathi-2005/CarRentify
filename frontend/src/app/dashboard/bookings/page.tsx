@@ -138,7 +138,7 @@ function MyBookingsContent() {
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE = 6;
+  const ITEMS_PER_PAGE = 10;
 
   const [showInvoice, setShowInvoice] = useState(false);
   const [showSettlementInvoice, setShowSettlementInvoice] = useState(false);
@@ -516,8 +516,14 @@ function MyBookingsContent() {
         setSelectedBooking(updated);
         setSignatureModal({ isOpen: false, type: null, bookingId: null });
         setRenterSignature(null);
+      } else {
+        const errorData = await res.json();
+        showToast(errorData.message || "Failed to submit signature.", 'error');
       }
-    } catch (err) { console.error(err); }
+    } catch (err: any) { 
+      console.error(err); 
+      showToast(err.message || "Network error occurred.", 'error');
+    }
     finally { setIsSubmittingAction(false); }
   };
 
@@ -1067,14 +1073,14 @@ function MyBookingsContent() {
           )}
         </>
       ) : (
-        <div className="h-[400px] bg-slate-50/50 rounded-app border-2 border-dashed border-slate-100 flex flex-col items-center justify-center text-center p-12">
-          <div className="w-20 h-20 rounded-app bg-white -200/50 flex items-center justify-center text-slate-200 mb-8 border border-slate-50">
+        <div className="h-[400px] bg-slate-50/50 dark:bg-white/5 rounded-app border-2 border-dashed border-slate-100 dark:border-white/10 flex flex-col items-center justify-center text-center p-12">
+          <div className="w-20 h-20 rounded-app bg-white dark:bg-slate-900 flex items-center justify-center text-slate-200 dark:text-slate-500 mb-8 border border-slate-50 dark:border-white/10">
             <Calendar size={40} />
           </div>
-          <h3 className="text-xl font-black text-slate-900 tracking-tight mb-3">
+          <h3 className="text-xl font-black text-slate-900 dark:text-white tracking-tight mb-3">
             {userType === 'host' ? t('bookings.labels.empty_title_host') : t('bookings.labels.empty_title')}
           </h3>
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest max-w-sm leading-relaxed mb-8">
+          <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest max-w-sm leading-relaxed mb-8">
             {userType === 'host' ? t('bookings.labels.empty_desc_host') : t('bookings.labels.empty_desc')}
           </p>
           <Link href={userType === 'host' ? "/dashboard/cars" : "/vehicles"}>
@@ -1149,19 +1155,29 @@ function MyBookingsContent() {
                   </div>
                 </div>
 
-                <div className="pt-6 border-t border-slate-200 space-y-3">
+                <div className="pt-6 border-t border-slate-200 dark:border-white/10 space-y-3">
                   <button
                     onClick={() => { setShowInvoice(!showInvoice); setShowSettlementInvoice(false); setShowClaimModal(false); }}
-                    className={`w-full h-12 rounded-app border border-slate-200 text-slate-600 hover:bg-slate-100 font-black text-[9px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${showInvoice ? 'bg-slate-100' : 'bg-white'}`}
+                    className={`w-full h-12 rounded-app border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/10 font-black text-[9px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${showInvoice ? 'bg-slate-100 dark:bg-white/10' : 'bg-white dark:bg-transparent'}`}
                   >
                     {showInvoice ? <ChevronLeft size={16} /> : <FileText size={16} />}
                     {showInvoice ? "Back to Tracking" : "View Invoice"}
                   </button>
 
+                  {selectedBooking.status !== 'Pending' && selectedBooking.status !== 'Awaiting Payment' && (
+                    <button
+                      onClick={() => window.open(`/dashboard/bookings/${selectedBooking._id}/agreement`, '_blank')}
+                      className={`w-full h-12 rounded-app border border-emerald-200 dark:border-emerald-500/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 font-black text-[9px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all bg-white dark:bg-transparent`}
+                    >
+                      <FileText size={16} />
+                      View Rental Agreement
+                    </button>
+                  )}
+
                   {((selectedBooking.settlementAmount || 0) > 0) && (
                     <button
                       onClick={() => { setShowSettlementInvoice(!showSettlementInvoice); setShowInvoice(false); setShowClaimModal(false); }}
-                      className={`w-full h-12 rounded-app border border-primary/20 text-primary hover:bg-primary/5 font-black text-[9px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${showSettlementInvoice ? 'bg-primary/10' : 'bg-white'}`}
+                      className={`w-full h-12 rounded-app border border-primary/20 text-primary hover:bg-primary/5 dark:hover:bg-primary/10 font-black text-[9px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${showSettlementInvoice ? 'bg-primary/10 dark:bg-primary/20' : 'bg-white dark:bg-transparent'}`}
                     >
                       {showSettlementInvoice ? <ChevronLeft size={16} /> : <Zap size={16} />}
                       {showSettlementInvoice ? "Back to Tracking" : "View Settlement"}
@@ -1171,7 +1187,7 @@ function MyBookingsContent() {
                   {((selectedBooking as any).protectionCost > 0 || (selectedBooking as any).protectionPlanId) && (
                     <button
                       onClick={() => { setShowClaimModal(!showClaimModal); setShowInvoice(false); setShowSettlementInvoice(false); }}
-                      className={`w-full h-12 rounded-app border border-rose-200 text-rose-500 hover:bg-rose-50 font-black text-[9px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${showClaimModal ? 'bg-rose-50' : 'bg-white'}`}
+                      className={`w-full h-12 rounded-app border border-rose-200 dark:border-rose-500/20 text-rose-500 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 font-black text-[9px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${showClaimModal ? 'bg-rose-50 dark:bg-rose-500/20' : 'bg-white dark:bg-transparent'}`}
                     >
                       {showClaimModal ? <ChevronLeft size={16} /> : <ShieldCheck size={16} />}
                       {showClaimModal ? "Back to Tracking" : "File a Claim"}
@@ -1423,11 +1439,11 @@ function MyBookingsContent() {
                       </div>
 
                       <div className="w-full md:max-w-[280px] space-y-6 relative z-10">
-                        <div className="p-5 bg-slate-50 rounded-app border border-slate-100">
+                        <div className="p-5 bg-slate-50 dark:bg-white/5 rounded-app border border-slate-100 dark:border-white/10">
                           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Payment Method</p>
-                          <p className="text-[11px] font-black text-slate-900 uppercase leading-relaxed">Wallet Liquidity /<br />Settlement Funds</p>
+                          <p className="text-[11px] font-black text-slate-900 dark:text-white uppercase leading-relaxed">Wallet Liquidity /<br />Settlement Funds</p>
                         </div>
-                        <p className="text-[9px] font-bold text-slate-300 leading-relaxed uppercase tracking-[0.15em]">
+                        <p className="text-[9px] font-bold text-slate-300 dark:text-slate-500 leading-relaxed uppercase tracking-[0.15em]">
                           This is a system generated document. All transactions are final and subject to CarRental's Terms of Logistics.
                         </p>
                       </div>
@@ -1436,13 +1452,13 @@ function MyBookingsContent() {
                     <div className="pt-10 flex flex-wrap justify-end gap-3 print:hidden">
                       <button
                         onClick={() => { setShowInvoice(false); window.scrollTo(0, 0); }}
-                        className="h-10 px-6 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-app text-[9px] font-black uppercase tracking-widest border-none flex items-center gap-2 transition-all transition-colors"
+                        className="h-10 px-6 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 dark:hover:text-white rounded-app text-[9px] font-black uppercase tracking-widest border-none flex items-center gap-2 transition-all transition-colors"
                       >
                         <ChevronLeft size={16} /> Back to Details
                       </button>
                       <button
                         onClick={() => window.print()}
-                        className="h-10 px-6 bg-slate-100 hover:bg-slate-200 text-slate-900 rounded-app text-[9px] font-black uppercase tracking-widest border-none flex items-center gap-2 transition-all transition-colors"
+                        className="h-10 px-6 bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 text-slate-900 dark:text-white rounded-app text-[9px] font-black uppercase tracking-widest border-none flex items-center gap-2 transition-all transition-colors"
                       >
                         <Printer size={16} /> Print Document
                       </button>
@@ -1551,9 +1567,9 @@ function MyBookingsContent() {
                       </div>
 
                       <div className="w-full md:max-w-[280px] space-y-4 relative z-10">
-                        <div className="p-5 bg-slate-50 rounded-app border border-slate-100">
+                        <div className="p-5 bg-slate-50 dark:bg-white/5 rounded-app border border-slate-100 dark:border-white/10">
                           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Audit Reference</p>
-                          <p className="text-[11px] font-black text-slate-900 uppercase leading-relaxed">
+                          <p className="text-[11px] font-black text-slate-900 dark:text-white uppercase leading-relaxed">
                             Odometer: {selectedBooking.checkInMileage || selectedBooking.hostMileage} KM → {selectedBooking.checkOutMileage || selectedBooking.returnMileage} KM
                           </p>
                         </div>
@@ -1562,7 +1578,7 @@ function MyBookingsContent() {
                     <div className="pt-10 flex flex-wrap justify-end gap-3 print:hidden">
                       <button
                         onClick={() => { setShowSettlementInvoice(false); window.scrollTo(0, 0); }}
-                        className="h-10 px-6 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-app text-[9px] font-black uppercase tracking-widest border-none flex items-center gap-2 transition-all transition-colors"
+                        className="h-10 px-6 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 dark:hover:text-white rounded-app text-[9px] font-black uppercase tracking-widest border-none flex items-center gap-2 transition-all transition-colors"
                       >
                         <ChevronLeft size={16} /> Back to Details
                       </button>
@@ -2322,7 +2338,14 @@ function MyBookingsContent() {
                                   <div className="flex gap-3">
                                     <Button
                                       disabled={isSubmittingAction || !isDocumentAccepted}
-                                      onClick={() => setSignatureModal({ isOpen: true, type: 'check-in', bookingId: b._id })}
+                                      onClick={() => {
+                                        if (!b.renterAgreementSignature) {
+                                          showToast("You must sign the Rental Agreement before Check-In.", "error");
+                                          router.push(`/dashboard/bookings/${b._id}/agreement`);
+                                          return;
+                                        }
+                                        setSignatureModal({ isOpen: true, type: 'check-in', bookingId: b._id });
+                                      }}
                                       className="flex-1 h-12 bg-emerald-500 hover:bg-emerald-600 text-white rounded-app text-[10px] font-black uppercase tracking-widest border-none disabled:opacity-50 disabled:grayscale transition-all"
                                     >
                                       {isSubmittingAction ? "PROCESSING..." : "Authorize & Start Journey"}

@@ -45,11 +45,12 @@ export class DestinationsController {
   /** Admin: upload/replace destination image */
   @UseGuards(JwtAuthGuard)
   @Post(':id/image')
-  uploadImage(
+  async uploadImage(
     @Param('id') id: string,
     @Body() body: { fileName: string; base64: string },
   ) {
-    return this.destinationsService.uploadImage(id, body.fileName, body.base64);
+    const url = await this.destinationsService.uploadImage(id, body.fileName, body.base64);
+    return { url };
   }
 
   /** Admin: reorder destinations */

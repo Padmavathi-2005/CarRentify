@@ -24,7 +24,8 @@ import {
  ChevronRight,
  CheckCircle2,
  XCircle,
- AlertCircle
+ AlertCircle,
+ Image as ImageIcon
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,13 +54,13 @@ export default function VendorCarsPage() {
  const [statusFilter, setStatusFilter] = useState("all");
  const [availabilityFilter, setAvailabilityFilter] = useState("all");
  const [sortBy, setSortBy] = useState("newest");
- const [currentPage, setCurrentPage] = useState(1);
- const [itemsPerPage, setItemsPerPage] = useState(5);
- const { settings } = useSettings();
+  const [currentPage, setCurrentPage] = useState(1);
+  const { settings } = useSettings();
+  const [itemsPerPage, setItemsPerPage] = useState(settings?.itemsPerPageLimit || 5);
 
- useEffect(() => {
- if (settings?.itemsPerPageLimit) setItemsPerPage(settings.itemsPerPageLimit);
- }, [settings?.itemsPerPageLimit]);
+  useEffect(() => {
+  if (settings?.itemsPerPageLimit) setItemsPerPage(settings.itemsPerPageLimit);
+  }, [settings?.itemsPerPageLimit]);
 
  const fetchFleet = async () => {
  try {
@@ -187,7 +188,7 @@ export default function VendorCarsPage() {
  <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
  <Input
  placeholder={t('dashboard.fleet.search_placeholder')}
- className="w-full pl-14 h-14 bg-slate-50 dark:bg-white/5 border-none rounded-app focus-visible:ring-primary/10 font-medium text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
+ className="w-full pl-14 h-14 bg-slate-100 dark:bg-slate-800 border-none rounded-app focus-visible:ring-2 focus-visible:ring-primary/20 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
  value={searchQuery}
  onChange={(e) => {
  setSearchQuery(e.target.value);
@@ -218,7 +219,8 @@ export default function VendorCarsPage() {
                { value: 'all', label: 'All Statuses' },
                { value: 'approved', label: 'Approved' },
                { value: 'pending', label: 'Pending' },
-               { value: 'rejected', label: 'Rejected' }
+               { value: 'rejected', label: 'Rejected' },
+               { value: 'draft', label: 'Draft' }
              ]}
            />
          </div>
@@ -275,12 +277,19 @@ export default function VendorCarsPage() {
  className="bg-white p-6 rounded-app border border-slate-100 transition-all group flex flex-col sm:flex-row items-start gap-4 sm:gap-8"
  >
                 {/* Image Node */}
-                <div className="w-full md:w-56 h-36 rounded-app overflow-hidden bg-slate-50 border border-slate-100 shrink-0 relative shadow-sm">
-                  <img
-                    src={getImageUrl(car.images?.[0] || "")}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                    alt={car.name}
-                  />
+                <div className="w-full md:w-56 h-36 rounded-app overflow-hidden bg-slate-50 border border-slate-100 shrink-0 relative shadow-sm flex items-center justify-center">
+                   {car.images?.[0] ? (
+                     <img
+                       src={getImageUrl(car.images[0])}
+                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                       alt={car.name}
+                     />
+                   ) : (
+                     <div className="flex flex-col items-center justify-center text-slate-300 gap-2 w-full h-full bg-slate-50">
+                       <ImageIcon size={28} className="text-slate-400" />
+                       <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">No Photos</span>
+                     </div>
+                   )}
                   <div className="absolute top-2 left-2 px-2 py-1 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-app text-[8px] font-black uppercase tracking-widest border border-slate-100 dark:border-slate-800 text-slate-900 dark:text-slate-100 flex items-center gap-1">
                     <Zap size={8} fill="currentColor" className="text-primary" /> {typeof car.vehicleType === 'object' ? car.vehicleType?.name : car.vehicleType}
                   </div>
@@ -294,13 +303,16 @@ export default function VendorCarsPage() {
   <h3 className="text-base md:text-lg font-black text-slate-900 tracking-tight leading-tight mb-2 flex flex-wrap items-center gap-2">
   {car.name || t('dashboard.fleet.premium_vehicle')}
   <div className="flex flex-wrap gap-2">
-    <span className={`px-2 md:px-3 py-1 rounded-app text-[7px] md:text-[8px] font-black uppercase tracking-widest ${car.available ? "bg-emerald-50 text-emerald-600 border border-emerald-100" : "bg-rose-50 text-rose-600 border border-rose-100"
-    }`}>
-    {car.available ? t('dashboard.fleet.ready') : t('dashboard.fleet.rented')}
-    </span>
+    {car.status !== 'draft' && (
+      <span className={`px-2 md:px-3 py-1 rounded-app text-[7px] md:text-[8px] font-black uppercase tracking-widest ${car.available ? "bg-emerald-50 text-emerald-600 border border-emerald-100" : "bg-rose-50 text-rose-600 border border-rose-100"
+      }`}>
+      {car.available ? t('dashboard.fleet.ready') : t('dashboard.fleet.rented')}
+      </span>
+    )}
     <span className={`px-2 md:px-3 py-1 rounded-app text-[7px] md:text-[8px] font-black uppercase tracking-widest ${
        car.status === 'approved' ? "bg-primary/10 text-primary border border-primary/20" : 
        car.status === 'rejected' ? "bg-rose-500/10 text-rose-600 border border-rose-500/20" : 
+       car.status === 'draft' ? "bg-slate-500/10 text-slate-600 border border-slate-500/20" :
        "bg-amber-500/10 text-amber-600 border border-amber-500/20"
      }`}>
       {car.status || 'Pending'}
@@ -308,10 +320,16 @@ export default function VendorCarsPage() {
   </div>
   </h3>
   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-  <div className="flex items-center gap-1"><MapPin size={12} className="text-primary" /> {car.location?.city || "NYC"}</div>
+  <div className="flex items-center gap-1"><MapPin size={12} className="text-primary" /> {car.location?.city || "No Location"}</div>
   <div className="hidden sm:block w-1 h-1 rounded-full bg-slate-200" />
   <div className="flex items-center gap-1"><Tag size={12} /> {car.licensePlate && car.licensePlate !== "N/A" ? car.licensePlate : "No Plate"}</div>
   </div>
+  {car.status === 'rejected' && car.rejectionReason && (
+    <div className="mt-2 p-2 bg-rose-50 border border-rose-100 rounded text-rose-700 text-[10px] font-medium flex items-start gap-2">
+      <AlertCircle size={14} className="shrink-0 mt-0.5" />
+      <p><strong>Reason for Rejection:</strong> {car.rejectionReason}</p>
+    </div>
+  )}
   </div>
 </div>
 

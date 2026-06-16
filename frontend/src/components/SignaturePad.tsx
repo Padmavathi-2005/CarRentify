@@ -4,6 +4,7 @@ import React, { useRef, useState, useEffect } from "react";
 import SignatureCanvas from "react-signature-canvas";
 import { Button } from "@/components/ui/button";
 import { PenTool, X, Trash2 } from "lucide-react";
+import { getImageUrl } from "@/config/api";
 
 interface SignaturePadProps {
   initialSignature?: string;
@@ -58,7 +59,7 @@ export default function SignaturePad({ initialSignature, onSave, title = "Digita
 
       {!isEditing && savedSignature ? (
         <div className="relative w-full h-40 bg-slate-50 border border-slate-200 rounded-app flex flex-col items-center justify-center p-4">
-          <img src={savedSignature} alt="Saved Signature" className="max-h-full max-w-full object-contain mix-blend-multiply" />
+          <img src={getImageUrl(savedSignature)} alt="Saved Signature" className="max-h-full max-w-full object-contain mix-blend-multiply" />
           <div className="absolute top-2 right-2 flex gap-2">
             <Button variant="outline" size="sm" onClick={drawNew} className="h-8 bg-white text-[10px] font-black uppercase tracking-widest text-slate-600">
               Draw New

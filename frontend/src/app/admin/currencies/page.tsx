@@ -24,7 +24,7 @@ export default function AdminCurrencies() {
  const [currencies, setCurrencies] = useState<any[]>([]);
  const [loading, setLoading] = useState(true);
  const [isModalOpen, setIsModalOpen] = useState(false);
- const [formData, setFormData] = useState({ name: "", code: "", symbol: "", exchangeRate: 1, symbolPosition: "left" });
+ const [formData, setFormData] = useState<any>({ name: "", code: "", symbol: "", exchangeRate: 1, symbolPosition: "left" });
 
  const fetchCurrencies = async () => {
  try {
@@ -38,9 +38,20 @@ export default function AdminCurrencies() {
 
  const handleSubmit = async (e: React.FormEvent) => {
  e.preventDefault();
+ 
+ if (!/^[A-Za-z]{3}$/.test(formData.code)) {
+   alert("ISO Code must be exactly 3 letters.");
+   return;
+ }
+ if (!formData.symbol || formData.symbol.length > 5) {
+   alert("Symbol is required and must be 1-5 characters.");
+   return;
+ }
+
  try {
- const res = await fetch(`${API_BASE_URL}/currencies`, {
- method: 'POST',
+ const isEditing = !!formData._id;
+ const res = await fetch(`${API_BASE_URL}/currencies${isEditing ? `/${formData._id}` : ''}`, {
+ method: isEditing ? 'PATCH' : 'POST',
  headers: { 'Content-Type': 'application/json' },
  body: JSON.stringify(formData)
  });
@@ -68,7 +79,7 @@ export default function AdminCurrencies() {
  <div className="fixed inset-0 bg-black/60" onClick={() => setIsModalOpen(false)} />
  <div className="relative bg-white w-full max-w-lg rounded-app p-10 animate-fade-in border border-slate-100">
  <button onClick={() => setIsModalOpen(false)} className="absolute top-6 right-6 w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:text-rose-500 transition-all"><X size={20} /></button>
- <h2 className="text-xl font-black mb-6 flex items-center gap-2">Add New Currency</h2>
+ <h2 className="text-xl font-black mb-6 flex items-center gap-2">{formData._id ? "Edit Currency" : "Add New Currency"}</h2>
  <form onSubmit={handleSubmit} className="space-y-5">
  <div>
  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block px-1">Name</label>
@@ -77,11 +88,11 @@ export default function AdminCurrencies() {
  <div className="grid grid-cols-3 gap-4">
  <div>
  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block px-1">ISO Code</label>
- <Input value={formData.code} onChange={e => setFormData({...formData, code: e.target.value})} placeholder="USD" className="h-12 rounded-app bg-slate-50 border-none font-bold px-6" required />
+ <Input value={formData.code} onChange={e => setFormData({...formData, code: e.target.value.toUpperCase()})} placeholder="USD" className="h-12 rounded-app bg-slate-50 border-none font-bold px-6" required minLength={3} maxLength={3} pattern="[A-Za-z]{3}" title="Exactly 3 letters" />
  </div>
  <div>
  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block px-1">Symbol</label>
- <Input value={formData.symbol} onChange={e => setFormData({...formData, symbol: e.target.value})} placeholder="$" className="h-12 rounded-app bg-slate-50 border-none font-bold px-6" required />
+ <Input value={formData.symbol} onChange={e => setFormData({...formData, symbol: e.target.value})} placeholder="$" className="h-12 rounded-app bg-slate-50 border-none font-bold px-6" required maxLength={5} />
  </div>
  <div>
  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block px-1">Rate</label>
@@ -155,6 +166,17 @@ export default function AdminCurrencies() {
  </td>
  <td className="px-6 py-3 text-right">
  <div className="flex items-center justify-end gap-2">
+ <Button 
+   onClick={() => {
+     setFormData({ ...curr });
+     setIsModalOpen(true);
+   }} 
+   size="icon" 
+   variant="ghost" 
+   className="w-8 h-8 rounded-app text-slate-300 hover:text-blue-500 transition-colors"
+ >
+   <Edit3 size={16} />
+ </Button>
  <Button onClick={() => handleDelete(curr._id)} size="icon" variant="ghost" className="w-8 h-8 rounded-app text-slate-300 hover:text-rose-500 transition-colors">
  <Trash2 size={16} />
  </Button>

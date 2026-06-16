@@ -379,8 +379,8 @@ import { useToast } from "@/components/Toast";
  <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">
   <span>{t('dashboard.profile.identity_status')}</span>
    {user?.verificationStatus ? (
-     <button 
-       onClick={() => { if (verifStatus?.documents?.length > 0) setPreviewedArtifact(verifStatus.documents[0]); }}
+       <button 
+         onClick={() => setShowVerifModal(true)}
        className={`px-2 py-0.5 rounded-app border-none cursor-pointer hover:scale-105 transition-all ${
        user.verificationStatus === 'approved' ? 'bg-emerald-500/10 text-emerald-500' :
        user.verificationStatus === 'pending' ? 'bg-orange-500/10 text-orange-500' :
@@ -400,24 +400,21 @@ import { useToast } from "@/components/Toast";
   </div>
  
   {verifStatus?.documents && verifStatus.documents.length > 0 ? (
-    <div className="text-left">
+    <div className="pt-2">
       <div className="flex items-center justify-between mb-3">
         <h4 className="text-[8px] font-black text-muted-foreground/40 uppercase tracking-widest">{t('dashboard.profile.registry_artifacts')}</h4>
         <span className="text-[8px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">{verifStatus.documents.length} Items</span>
       </div>
-      <div className="max-h-[220px] overflow-y-auto custom-scrollbar pr-2 space-y-2">
-        {verifStatus.documents.map((doc: any, i: number) => (
-          <div key={i} onClick={() => setPreviewedArtifact(doc)} className="flex items-center justify-between p-3 bg-muted/30 rounded-app border border-border dark:border-white/5 cursor-pointer hover:bg-muted hover:border-primary/20 group transition-all">
-            <div className="flex flex-col truncate pr-2">
-              <span className="text-[8px] font-black text-muted-foreground/60 uppercase tracking-tighter mb-0.5 group-hover:text-primary transition-colors">{t('dashboard.profile.digital_evidence')}</span>
-              <span className="text-[10px] font-black text-foreground uppercase tracking-widest truncate">{doc.fieldId.replace(/_/g, ' ')}</span>
-            </div>
-            <div className="w-6 h-6 shrink-0 rounded-app bg-card border border-border flex items-center justify-center text-primary group-hover:scale-110 group-hover:bg-primary group-hover:text-white transition-all">
-              <CheckCircle2 size={12} />
-            </div>
-          </div>
-        ))}
-      </div>
+      <button 
+        type="button"
+        onClick={() => setShowVerifModal(true)}
+        className="w-full py-2.5 px-4 rounded-app border border-border hover:border-primary/40 hover:bg-primary/5 transition-all group flex flex-row items-center justify-center gap-3 bg-card shadow-sm"
+      >
+        <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform shrink-0">
+          <ShieldCheck size={14} />
+        </div>
+        <span className="text-[10px] font-black text-foreground uppercase tracking-widest group-hover:text-primary transition-colors mt-0.5">View / Edit Documents</span>
+      </button>
     </div>
   ) : (
     <div className="pt-2">
@@ -639,6 +636,18 @@ import { useToast } from "@/components/Toast";
  )}
  </div>
  </div>
+  <div className="space-y-3 md:col-span-2">
+  <label className="text-[9px] font-black text-slate-900 dark:text-slate-300 uppercase tracking-widest block ml-1">{t('dashboard.profile.display_name') || 'Display Name'}</label>
+  <div className="relative group">
+  <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-primary transition-colors" size={16} />
+  <Input 
+  value={formData.displayName}
+  onChange={(e) => setFormData({...formData, displayName: e.target.value})}
+  className="h-11 pl-12 rounded-app border-border focus:bg-card focus:border-primary transition-all font-bold text-xs text-slate-900 dark:text-white" 
+  placeholder="How you appear to others"
+  />
+  </div>
+  </div>
   <div className="space-y-3 md:col-span-2">
   <label className="text-[9px] font-black text-slate-900 dark:text-slate-300 uppercase tracking-widest block ml-1">Profile Slug (URL)</label>
   <div className="relative group">

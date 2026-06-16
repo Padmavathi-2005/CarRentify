@@ -9,9 +9,8 @@ export class NotificationsController {
   @UseGuards(JwtAuthGuard)
   @Get()
   async findAll(@Request() req: any) {
-    if (req.user.role === 'admin') {
-      return this.notificationsService.findAllAdmin();
-    }
+    // Admins and users should only see notifications assigned to their own user ID.
+    // Explicit notifications are already created for admins when needed.
     return this.notificationsService.findAll(req.user.userId);
   }
 

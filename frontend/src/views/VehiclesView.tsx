@@ -31,6 +31,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { API_BASE_URL, BACKEND_URL, getImageUrl } from "@/config/api";
+import { useSettings } from "@/components/ThemeProvider";
 import dynamic from "next/dynamic";
 
 // We'll load these dynamically inside the component to ensure they're only on the client
@@ -151,9 +152,14 @@ function VehiclesContent() {
   const [mapIcon, setMapIcon] = useState<any>(null);
 
   // Pagination State
+  const { settings } = useSettings();
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(12); // Default, overridden by DB
+  const [pageSize, setPageSize] = useState(settings?.itemsPerPageLimit || 12);
   const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    if (settings?.itemsPerPageLimit) setPageSize(settings.itemsPerPageLimit);
+  }, [settings?.itemsPerPageLimit]);
 
   useEffect(() => {
     const checkDesktop = () => setIsDesktop(window.innerWidth >= 1024);
@@ -245,8 +251,8 @@ function VehiclesContent() {
             const L = LeafletModule.default || LeafletModule; const icon = new L.DivIcon({
             className: 'custom-marker-icon',
             html: `<div style="position:relative; display:flex; align-items:center; justify-content:center; width:36px; height:36px;">
-  <div style="position:absolute; width:32px; height:32px; background-color:rgba(227,28,95,0.2); border-radius:50%; animation: pulse 2s infinite;"></div>
-  <div style="position:relative; width:28px; height:28px; background-color:#e31c5f; border-radius:50%; border:2px solid white; box-shadow: 0 0 8px rgba(0,0,0,0.3); display:flex; align-items:center; justify-content:center; color:white;">
+  <div style="position:absolute; width:32px; height:32px; background-color:rgba(var(--primary-rgb),0.2); border-radius:50%; animation: pulse 2s infinite;"></div>
+  <div style="position:relative; width:28px; height:28px; background-color:var(--primary-brand-color); border-radius:50%; border:2px solid white; box-shadow: 0 0 8px rgba(0,0,0,0.3); display:flex; align-items:center; justify-content:center; color:white;">
     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></svg>
   </div>
   </div>`,

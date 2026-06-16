@@ -267,6 +267,8 @@ export class Booking {
     photos: string[];
     status: string; // e.g. Pending, Approved, Rejected
     submittedAt: Date;
+    adminNotes?: string;
+    resolvedAt?: Date;
   };
 }
 

@@ -152,8 +152,6 @@ function DashboardContent() {
  <div className="flex items-center gap-2 mb-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">
  <Link href="/" className="hover:text-primary cursor-pointer">{t('dashboard.common.home')}</Link>
  <ChevronRight size={10} className="text-slate-300" />
- <span className="hover:text-primary cursor-pointer">{t('dashboard.common.account')}</span>
- <ChevronRight size={10} className="text-slate-300" />
  <span className="text-primary border-b-2 border-primary/20 pb-0.5">{t('dashboard.nav.overview')}</span>
  </div>
 
@@ -332,13 +330,13 @@ function DashboardContent() {
  ))}
  </div>
  ) : (
- <div className="h-[280px] flex flex-col items-center justify-center text-center space-y-6 bg-slate-50/50 rounded-app border border-dashed border-slate-200 group hover:bg-white hover:border-primary/20 transition-all">
- <div className="w-16 h-16 rounded-app bg-white border border-slate-100 flex items-center justify-center text-slate-300 group-hover:scale-110 transition-transform">
+ <div className="h-[280px] flex flex-col items-center justify-center text-center space-y-6 bg-slate-50/50 dark:bg-white/5 rounded-app border border-dashed border-slate-200 dark:border-white/10 group hover:bg-white dark:hover:bg-white/10 hover:border-primary/20 transition-all">
+ <div className="w-16 h-16 rounded-app bg-white dark:bg-slate-900 border border-slate-100 dark:border-white/10 flex items-center justify-center text-slate-300 dark:text-slate-500 group-hover:scale-110 transition-transform">
  <Car size={32} />
  </div>
  <div className="space-y-2">
- <h4 className="text-lg font-black text-slate-900 leading-none">{t('dashboard.overview.recent.no_activity')}</h4>
- <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">{t('dashboard.overview.recent.sync_now')}</p>
+ <h4 className="text-lg font-black text-slate-900 dark:text-white leading-none">{t('dashboard.overview.recent.no_activity')}</h4>
+ <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none">{t('dashboard.overview.recent.sync_now')}</p>
  </div>
  <Link href="/vehicles">
  <Button className="h-12 px-8 rounded-app bg-primary text-white font-black text-[10px] uppercase tracking-widest hover:scale-105 active:scale-95 transition-all outline-none border-none">

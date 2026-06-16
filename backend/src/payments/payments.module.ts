@@ -6,6 +6,7 @@ import { Booking, BookingSchema } from '../bookings/schemas/booking.schema';
 import { PaymentGateway, PaymentGatewaySchema } from '../settings/schemas/payment-gateway.schema';
 import { Setting, SettingSchema } from '../settings/schemas/setting.schema';
 import { BookingsModule } from '../bookings/bookings.module';
+import { Currency, CurrencySchema } from '../settings/schemas/currency.schema';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { BookingsModule } from '../bookings/bookings.module';
       { name: Booking.name, schema: BookingSchema },
       { name: PaymentGateway.name, schema: PaymentGatewaySchema },
       { name: Setting.name, schema: SettingSchema },
+      { name: Currency.name, schema: CurrencySchema },
     ]),
     BookingsModule,
   ],

@@ -62,4 +62,5 @@ export class CreateCarDto {
     maxDistance: number;
     price: number;
   };
+  status?: string;
 }

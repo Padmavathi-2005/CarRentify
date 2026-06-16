@@ -80,6 +80,7 @@ export default function EditCarPage() {
  const { user, setUserType } = useAuth();
  const [loading, setLoading] = useState(false);
  const [fetchLoading, setFetchLoading] = useState(true);
+ const [initialStatus, setInitialStatus] = useState("pending");
 
  // Data State
  const [name, setName] = useState("");
@@ -189,9 +190,9 @@ export default function EditCarPage() {
  const [latitude, setLatitude] = useState(12.9249);
  const [longitude, setLongitude] = useState(78.1306);
  const [address, setAddress] = useState("");
- const [country, setCountry] = useState("India");
- const [state, setState] = useState("Tamil Nadu");
- const [city, setCity] = useState("Madurai");
+ const [country, setCountry] = useState("");
+ const [state, setState] = useState("");
+ const [city, setCity] = useState("");
  const [pickupLocations, setPickupLocations] = useState<any[]>([]);
  const [customDeliveryEnabled, setCustomDeliveryEnabled] = useState(false);
  const [customDeliveryMaxDistance, setCustomDeliveryMaxDistance] = useState("5");
@@ -217,6 +218,7 @@ export default function EditCarPage() {
 
     if (carRes.ok) {
      const car = await carRes.json();
+     setInitialStatus(car.status || "pending");
      setName(car.name || "");
      setPermalink(car.permalink || "");
      setContent(car.content || "");
@@ -513,166 +515,190 @@ export default function EditCarPage() {
 
   const handleCancel = () => setShowDiscardModal(true);
 
-  const handleSubmit = async () => {
-    // Final Global Validation
-    if (!validateStep(1)) { setCurrentStep(1); setShowAllSteps(false); return; }
-    if (!validateStep(5)) { setCurrentStep(5); setShowAllSteps(false); return; }
-    
-    if (!pricePerDay || parseFloat(pricePerDay) <= 0) { 
-      setFormErrors(prev => ({ ...prev, price: "Daily rate must be more than 0." }));
-      document.getElementById("price-input")?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      setCurrentStep(5); setShowAllSteps(false);
-      return; 
-    }
-    setLoading(true);
-  try {
-   const finalImages = [];
-   
-   // 1. Handle Main Image
-   if (mainImage) {
-     const { base64 } = await validateAndResizeImage(mainImage);
-     const res = await fetch(`${API_BASE_URL}/media/upload`, {
-       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fileName: mainImage.name, base64 })
-     });
-     if (res.ok) finalImages.push((await res.json()).url);
-   } else if (existingMainImage) {
-     finalImages.push(existingMainImage);
-   }
+  const handleSubmit = async (targetStatus?: 'pending' | 'draft') => {
+    const isSavingDraft = targetStatus === 'draft' || (targetStatus === undefined && initialStatus === 'draft');
 
-   // 2. Handle Gallery (Existing)
-   finalImages.push(...existingImages);
-
-   // 3. Handle Gallery (New)
-    for (const file of selectedFiles) {
-      try {
-        const { base64 } = await validateAndResizeImage(file);
-        const res = await fetch(`${API_BASE_URL}/media/upload`, {
-          method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fileName: file.name, base64 })
-        });
-        if (res.ok) {
-          finalImages.push((await res.json()).url);
-        } else {
-          throw new Error(`Upload Failed for ${file.name}`);
-        }
-      } catch (err) {
-        console.error("Image Upload Error:", err);
-        showToast(`Network Error: Failed to upload ${file.name}. Please try again.`, "error");
+    if (!isSavingDraft) {
+      if (!validateStep(1)) { setCurrentStep(1); setShowAllSteps(false); return; }
+      if (!validateStep(5)) { setCurrentStep(5); setShowAllSteps(false); return; }
+      
+      if (!pricePerDay || parseFloat(pricePerDay) <= 0) { 
+        setFormErrors(prev => ({ ...prev, price: "Daily rate must be more than 0." }));
+        document.getElementById("price-input")?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setCurrentStep(5); setShowAllSteps(false);
+        return; 
+      }
+    } else {
+      if (!name.trim()) {
+        setFormErrors({ name: "Title is required to save a draft." });
+        setCurrentStep(1); setShowAllSteps(false);
+        document.getElementById("name-input")?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
       }
     }
 
-   const docs = [];
-    let finalSeoImage = existingSeoImage;
-    if (seoImage) {
-     const { base64 } = await validateAndResizeImage(seoImage, 1200, 630);
-     const res = await fetch(`${API_BASE_URL}/media/upload`, {
-      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fileName: seoImage.name, base64 })
-     });
-     if (res.ok) finalSeoImage = (await res.json()).url;
+    setLoading(true);
+  try {
+    const finalImages = [];
+    
+    if (mainImage) {
+      const { base64 } = await validateAndResizeImage(mainImage);
+      const res = await fetch(`${API_BASE_URL}/media/upload`, {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fileName: mainImage.name, base64 })
+      });
+      if (res.ok) finalImages.push((await res.json()).url);
+    } else if (existingMainImage) {
+      finalImages.push(existingMainImage);
     }
-   for (const [key, file] of Object.entries(docFiles)) {
-    if (file) {
-     const base64 = await new Promise((r) => { const rd = new FileReader(); rd.readAsDataURL(file); rd.onload = () => r(rd.result); });
-     const res = await fetch(`${API_BASE_URL}/media/upload`, {
-      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fileName: file.name, base64 })
-     });
-     if (res.ok) docs.push({ name: file.name, url: (await res.json()).url, type: key.toUpperCase(), expiryDate: new Date() });
-    }
-   }
 
-   // Upload Custom Spec Files/Images
-   const finalCustomSpecs = { ...customSpecs };
-   for (const [key, fileOrFiles] of Object.entries(customFiles)) {
-     if (Array.isArray(fileOrFiles)) {
-       const urls = [];
-       for (const f of fileOrFiles) {
-         try {
-           const base64 = await new Promise((resolve) => {
-             const reader = new FileReader();
-             reader.readAsDataURL(f);
-             reader.onload = () => resolve(reader.result);
-           });
-           const res = await fetch(`${API_BASE_URL}/media/upload`, {
-             method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fileName: f.name, base64 })
-           });
-           if (res.ok) urls.push((await res.json()).url);
-         } catch (err) { console.error(err); }
-       }
-       if (urls.length > 0) {
-         finalCustomSpecs[key] = Array.isArray(finalCustomSpecs[key]) ? [...finalCustomSpecs[key], ...urls] : urls;
-       }
-     } else if (fileOrFiles) {
+    finalImages.push(...existingImages);
+
+     for (const file of selectedFiles) {
        try {
-         const base64 = await new Promise((resolve) => {
-           const reader = new FileReader();
-           reader.readAsDataURL(fileOrFiles);
-           reader.onload = () => resolve(reader.result);
-         });
+         const { base64 } = await validateAndResizeImage(file);
          const res = await fetch(`${API_BASE_URL}/media/upload`, {
-           method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fileName: fileOrFiles.name, base64 })
+           method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fileName: file.name, base64 })
          });
          if (res.ok) {
-           const url = (await res.json()).url;
-           finalCustomSpecs[key] = { name: fileOrFiles.name, url };
+           finalImages.push((await res.json()).url);
+         } else {
+           throw new Error(`Upload Failed for ${file.name}`);
          }
-       } catch (err) { console.error(err); }
+       } catch (err) {
+         console.error("Image Upload Error:", err);
+         showToast(`Network Error: Failed to upload ${file.name}. Please try again.`, "error");
+       }
      }
-   }
 
-   const res = await fetch(`${API_BASE_URL}/cars/${id}`, {
-    method: "PATCH", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${localStorage.getItem('token')}` },
-    body: JSON.stringify({
-     name, permalink, content, shortDescription, vehicleType, transmission, fuelType, year, brandId, model, 
-     pricePerDay: parseFloat(pricePerDay), 
-     images: finalImages,
-     minBookingDays: parseInt(minBookingDays) || 1,
-     bookingType,
-     securityDeposit: parseFloat(securityDeposit) || 0,
-     currency: currencyId,
-     distanceIncluded: parseFloat(distanceIncluded),
-     extraDistanceFee: parseFloat(extraDistanceFee),
-     priceTiers,
-     extras,
-     horsepower: parseFloat(horsepower) || 0,
-     mileage: parseFloat(mileage) || 0,
-     vin,
-     seats: parseInt(seats) || 0,
-     doors: parseInt(doors) || 0,
-     driveType,
-     fuelEfficiency,
-     isUsed,
-     condition,
-     color,
-     acceleration: parseFloat(acceleration) || undefined,
-     chargingType,
-     batteryCapacity: parseFloat(batteryCapacity) || undefined,
-     range: parseFloat(range) || undefined,
-     location: { country, state, city, address, latitude, longitude }, 
-     pickupLocations,
-
-     amenities: selectedAmenities, seoTitle, seoDescription, seoKeywords, seoImage: finalSeoImage,
-     documents: docs,
-     customSpecs: finalCustomSpecs,
-     customDelivery: {
-       enabled: customDeliveryEnabled,
-       maxDistance: parseFloat(customDeliveryMaxDistance) || 5,
-       price: parseFloat(customDeliveryPrice) || 0
+    const docs = [];
+     let finalSeoImage = existingSeoImage;
+     if (seoImage) {
+      const { base64 } = await validateAndResizeImage(seoImage, 1200, 630);
+      const res = await fetch(`${API_BASE_URL}/media/upload`, {
+       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fileName: seoImage.name, base64 })
+      });
+      if (res.ok) finalSeoImage = (await res.json()).url;
      }
-    }),
-   });
-
-    if (res.ok) {
-      showToast("Car updated in carrental platform. Status Retained.", "success");
-      setUserType("host");
-      router.push("/dashboard/cars");
-    } else {
-      const data = await res.json();
-      showToast(data.message || "Protocol Error: Could not synchronize updates with the network.", "error");
+    for (const [key, file] of Object.entries(docFiles)) {
+     if (file) {
+      const base64 = await new Promise((r) => { const rd = new FileReader(); rd.readAsDataURL(file); rd.onload = () => r(rd.result); });
+      const res = await fetch(`${API_BASE_URL}/media/upload`, {
+       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fileName: file.name, base64 })
+      });
+      if (res.ok) docs.push({ name: file.name, url: (await res.json()).url, type: key.toUpperCase(), expiryDate: new Date() });
+     }
     }
-   } catch (err: any) { 
-     console.error(err);
-     showToast(err.message || "Network Error: Listing update protocol interrupted.", "error");
-   } finally { setLoading(false); }
- };
+
+    const finalCustomSpecs = { ...customSpecs };
+    for (const [key, fileOrFiles] of Object.entries(customFiles)) {
+      if (Array.isArray(fileOrFiles)) {
+        const urls = [];
+        for (const f of fileOrFiles) {
+          try {
+            const base64 = await new Promise((resolve) => {
+              const reader = new FileReader();
+              reader.readAsDataURL(f);
+              reader.onload = () => resolve(reader.result);
+            });
+            const res = await fetch(`${API_BASE_URL}/media/upload`, {
+              method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fileName: f.name, base64 })
+            });
+            if (res.ok) urls.push((await res.json()).url);
+          } catch (err) { console.error(err); }
+        }
+        if (urls.length > 0) {
+          finalCustomSpecs[key] = Array.isArray(finalCustomSpecs[key]) ? [...finalCustomSpecs[key], ...urls] : urls;
+        }
+      } else if (fileOrFiles) {
+        try {
+          const base64 = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(fileOrFiles);
+            reader.onload = () => resolve(reader.result);
+          });
+          const res = await fetch(`${API_BASE_URL}/media/upload`, {
+            method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fileName: fileOrFiles.name, base64 })
+          });
+          if (res.ok) {
+            const url = (await res.json()).url;
+            finalCustomSpecs[key] = { name: fileOrFiles.name, url };
+          }
+        } catch (err) { console.error(err); }
+      }
+    }
+
+    const res = await fetch(`${API_BASE_URL}/cars/${id}`, {
+     method: "PATCH", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${localStorage.getItem('token')}` },
+     body: JSON.stringify({
+      name, 
+      permalink: permalink || undefined, 
+      content: content || undefined, 
+      shortDescription: shortDescription || undefined, 
+      vehicleType: vehicleType || undefined, 
+      transmission: transmission || undefined, 
+      fuelType: fuelType || undefined, 
+      year: year ? parseInt(year) : undefined, 
+      brandId: brandId || undefined, 
+      model: model || undefined, 
+      pricePerDay: pricePerDay ? parseFloat(pricePerDay) : undefined, 
+      images: finalImages,
+      minBookingDays: minBookingDays ? (parseInt(minBookingDays) || 1) : undefined,
+      bookingType,
+      securityDeposit: securityDeposit ? parseFloat(securityDeposit) : undefined,
+      currency: currencyId || undefined,
+      distanceIncluded: distanceIncluded ? parseFloat(distanceIncluded) : undefined,
+      extraDistanceFee: extraDistanceFee ? parseFloat(extraDistanceFee) : undefined,
+      priceTiers,
+      extras,
+      horsepower: horsepower ? parseFloat(horsepower) : undefined,
+      mileage: mileage ? parseFloat(mileage) : undefined,
+      vin: vin || undefined,
+      seats: seats ? parseInt(seats) : undefined,
+      doors: doors ? parseInt(doors) : undefined,
+      driveType: driveType || undefined,
+      fuelEfficiency: fuelEfficiency || undefined,
+      isUsed,
+      condition: condition || undefined,
+      color: color || undefined,
+      acceleration: acceleration ? parseFloat(acceleration) : undefined,
+      chargingType: chargingType || undefined,
+      batteryCapacity: batteryCapacity ? parseFloat(batteryCapacity) : undefined,
+      range: range ? parseFloat(range) : undefined,
+      location: (address || city || state || country) ? { country, state, city, address, latitude, longitude } : undefined, 
+      pickupLocations,
+
+      amenities: selectedAmenities, seoTitle: seoTitle || undefined, seoDescription: seoDescription || undefined, seoKeywords: seoKeywords || undefined, seoImage: finalSeoImage || undefined,
+      documents: docs,
+      customSpecs: finalCustomSpecs,
+      customDelivery: {
+        enabled: customDeliveryEnabled,
+        maxDistance: customDeliveryMaxDistance ? parseFloat(customDeliveryMaxDistance) : 5,
+        price: customDeliveryPrice ? parseFloat(customDeliveryPrice) : 0
+      },
+      status: targetStatus
+     }),
+    });
+
+     if (res.ok) {
+       showToast(
+         targetStatus === 'draft' 
+           ? "Draft updated successfully!" 
+           : targetStatus === 'pending' 
+             ? "Car listing published! Awaiting administrative review." 
+             : "Car updated successfully.", 
+         "success"
+       );
+       setUserType("host");
+       router.push("/dashboard/cars");
+     } else {
+       const data = await res.json();
+       showToast(data.message || "Protocol Error: Could not synchronize updates with the network.", "error");
+     }
+    } catch (err: any) { 
+      console.error(err);
+      showToast(err.message || "Network Error: Listing update protocol interrupted.", "error");
+    } finally { setLoading(false); }
+  };
 
   const visibleAmenities = useMemo(() => {
    const filtered = allAmenities.filter(a => a.name.toLowerCase().includes(amenitySearch.toLowerCase()));
@@ -701,10 +727,17 @@ export default function EditCarPage() {
         </React.Fragment>
        ))}
       </div>
-      <div className="flex items-center gap-2 lg:gap-3">
-        <Button variant="ghost" onClick={handleCancel} className="h-9 px-2 sm:px-3 lg:px-4 rounded-app font-black text-slate-400 dark:text-slate-500 uppercase text-[8px] tracking-[0.2em] hover:bg-slate-50 dark:hover:bg-white/5 transition-all flex items-center gap-2 border border-transparent active:scale-95"><XCircle size={16} /> <span className="hidden md:inline">Discard</span></Button>
-       <Button onClick={handleSubmit} disabled={loading} className="h-9 sm:h-10 px-3 sm:px-4 lg:px-6 bg-primary hover:bg-secondary text-white hover:text-white rounded-app font-black uppercase text-[9px] tracking-widest flex items-center gap-2 sm:gap-3 border-none transition-all active:scale-95">{loading ? <RefreshCw className="animate-spin" size={14} /> : <CheckCircle2 size={16} />}<span className="hidden sm:inline">Publish</span></Button>
-      </div>
+       <div className="flex items-center gap-2 lg:gap-3">
+         <Button variant="ghost" onClick={handleCancel} className="h-9 px-2 sm:px-3 lg:px-4 rounded-app font-black text-slate-400 dark:text-slate-500 uppercase text-[8px] tracking-[0.2em] hover:bg-slate-50 dark:hover:bg-white/5 transition-all flex items-center gap-2 border border-transparent active:scale-95"><XCircle size={16} /> <span className="hidden md:inline">Discard</span></Button>
+         {initialStatus === 'draft' ? (
+           <>
+             <Button onClick={() => handleSubmit('draft')} disabled={loading} variant="outline" className="h-9 sm:h-10 px-3 sm:px-4 lg:px-5 border border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5 rounded-app font-black uppercase text-[9px] tracking-widest flex items-center gap-2 transition-all active:scale-95 text-slate-700 dark:text-slate-300 bg-transparent">{loading ? <RefreshCw className="animate-spin" size={14} /> : <Save size={16} />}<span className="hidden sm:inline">Save Draft</span></Button>
+             <Button onClick={() => handleSubmit('pending')} disabled={loading} className="h-9 sm:h-10 px-3 sm:px-4 lg:px-6 bg-primary hover:bg-secondary text-white hover:text-white rounded-app font-black uppercase text-[9px] tracking-widest flex items-center gap-2 sm:gap-3 border-none transition-all active:scale-95">{loading ? <RefreshCw className="animate-spin" size={14} /> : <CheckCircle2 size={16} />}<span className="hidden sm:inline">Publish</span></Button>
+           </>
+         ) : (
+           <Button onClick={() => handleSubmit(initialStatus as any)} disabled={loading} className="h-9 sm:h-10 px-3 sm:px-4 lg:px-6 bg-primary hover:bg-secondary text-white hover:text-white rounded-app font-black uppercase text-[9px] tracking-widest flex items-center gap-2 sm:gap-3 border-none transition-all active:scale-95">{loading ? <RefreshCw className="animate-spin" size={14} /> : <Save size={16} />}<span className="hidden sm:inline">Save Changes</span></Button>
+         )}
+       </div>
      </header>
 
     <main className="max-w-4xl mx-auto px-4 md:px-8 py-6 md:py-10 w-full flex-grow">
@@ -1338,11 +1371,16 @@ export default function EditCarPage() {
           if (currentIndex > 0) setCurrentStep(steps[currentIndex - 1].id);
         }
       }} disabled={currentStep === 1 && !showAllSteps} className="h-14 px-8 rounded-app font-black uppercase text-[10px] tracking-widest text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-white/5 disabled:opacity-0 transition-all flex items-center gap-3"><ArrowLeft size={18} /> Protocol Revise</Button>
-      {!showAllSteps ? (
-        <Button onClick={handleNext} className="h-14 px-10 bg-primary hover:bg-secondary text-white hover:text-white rounded-app font-black uppercase text-[10px] tracking-widest flex items-center gap-4 transition-all active:scale-95 border-none">{currentStep === steps[steps.length - 1].id ? 'Complete' : 'Next'} <ArrowRight size={18} /></Button>
-       ) : (
-        <Button onClick={handleSubmit} disabled={loading} className="h-14 px-10 bg-primary hover:bg-secondary text-white hover:text-white rounded-app font-black uppercase text-[10px] tracking-widest flex items-center gap-4 border-none transition-all active:scale-95">{loading ? <RefreshCw className="animate-spin" /> : <CheckCircle2 size={16} />} Publish</Button>
-       )}
+      <div className="flex items-center gap-4">
+        {initialStatus === 'draft' && (
+          <Button onClick={() => handleSubmit('draft')} disabled={loading} variant="outline" className="h-14 px-8 border border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5 rounded-app font-black uppercase text-[10px] tracking-widest flex items-center gap-3 transition-all active:scale-95 text-slate-700 dark:text-slate-300 bg-transparent">{loading ? <RefreshCw className="animate-spin" size={16} /> : <Save size={18} />} Save Draft</Button>
+        )}
+        {!showAllSteps ? (
+          <Button onClick={handleNext} className="h-14 px-10 bg-primary hover:bg-secondary text-white hover:text-white rounded-app font-black uppercase text-[10px] tracking-widest flex items-center gap-4 transition-all active:scale-95 border-none">{currentStep === steps[steps.length - 1].id ? 'Complete' : 'Next'} <ArrowRight size={18} /></Button>
+         ) : (
+          <Button onClick={() => handleSubmit(initialStatus === 'draft' ? 'pending' : (initialStatus as any))} disabled={loading} className="h-14 px-10 bg-primary hover:bg-secondary text-white hover:text-white rounded-app font-black uppercase text-[10px] tracking-widest flex items-center gap-4 border-none transition-all active:scale-95">{loading ? <RefreshCw className="animate-spin" size={16} /> : <CheckCircle2 size={16} />} {initialStatus === 'draft' ? 'Publish' : 'Save Changes'}</Button>
+         )}
+      </div>
      </div>
   </div>
  );

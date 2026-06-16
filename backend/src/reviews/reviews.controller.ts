@@ -10,6 +10,11 @@ export class ReviewsController {
     return await this.reviewsService.create(createReviewDto);
   }
 
+  @Get('featured')
+  async getFeaturedReviews() {
+    return await this.reviewsService.getFeaturedReviews();
+  }
+
   @Get('car/:carId')
   async findByCar(@Param('carId') carId: string) {
     return await this.reviewsService.findByCar(carId);

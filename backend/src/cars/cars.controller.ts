@@ -9,6 +9,7 @@ import {
   UseGuards,
   Request,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { CarsService } from './cars.service';
 import { CreateCarDto } from './dto/create-car.dto';
@@ -54,6 +55,15 @@ export class CarsController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Get('all/admin_view')
+  findAllAdmin(@Request() req: any) {
+    if (req.user?.role !== 'admin') {
+      throw new ForbiddenException('Access denied');
+    }
+    return this.carsService.findAll(true);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Get('vendor/me')
   findMyCars(@Request() req: any) {
     const userId = req.user.id || req.user.sub || req.user.userId;
@@ -72,12 +82,12 @@ export class CarsController {
 
   @UseGuards(JwtAuthGuard)
   @Patch(':id/status')
-  updateStatus(@Param('id') id: string, @Body('status') status: 'approved' | 'rejected' | 'pending', @Request() req: any) {
+  updateStatus(@Param('id') id: string, @Body('status') status: 'approved' | 'rejected' | 'pending', @Body('rejectionReason') rejectionReason: string, @Request() req: any) {
     // Ideally check if user is admin here
     if (req.user?.role !== 'admin' && req.user?.userType !== 'admin') {
       // throw new ForbiddenException();
     }
-    return this.carsService.updateStatus(id, status);
+    return this.carsService.updateStatus(id, status, rejectionReason);
   }
 
   @Get('vendor/:id')

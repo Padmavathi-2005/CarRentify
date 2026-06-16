@@ -71,6 +71,7 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ slug: 
     const [pickupTime, setPickupTime] = useState("");
     const [returnTime, setReturnTime] = useState("");
     const [bookedSlots, setBookedSlots] = useState<any[]>([]);
+    const [selectedExtras, setSelectedExtras] = useState<any[]>([]);
 
    const [pickupLocation, setPickupLocation] = useState('');
    const [returnLocation, setReturnLocation] = useState('');
@@ -287,6 +288,15 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ slug: 
       if (!isNaN(deliveryFee) && deliveryFee > 0) {
          total += deliveryFee;
       }
+      if (selectedExtras && selectedExtras.length > 0) {
+         selectedExtras.forEach(ex => {
+            if (ex.priceType === 'per_day') {
+               total += ex.price * days;
+            } else {
+               total += ex.price;
+            }
+         });
+      }
       return total;
    };
 
@@ -324,6 +334,10 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ slug: 
          pickup: pickupTime,
          return: returnTime
       });
+
+      if (selectedExtras && selectedExtras.length > 0) {
+         params.append('extras', encodeURIComponent(JSON.stringify(selectedExtras.map(e => e.name))));
+      }
       
       router.push(`/checkout?${params.toString()}`);
    };
@@ -499,7 +513,8 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ slug: 
                   pickupLocation={pickupLocation} setPickupLocation={setPickupLocation} returnLocation={returnLocation} setReturnLocation={setReturnLocation}
                   locationOptions={locationOptions} bookedSlots={bookedSlots} formatPrice={formatPrice} calculateTotal={calculateTotal}
                   getPricingDetails={() => ({ pricePerDay: car.pricePerDay, totalDays: calculateRentalDays(), officialTotal: calculateTotal(), deliveryFee: Number(pickupCoords?.price || 0) })}
-                  handleBooking={handleBooking} submitting={submitting} bookingError={bookingError} isAdmin={isAdmin} isOwner={isOwner} t={t}
+                  handleBooking={handleBooking} submitting={submitting} bookingError={bookingError} isAdmin={isAdmin} isOwner={isOwner} t={t} reviews={reviews}
+                  selectedExtras={selectedExtras} setSelectedExtras={setSelectedExtras}
                />
             </div>
 

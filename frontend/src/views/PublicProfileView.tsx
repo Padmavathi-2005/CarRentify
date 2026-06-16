@@ -11,7 +11,6 @@ import {
   Share2,
   ChevronLeft,
   Car,
-  Globe,
   Mail,
   Link as LinkIcon,
   MessageCircle
@@ -26,6 +25,18 @@ import { API_BASE_URL, getImageUrl } from "@/config/api";
 import { useLocale } from "@/components/LocaleContext";
 import Modal from "@/components/ui/modal";
 
+const FacebookIcon = ({ size = 20, className = "" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
+  </svg>
+);
+
+const XIcon = ({ size = 20, className = "" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className}>
+    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+  </svg>
+);
+
 export default function PublicProfileView() {
   const params = useParams();
   const router = useRouter();
@@ -39,8 +50,11 @@ export default function PublicProfileView() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [pageUrl, setPageUrl] = useState("");
+  const [showCopied, setShowCopied] = useState(false);
 
   useEffect(() => {
+    setPageUrl(window.location.href);
     const fetchData = async () => {
       setLoading(true);
       try {
@@ -288,55 +302,69 @@ export default function PublicProfileView() {
       <Footer />
 
       <Modal isOpen={showShareModal} onClose={() => setShowShareModal(false)} title="Share Profile">
-        <div className="p-8 grid grid-cols-2 sm:grid-cols-4 gap-6">
-          <button 
-            onClick={() => {
-              navigator.clipboard.writeText(typeof window !== 'undefined' ? window.location.href : '');
-              alert("Link copied!");
-            }}
-            className="flex flex-col items-center gap-3 group"
-          >
-            <div className="w-14 h-14 rounded-app bg-muted flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all">
-              <LinkIcon size={20} />
-            </div>
-            <span className="text-[10px] font-black uppercase tracking-widest">Copy Link</span>
-          </button>
+        <div className="p-8 flex flex-col items-center">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 w-full">
+            <button 
+              onClick={() => {
+                navigator.clipboard.writeText(typeof window !== 'undefined' ? window.location.href : '');
+                setShowShareModal(false);
+                setShowCopied(true);
+                setTimeout(() => setShowCopied(false), 2000);
+              }}
+              className="flex flex-col items-center gap-3 group"
+            >
+              <div className="w-14 h-14 rounded-app bg-primary text-white flex items-center justify-center hover:opacity-80 transition-all">
+                <LinkIcon size={20} />
+              </div>
+              <span className="text-[10px] font-black uppercase tracking-widest">Copy Link</span>
+            </button>
 
-          <a 
-            href={`mailto:?subject=Check out this host on CarRental&body=Check out ${hostName}'s profile: ${typeof window !== 'undefined' ? window.location.href : ''}`}
-            className="flex flex-col items-center gap-3 group"
-          >
-            <div className="w-14 h-14 rounded-app bg-muted flex items-center justify-center group-hover:bg-[#EA4335] group-hover:text-white transition-all">
-              <Mail size={20} />
-            </div>
-            <span className="text-[10px] font-black uppercase tracking-widest">Email</span>
-          </a>
+            <a 
+              href={`https://mail.google.com/mail/?view=cm&fs=1&tf=1&su=${encodeURIComponent("Check out this host on CarRental")}&body=${encodeURIComponent(`Check out ${hostName}'s profile: ${pageUrl}`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex flex-col items-center gap-3 group"
+            >
+              <div className="w-14 h-14 rounded-app bg-[#EA4335] text-white flex items-center justify-center hover:opacity-80 transition-all">
+                <Mail size={20} />
+              </div>
+              <span className="text-[10px] font-black uppercase tracking-widest">Email</span>
+            </a>
 
-          <a 
-            href={`https://www.facebook.com/sharer/sharer.php?u=${typeof window !== 'undefined' ? encodeURIComponent(window.location.href) : ''}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex flex-col items-center gap-3 group"
-          >
-            <div className="w-14 h-14 rounded-app bg-muted flex items-center justify-center group-hover:bg-[#1877F2] group-hover:text-white transition-all">
-              <Globe size={20} />
-            </div>
-            <span className="text-[10px] font-black uppercase tracking-widest">Facebook</span>
-          </a>
+            <a 
+              href={`https://www.facebook.com/sharer/sharer.php?u=${typeof window !== 'undefined' ? encodeURIComponent(window.location.href) : ''}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex flex-col items-center gap-3 group"
+            >
+              <div className="w-14 h-14 rounded-app bg-[#1877F2] text-white flex items-center justify-center hover:opacity-80 transition-all">
+                <FacebookIcon size={20} />
+              </div>
+              <span className="text-[10px] font-black uppercase tracking-widest">Facebook</span>
+            </a>
 
-          <a 
-            href={`https://twitter.com/intent/tweet?url=${typeof window !== 'undefined' ? encodeURIComponent(window.location.href) : ''}&text=Check out ${hostName}'s profile on CarRental`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex flex-col items-center gap-3 group"
-          >
-            <div className="w-14 h-14 rounded-app bg-muted flex items-center justify-center group-hover:bg-[#1DA1F2] group-hover:text-white transition-all">
-              <MessageCircle size={20} />
-            </div>
-            <span className="text-[10px] font-black uppercase tracking-widest">Twitter</span>
-          </a>
+            <a 
+              href={`https://twitter.com/intent/tweet?url=${typeof window !== 'undefined' ? encodeURIComponent(window.location.href) : ''}&text=Check out ${hostName}'s profile on CarRental`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex flex-col items-center gap-3 group"
+            >
+              <div className="w-14 h-14 rounded-app bg-black text-white dark:bg-white dark:text-black flex items-center justify-center hover:opacity-80 transition-all">
+                <XIcon size={20} />
+              </div>
+              <span className="text-[10px] font-black uppercase tracking-widest">X</span>
+            </a>
+          </div>
         </div>
       </Modal>
+
+      {showCopied && (
+        <div className="fixed inset-0 flex items-center justify-center z-[100] pointer-events-none animate-in fade-in zoom-in duration-300">
+          <span className="text-foreground text-2xl font-black uppercase tracking-widest drop-shadow-lg">
+            Link Copied
+          </span>
+        </div>
+      )}
     </div>
   );
 }

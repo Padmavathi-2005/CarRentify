@@ -12,7 +12,7 @@ const nextConfig: NextConfig = {
     ],
   },
   async rewrites() {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4042';
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4042';
     return [
       {
         source: '/backup',

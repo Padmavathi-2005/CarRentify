@@ -81,6 +81,7 @@ export default function Home() {
  const [loadingCars, setLoadingCars] = useState(true);
  const [destinations, setDestinations] = useState<any[]>([]);
  const [isCarouselReady, setIsCarouselReady] = useState(false);
+ const [reviews, setReviews] = useState<any[]>([]);
 
  const [fromDate, setFromDate] = useState("");
  const [fromTime, setFromTime] = useState("");
@@ -88,6 +89,7 @@ export default function Home() {
  const [toTime, setToTime] = useState("");
 
  const carouselRef = useRef<HTMLDivElement>(null);
+ const testimonialsRef = useRef<HTMLDivElement>(null);
  const isPaused = useRef(false);
 
  useEffect(() => {
@@ -119,14 +121,18 @@ export default function Home() {
 
  let { itemWidth, gap, setWidth } = updateDimensions();
 
- const handleScroll = () => {
- // Small buffer to prevent stutter
- if (carousel.scrollLeft >= setWidth * 2) {
- carousel.scrollLeft = carousel.scrollLeft - setWidth;
- } else if (carousel.scrollLeft <= setWidth / 2) {
- carousel.scrollLeft = carousel.scrollLeft + setWidth;
- }
- };
+  const handleScroll = () => {
+  // Seamlessly jump back to the middle without animating
+  if (carousel.scrollLeft >= setWidth * 2) {
+    carousel.style.scrollBehavior = 'auto';
+    carousel.scrollLeft = carousel.scrollLeft - setWidth;
+    requestAnimationFrame(() => carousel.style.scrollBehavior = 'smooth');
+  } else if (carousel.scrollLeft <= setWidth / 2) {
+    carousel.style.scrollBehavior = 'auto';
+    carousel.scrollLeft = carousel.scrollLeft + setWidth;
+    requestAnimationFrame(() => carousel.style.scrollBehavior = 'smooth');
+  }
+  };
 
  carousel.addEventListener('scroll', handleScroll);
 
@@ -139,10 +145,66 @@ export default function Home() {
  }, 4500);
 
  return () => {
- carousel.removeEventListener('scroll', handleScroll);
- clearInterval(interval);
+  carousel.removeEventListener('scroll', handleScroll);
+  clearInterval(interval);
  };
  }, [destinations.length]);
+
+  const [isTestimonialsReady, setIsTestimonialsReady] = useState(false);
+
+  useEffect(() => {
+    const baseLength = reviews.length > 0 ? reviews.length : TESTIMONIALS.length;
+    if (baseLength <= 0 || !testimonialsRef.current) return;
+
+    const carousel = testimonialsRef.current;
+    const updateDimensions = () => {
+      const first = carousel.firstElementChild as HTMLElement;
+      if (!first) return { itemWidth: 0, gap: 0, setWidth: 0 };
+      const itemWidth = first.clientWidth;
+      if (itemWidth === 0) return { itemWidth: 0, gap: 0, setWidth: 0 };
+      const gap = 24;
+      const setWidth = (itemWidth + gap) * baseLength;
+
+      carousel.style.scrollBehavior = 'auto';
+      carousel.scrollLeft = setWidth;
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setIsTestimonialsReady(true);
+          carousel.style.scrollBehavior = 'smooth';
+        });
+      });
+
+      return { itemWidth, gap, setWidth };
+    };
+
+    let { itemWidth, gap, setWidth } = updateDimensions();
+
+    const handleScroll = () => {
+      // Seamlessly jump back to the middle without animating
+      if (carousel.scrollLeft >= setWidth * 2) {
+        carousel.style.scrollBehavior = 'auto';
+        carousel.scrollLeft = carousel.scrollLeft - setWidth;
+        requestAnimationFrame(() => carousel.style.scrollBehavior = 'smooth');
+      } else if (carousel.scrollLeft <= setWidth / 2) {
+        carousel.style.scrollBehavior = 'auto';
+        carousel.scrollLeft = carousel.scrollLeft + setWidth;
+        requestAnimationFrame(() => carousel.style.scrollBehavior = 'smooth');
+      }
+    };
+
+    carousel.addEventListener('scroll', handleScroll);
+
+    const interval = setInterval(() => {
+      if (isPaused.current) return;
+      carousel.scrollBy({ left: itemWidth + gap, behavior: "smooth" });
+    }, 4500);
+
+    return () => {
+      carousel.removeEventListener('scroll', handleScroll);
+      clearInterval(interval);
+    };
+  }, [reviews.length]);
 
  const FALLBACK_BRANDS = [
  { name: 'Rolls-Royce', logo: 'https://cdn.iconscout.com/icon/free/png-256/free-rolls-royce-8-202758.png' },
@@ -211,7 +273,25 @@ export default function Home() {
  }
  }
  });
- }, []);
+    // Fetch live featured reviews
+    fetch(`${API_BASE_URL}/reviews/featured`)
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          const mappedReviews = data.map((r: any) => ({
+            name: r.user?.displayName || `${r.user?.firstName || ''} ${r.user?.lastName || ''}`.trim() || 'Verified Client',
+            role: r.car?.name ? `Rented ${r.car?.brandName || ''} ${r.car?.model || r.car?.name}` : 'Verified Client',
+            content: r.comment || '',
+            rating: r.rating || 5,
+            profileImage: r.user?.profileImage ? getImageUrl(r.user.profileImage) : null,
+            carId: r.car?._id,
+            carSlug: r.car?.slug
+          }));
+          setReviews(mappedReviews);
+        }
+      })
+      .catch(err => console.error("Error fetching reviews:", err));
+  }, []);
 
  return (
  <div className="min-h-screen bg-background font-sans selection:bg-primary selection:text-white">
@@ -670,6 +750,164 @@ export default function Home() {
       </motion.div>
     </div>
   </section>
+  )}
+
+  {/* Enhance Your Experience */}
+  {settings.showEnhanceSection !== false && (
+    <section className="py-24 max-w-7xl mx-auto px-6">
+      <div className="flex flex-col lg:flex-row gap-12">
+        <div className="lg:w-1/2">
+          <h2 className="text-4xl font-bold mb-6 text-foreground">
+            {settings.heroTranslations?.[language]?.enhanceTitle || settings.heroTranslations?.['en']?.enhanceTitle || "Why Rent With Us?"}
+          </h2>
+          <p className="text-muted-foreground mb-10 text-lg">
+            {settings.heroTranslations?.[language]?.enhanceSubtitle || settings.heroTranslations?.['en']?.enhanceSubtitle || "Elevate your journey with handpicked vehicles, verified hosts, and a booking experience designed for ultimate convenience."}
+          </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {(settings.accessories && settings.accessories.length > 0 ? settings.accessories : accessories).map((acc: any, i: number) => (
+            <div key={i} className="p-6 rounded-2xl border border-border/50 bg-muted/30 hover:border-primary/30 transition-colors">
+              <h4 className="font-bold text-foreground mb-2">{acc.title}</h4>
+              <p className="text-primary font-medium">{acc.price}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+        <div className="lg:w-1/2">
+          <div className="w-full h-full min-h-[400px] rounded-3xl overflow-hidden">
+            <img src={settings.enhanceImage || "/enhance.png"} alt="Luxury Accessories" className="w-full h-full object-cover" />
+          </div>
+        </div>
+      </div>
+    </section>
+  )}
+
+  {/* Get the App */}
+  {settings.showAppSection !== false && (
+    <section className="py-24 bg-muted/30 border-t border-border/50">
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="bg-primary rounded-[3rem] overflow-hidden relative shadow-2xl flex flex-col lg:flex-row items-center">
+          <div className="lg:w-1/2 p-12 lg:p-20 relative z-10">
+            <h2 className="text-4xl md:text-5xl font-bold mb-6 text-white">
+              {settings.heroTranslations?.[language]?.appTitle || settings.heroTranslations?.['en']?.appTitle || "Get the Drive App"}
+            </h2>
+            <p className="text-white/80 mb-10 text-lg">
+              {settings.heroTranslations?.[language]?.appSubtitle || settings.heroTranslations?.['en']?.appSubtitle || "Download the app and find your perfect drive instantly. Manage bookings, unlock cars directly, and access 24/7 premium support."}
+            </p>
+          <div className="flex flex-wrap gap-4">
+            <a href={settings.appStoreLink || "https://apple.com/app-store"} target="_blank" rel="noopener noreferrer">
+              <Button className="bg-white text-primary hover:bg-white/90 h-14 px-8 rounded-xl text-base font-bold flex gap-3" data-testid="button-app-store">
+                {settings.heroTranslations?.[language]?.appStoreLabel || settings.heroTranslations?.['en']?.appStoreLabel || "App Store"}
+              </Button>
+            </a>
+            <a href={settings.googlePlayLink || "https://play.google.com/store"} target="_blank" rel="noopener noreferrer">
+              <Button className="bg-white text-primary hover:bg-white/90 h-14 px-8 rounded-xl text-base font-bold flex gap-3" data-testid="button-google-play">
+                {settings.heroTranslations?.[language]?.googlePlayLabel || settings.heroTranslations?.['en']?.googlePlayLabel || "Google Play"}
+              </Button>
+            </a>
+          </div>
+        </div>
+          <div className="lg:w-1/2 relative w-full flex items-end justify-center lg:justify-end h-[320px] md:h-[450px] lg:h-[600px] overflow-hidden px-8 lg:px-0">
+            <img src={settings.appImage || "/app-mockup.png"} alt="App Mockups" className="w-auto h-full max-w-none object-contain object-bottom transform lg:translate-y-16 lg:translate-x-12 lg:scale-110" />
+          </div>
+        </div>
+      </div>
+    </section>
+  )}
+
+      {/* Testimonials Section */}
+      {settings.showTestimonials && (reviews.length > 0 || TESTIMONIALS.length > 0) && (
+        <section className="py-24 bg-[var(--section-bg-alt)] border-t border-border/40 relative overflow-hidden">
+          <div className="max-w-7xl mx-auto px-6 relative z-10">
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-80px" }}
+              variants={staggerContainer}
+              className="text-center mb-16"
+            >
+              <motion.p variants={fadeInUp} className="text-primary font-semibold tracking-wider uppercase text-sm mb-3">
+                {settings.heroTranslations?.[language]?.testimonialsTitle || settings.heroTranslations?.['en']?.testimonialsTitle || "What Our Clients Say"}
+              </motion.p>
+              <motion.h2 variants={fadeInUp} className="text-4xl font-bold mb-4 text-foreground">
+                {settings.heroTranslations?.[language]?.testimonialsSubtitle || settings.heroTranslations?.['en']?.testimonialsSubtitle || "Trusted by Thousands"}
+              </motion.h2>
+              <motion.p variants={fadeInUp} className="text-muted-foreground max-w-2xl mx-auto">
+                {settings.heroTranslations?.[language]?.testimonialsDescription || settings.heroTranslations?.['en']?.testimonialsDescription || "Real stories from real CarRentify clients around the world."}
+              </motion.p>
+            </motion.div>
+
+            <div className="flex justify-center md:justify-end gap-3 mb-6">
+              <button
+                onClick={() => {
+                  if (testimonialsRef.current) {
+                    const itemWidth = testimonialsRef.current.firstElementChild?.clientWidth || 300;
+                    testimonialsRef.current.scrollBy({ left: -(itemWidth + 24), behavior: 'smooth' });
+                  }
+                }}
+                className="w-10 h-10 rounded-full border border-border flex items-center justify-center hover:bg-primary hover:text-white transition-all group bg-white dark:bg-slate-800"
+              >
+                <ChevronLeft className="w-5 h-5 text-muted-foreground group-hover:text-white rtl:rotate-180" />
+              </button>
+              <button
+                onClick={() => {
+                  if (testimonialsRef.current) {
+                    const itemWidth = testimonialsRef.current.firstElementChild?.clientWidth || 300;
+                    testimonialsRef.current.scrollBy({ left: (itemWidth + 24), behavior: 'smooth' });
+                  }
+                }}
+                className="w-10 h-10 rounded-full border border-border flex items-center justify-center hover:bg-primary hover:text-white transition-all group bg-white dark:bg-slate-800"
+              >
+                <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-white rtl:rotate-180" />
+              </button>
+            </div>
+
+            <div 
+              ref={testimonialsRef}
+              className={`flex overflow-x-auto gap-6 snap-x snap-mandatory pb-8 custom-scrollbar-hide transition-opacity duration-700 ${isTestimonialsReady ? 'opacity-100' : 'opacity-0'}`}
+              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            >
+          {([...(reviews.length > 0 ? reviews : TESTIMONIALS), ...(reviews.length > 0 ? reviews : TESTIMONIALS), ...(reviews.length > 0 ? reviews : TESTIMONIALS)]).map((t: any, i) => (
+            <motion.div
+              key={`${t.name}-${i}`}
+              initial={{ opacity: 0 }}
+              animate={isTestimonialsReady ? { opacity: 1 } : { opacity: 0 }}
+              transition={{ duration: 0.5, delay: isTestimonialsReady ? (i % (reviews.length > 0 ? reviews.length : TESTIMONIALS.length)) * 0.1 : 0 }}
+              data-testid={`card-testimonial-${i}`}
+              className="shrink-0 w-full md:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)] xl:w-[calc(25%-18px)] snap-start h-auto flex flex-col"
+            >
+              <Card className="h-full rounded-2xl border-border/40 bg-white shadow-none hover:shadow-none transition-all duration-300 p-6 flex flex-col">
+                <Quote className="w-8 h-8 text-primary/20 mb-4 shrink-0" />
+                <p className="text-foreground/75 text-sm leading-relaxed flex-1 mb-6 line-clamp-4">"{t.content}"</p>
+                <div className="flex items-center gap-3">
+                  {t.profileImage ? (
+                    <img src={t.profileImage} alt={t.name} className="w-10 h-10 rounded-full object-cover shrink-0" />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white text-xs font-bold shrink-0">
+                      {t.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()}
+                    </div>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <div className="font-semibold text-sm text-foreground truncate">{t.name}</div>
+                    {(t.carSlug || t.carId) ? (
+                      <Link href={`/vehicles/${t.carSlug || t.carId}`}>
+                        <div className="text-[10px] text-primary hover:underline truncate cursor-pointer">{t.role}</div>
+                      </Link>
+                    ) : (
+                      <div className="text-[10px] text-muted-foreground truncate">{t.role}</div>
+                    )}
+                  </div>
+                  <div className="ml-auto flex gap-0.5 shrink-0">
+                    {Array.from({ length: Math.min(5, Math.max(1, t.rating || 5)) }).map((_, si) => (
+                      <Star key={si} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                    ))}
+                  </div>
+                </div>
+              </Card>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
   )}
 
  {/* Map & Locations */}

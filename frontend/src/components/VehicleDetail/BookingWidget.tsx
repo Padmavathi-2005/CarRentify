@@ -1,7 +1,7 @@
 "use client";
 
-import React from "react";
-import { Zap, ShieldCheck, Info, Star } from "lucide-react";
+import React, { useState } from "react";
+import { Zap, ShieldCheck, Info, Star, ChevronDown, ChevronUp, CheckSquare, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PremiumRangePicker, PremiumTimeRangePicker, PremiumLocationPicker, formatTimeDisplay, formatDateDisplay } from "@/components/CustomDateTimePicker";
 import { useSettings } from "../ThemeProvider";
@@ -32,17 +32,31 @@ export const BookingWidget = ({
  bookingError,
  isAdmin,
  isOwner,
- t
+ t,
+ reviews,
+ selectedExtras = [],
+ setSelectedExtras = () => {}
 }: any) => {
  const { settings } = useSettings();
  const router = useRouter();
  const { userType, setUserType } = useAuth();
  const d = getPricingDetails();
  const total = calculateTotal();
+ 
+ const [showExtras, setShowExtras] = useState(false);
+
+ const toggleExtra = (extra: any) => {
+   const isSelected = selectedExtras.some((e: any) => e.name === extra.name);
+   if (isSelected) {
+     setSelectedExtras(selectedExtras.filter((e: any) => e.name !== extra.name));
+   } else {
+     setSelectedExtras([...selectedExtras, extra]);
+   }
+ };
 
  return (
  <div className="lg:col-span-4 lg:order-3 order-2 space-y-6 lg:sticky lg:top-24">
- <div className="bg-card border border-border dark:border-white/20 rounded-app p-6 space-y-6 relative overflow-hidden group/card">
+ <div className="bg-card border border-border dark:border-white/20 rounded-app p-6 space-y-4 relative overflow-hidden group/card">
  {/* Header: Price, Rating, Reviews */}
  <div className="flex flex-wrap items-center justify-between gap-4">
  <div className="flex items-baseline gap-1">
@@ -53,13 +67,15 @@ export const BookingWidget = ({
  <Star size={14} className="fill-amber-400 text-amber-400" />
  <span className="text-foreground">{car.rating ? Number(car.rating).toFixed(1) : '0.0'}</span>
  <span className="text-muted-foreground/30 mx-0.5">.</span>
- <button className="text-muted-foreground hover:text-primary underline transition-colors">
- {car.reviewCount || 0} reviews
+ <button className="text-muted-foreground hover:text-primary underline transition-colors" onClick={() => {
+   document.getElementById('reviews-section')?.scrollIntoView({ behavior: 'smooth' });
+ }}>
+ {reviews?.length || car.reviewCount || 0} reviews
  </button>
  </div>
  </div>
 
- {/* The Grid: Dates & Times */}
+ {/* Dates, Times & Location — grouped into one box */}
  <div className="border border-border dark:border-white/20 rounded-xl overflow-hidden divide-y divide-border">
  {/* Dates Row */}
  <PremiumRangePicker
@@ -119,10 +135,8 @@ export const BookingWidget = ({
  </div>
  )}
  />
- </div>
 
- {/* Location Section */}
- <div className="border border-border dark:border-white/20 rounded-xl overflow-hidden">
+ {/* Location Row */}
  <PremiumLocationPicker
  value={pickupLocation}
  onChange={setPickupLocation}
@@ -132,7 +146,7 @@ export const BookingWidget = ({
  align="left"
  trigger={(onClick: () => void) => (
  <div className="p-4 space-y-1 hover:bg-muted/30 transition-colors cursor-pointer" onClick={onClick}>
- <span className="text-[9px] font-black uppercase tracking-widest text-foreground block">Location</span>
+ <span className="text-[9px] font-black uppercase tracking-widest text-foreground block">Pickup & Drop Location</span>
  <span className="text-[11px] font-bold text-muted-foreground block truncate">
  {pickupLocation?.name || pickupLocation || 'Select Pickup Location'}
  </span>
@@ -140,6 +154,49 @@ export const BookingWidget = ({
  )}
  />
  </div>
+
+ {/* Extras Section */}
+ {car.extras && car.extras.length > 0 && (
+ <div className="border border-border dark:border-white/20 rounded-xl overflow-hidden">
+   <div 
+     className="p-4 flex justify-between items-center cursor-pointer hover:bg-muted/30 transition-colors"
+     onClick={() => setShowExtras(!showExtras)}
+   >
+     <span className="text-[9px] font-black uppercase tracking-widest text-foreground">Extras & Add-ons</span>
+     {showExtras ? <ChevronUp size={14} className="text-muted-foreground" /> : <ChevronDown size={14} className="text-muted-foreground" />}
+   </div>
+   
+   {showExtras && (
+     <div className="border-t border-border p-4 space-y-3 bg-muted/10">
+       {car.extras.map((extra: any, index: number) => {
+         const isSelected = selectedExtras.some((e: any) => e.name === extra.name);
+         return (
+           <div 
+             key={index} 
+             className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${isSelected ? 'border-primary bg-primary/5' : 'border-border bg-background hover:border-primary/30'}`}
+             onClick={() => toggleExtra(extra)}
+           >
+             <div className="mt-0.5 text-primary">
+               {isSelected ? <CheckSquare size={16} /> : <Square size={16} className="text-muted-foreground" />}
+             </div>
+             <div className="flex-1">
+               <div className="flex justify-between items-center mb-1">
+                 <span className="text-[11px] font-bold text-foreground">{extra.name}</span>
+                 <span className="text-[10px] font-black text-primary uppercase tracking-widest">
+                   {formatPrice(extra.price)} {extra.priceType === 'per_day' ? '/ day' : '/ trip'}
+                 </span>
+               </div>
+               {extra.description && (
+                 <p className="text-[9px] font-bold text-muted-foreground leading-snug">{extra.description}</p>
+               )}
+             </div>
+           </div>
+         );
+       })}
+     </div>
+   )}
+ </div>
+ )}
 
  {/* Total Calculation */}
  {startDate && endDate ? (
@@ -160,6 +217,23 @@ export const BookingWidget = ({
       <span>{formatPrice(d.deliveryFee)}</span>
     </div>
   )}
+  {selectedExtras.map((extra: any, idx: number) => (
+    <div key={idx} className="flex justify-between items-center text-[11px] font-bold text-muted-foreground uppercase tracking-widest">
+      <span className="truncate max-w-[140px]">{extra.name}</span>
+      <div className="flex flex-col items-end">
+        {extra.priceType === 'per_day' ? (
+          <>
+            <span className="text-[9px] opacity-60 mb-0.5 lowercase tracking-normal">
+              {formatPrice(extra.price)} x {d?.totalDays || 1} days =
+            </span>
+            <span className="text-[12px] font-black text-foreground">{formatPrice(extra.price * (d?.totalDays || 1))}</span>
+          </>
+        ) : (
+          <span className="text-[12px] font-black text-foreground">{formatPrice(extra.price)}</span>
+        )}
+      </div>
+    </div>
+  ))}
  <div className="flex justify-between items-center pt-2 border-t border-border">
  <span className="text-xs font-black uppercase tracking-widest">Total</span>
  <span className="text-xl font-black text-primary tracking-tighter">{formatPrice(total)}</span>

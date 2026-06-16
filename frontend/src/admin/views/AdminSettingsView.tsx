@@ -25,7 +25,14 @@ const backendUrl = API_BASE_URL;
 const resolveAsset = (path: string | null | undefined) => {
   if (!path) return null;
   if (path.startsWith('http') || path.startsWith('data:')) return path;
-  return `${backendUrl.replace('/api', '')}${path}`;
+  
+  // Backend uploads typically start with /images/
+  if (path.startsWith('/images/')) {
+    return `${backendUrl.replace('/api', '')}${path}`;
+  }
+  
+  // Otherwise, it's a frontend public asset like /hero-car.png
+  return path;
 };
 
 const BRAND_PRESETS = [
@@ -160,7 +167,7 @@ const EliteSelect = ({
  onClick={() => !disabled && setIsOpen(!isOpen)}
  className={`w-full flex items-center justify-between px-4 rounded-app transition-all outline-none border focus:ring-2 focus:ring-primary/10 ${
  variant === 'primary' 
- ? 'h-9 bg-[var(--admin-bg)]/80 border-[var(--admin-border)] text-primary font-black uppercase tracking-[0.2em] text-[9px]'
+ ? 'h-9 bg-[var(--admin-bg)]/80 border-primary/30 text-primary font-black uppercase tracking-[0.2em] text-[9px]'
  : variant === 'minimal'
  ? 'h-8 bg-[var(--admin-card-bg)] border-[var(--admin-border)] text-[var(--admin-text-main)] font-bold uppercase tracking-widest text-[9px]'
  : 'h-11 bg-[var(--admin-bg)] border-[var(--admin-border)] text-[var(--admin-text-main)] font-bold uppercase tracking-widest text-[10px]'
@@ -414,39 +421,21 @@ const VerificationFieldsManager = ({
  fields: any[];
  onChange: (val: any[]) => void;
 }) => {
-  // Force add licenseExpiryDate and driverLicense if they don't exist to ensure they are in the list
+  const [lastAddedId, setLastAddedId] = useState<string | null>(null);
+
   useEffect(() => {
-    if (fields.length > 0) {
-      let updated = [...fields];
-      let changed = false;
-
-      if (!updated.find((f: any) => f.id === 'driverLicense')) {
-        updated.splice(2, 0, {
-          id: 'driverLicense',
-          name: 'Driver License Number',
-          type: 'text',
-          required: true,
-          description: 'Enter your driver license number'
-        });
-        changed = true;
-      }
-
-      if (!updated.find((f: any) => f.id === 'licenseExpiryDate')) {
-        updated.splice(3, 0, {
-          id: 'licenseExpiryDate',
-          name: 'License Expiry Date',
-          type: 'date',
-          required: true,
-          description: 'Enter the expiration date printed on your driver\'s license'
-        });
-        changed = true;
-      }
-
-      if (changed) {
-        onChange(updated);
-      }
+    if (lastAddedId) {
+      setTimeout(() => {
+        const el = document.getElementById(lastAddedId);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        setLastAddedId(null);
+      }, 100);
     }
-  }, [fields, onChange]);
+  }, [fields.length, lastAddedId]);
+  // Force add licenseExpiryDate and driverLicense if they don't exist to ensure they are in the list
+  // Removed force-add logic to allow admin to delete these fields if desired.
 
  return (
  <div className="space-y-6">
@@ -457,8 +446,10 @@ const VerificationFieldsManager = ({
  </div>
  <Button 
  onClick={() => {
- const newField = { id: `field_${Date.now()}`, name: 'New ID Type', type: 'image', required: true, description: '' };
+ const newId = `field_${Date.now()}`;
+ const newField = { id: newId, name: 'New ID Type', type: 'image', required: true, description: '' };
  onChange([...fields, newField]);
+ setLastAddedId(newId);
  }}
  className="h-10 px-6 rounded-app bg-primary text-[10px] font-black uppercase tracking-widest text-white "
  >
@@ -468,7 +459,7 @@ const VerificationFieldsManager = ({
 
  <div className="grid grid-cols-1 gap-4">
  {fields.map((field, idx) => (
- <div key={field.id} className="bg-[var(--admin-card-bg)] p-6 rounded-app border border-[var(--admin-border)] space-y-4">
+ <div key={field.id} id={field.id} className="bg-[var(--admin-card-bg)] p-6 rounded-app border border-[var(--admin-border)] space-y-4">
  <div className="flex items-center justify-between">
  <div className="flex items-center gap-3">
  <div className="w-8 h-8 rounded-app bg-primary/10 flex items-center justify-center text-primary">
@@ -516,7 +507,7 @@ const VerificationFieldsManager = ({
  />
  </div>
  <div className="space-y-2">
- <label className="text-[9px] font-black uppercase tracking-widest text-[var(--admin-text-muted)]">Required</label>
+ <label className="text-[9px] font-black uppercase tracking-widest text-[var(--admin-text-muted)]">Enabled / Required</label>
  <div className="h-8 flex items-center">
  <Switch 
  checked={field.required}
@@ -1223,8 +1214,7 @@ const CancellationManager = React.forwardRef(({
  const updatedRules = (config.rules || []).filter((_: any, i: number) => i !== idx);
  onChange({ ...config, rules: updatedRules });
  };
-
- return (
+return (
  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
  <div className="flex items-center justify-between py-2 mb-4 border-b border-[var(--admin-border)]">
  <div>
@@ -1236,6 +1226,40 @@ const CancellationManager = React.forwardRef(({
  <div className="flex items-center gap-4">
  <span className="text-[10px] font-black text-[var(--admin-text-muted)] uppercase tracking-widest">Enabled</span>
  <Switch checked={config.isCancellationEnabled} onCheckedChange={(val) => onChange({...config, isCancellationEnabled: val})} />
+ </div>
+ </div>
+
+ <div className="grid grid-cols-1 gap-4">
+ <div className="p-6 bg-[var(--admin-card-bg)] rounded-app border border-[var(--admin-border)] space-y-4">
+ <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+ <div className="space-y-1">
+ <label className="text-[9px] font-bold uppercase tracking-widest text-[var(--admin-text-muted)]">Title</label>
+ <Input 
+ value={config.title || "Free Cancellation"} 
+ onChange={(e) => onChange({...config, title: e.target.value})}
+ className="h-10 font-bold" 
+ placeholder="e.g. Free Cancellation"
+ />
+ </div>
+ <div className="space-y-1">
+ <label className="text-[9px] font-bold uppercase tracking-widest text-[var(--admin-text-muted)]">Policy Link</label>
+ <Input 
+ value={config.policyLink || "/pages/cancellation-policy"} 
+ onChange={(e) => onChange({...config, policyLink: e.target.value})}
+ className="h-10 font-bold" 
+ placeholder="e.g. /pages/cancellation-policy"
+ />
+ </div>
+ </div>
+ <div className="space-y-1">
+ <label className="text-[9px] font-bold uppercase tracking-widest text-[var(--admin-text-muted)]">Description</label>
+ <Input 
+ value={config.description || "Cancel for a full refund up to 24 hours before your journey starts."} 
+ onChange={(e) => onChange({...config, description: e.target.value})}
+ className="h-10 font-bold" 
+ placeholder="e.g. Cancel for a full refund up to 24 hours before your journey starts."
+ />
+ </div>
  </div>
  </div>
 
@@ -1652,7 +1676,7 @@ function DestinationsManager({ backendUrl }: { backendUrl: string }) {
  })
  .then(res => res.json())
  .then(data => {
- setItems(prev => prev.map(item => item._id === id ? { ...item, image: data } : item));
+ setItems(prev => prev.map(item => item._id === id ? { ...item, image: data.url } : item));
  })
  .catch(() => alert('Image sync failed'))
  .finally(() => setUploadingId(null));
@@ -1676,8 +1700,8 @@ function DestinationsManager({ backendUrl }: { backendUrl: string }) {
  headers: authHeaders,
  body: JSON.stringify({ fileName, base64: image }),
  });
- const imgPath = await imgRes.json();
- data.image = imgPath;
+ const imgData = await imgRes.json();
+ data.image = imgData.url;
  }
 
  setItems(prev => [...prev, data]);
@@ -2126,7 +2150,7 @@ function PaymentSettingsManager({ backendUrl }: { backendUrl: string }) {
  const isSaving = savingId === g._id;
 
  return (
- <div key={g._id} className="bg-[#f8fafc] border border-[var(--admin-border)] rounded-app overflow-hidden transition-all hover:">
+ <div key={g._id} className="bg-[var(--admin-bg)] border border-[var(--admin-border)] rounded-app overflow-hidden transition-all hover:">
  {/* Provider Header Block */}
  <div 
  className="p-6 bg-[var(--admin-card-bg)] border-b border-[var(--admin-border)] flex items-center justify-between cursor-pointer group"
@@ -2250,9 +2274,11 @@ function PaymentSettingsManager({ backendUrl }: { backendUrl: string }) {
  <h5 className="text-[10px] font-black text-[var(--admin-text-main)] uppercase tracking-widest">Configuration Help</h5>
  <div className="space-y-3">
  <p className="text-[10px] text-[var(--admin-text-muted)] font-bold uppercase tracking-tight">Webhook URL (Copy to {g.name} Dashboard):</p>
- <div className="flex items-center justify-between gap-4 p-4 bg-[#f1f5f9] rounded-app border border-[var(--admin-border)] group">
- <code className="text-[11px] text-[#e11d48] font-mono truncate">{webhookUrl}</code>
- <button onClick={() => copyToClipboard(webhookUrl)} className="h-8 px-4 bg-[var(--admin-card-bg)] border border-[var(--admin-border)] text-[9px] font-black uppercase text-blue-500 rounded hover:bg-blue-500 hover:text-white transition-all">Copy</button>
+ <div className="flex items-center justify-between gap-4 p-4 bg-[var(--admin-bg)] rounded-app border border-[var(--admin-border)] group">
+ <code className="text-[11px] text-[var(--admin-text-main)] font-mono truncate opacity-70">{webhookUrl}</code>
+ <button onClick={() => copyToClipboard(webhookUrl)} className="shrink-0 h-8 px-4 bg-blue-500 text-[9px] font-black uppercase text-white rounded hover:bg-blue-600 transition-all">
+   Copy
+ </button>
  </div>
  </div>
  </div>
@@ -3025,6 +3051,24 @@ export default function AdminSettingsView() {
 
 
  <TabsContent value="frontend" className="mt-0 p-4 md:p-6 space-y-8 outline-none pb-20">
+ {currentSection !== 'destinations' && (
+ <div className="flex items-center justify-between p-4 bg-[var(--admin-bg)] rounded-app border border-[var(--admin-border)] mb-4">
+ <div>
+ <h4 className="text-[10px] font-bold uppercase tracking-widest text-[var(--admin-text-main)]">Translation Language</h4>
+ <p className="text-[9px] text-[var(--admin-text-muted)] font-medium font-bold uppercase tracking-[0.1em]">Select language to translate content</p>
+ </div>
+ <EliteSelect
+ value={selectedHeroLang}
+ onChange={setSelectedHeroLang}
+ options={[
+ { value: 'en', label: 'English' },
+ { value: 'ar', label: 'Arabic' },
+ { value: 'zh', label: 'Chinese' },
+ ...languages.filter(l => !['en', 'ar', 'zh'].includes(l.code)).map(l => ({ value: l.code, label: l.name }))
+ ]}
+ />
+ </div>
+ )}
  {currentSection === 'hero' && (
  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-1 md:grid-cols-2 gap-8">
  {/* Hero Management */}
@@ -3583,6 +3627,107 @@ export default function AdminSettingsView() {
  />
  </div>
  </div>
+
+ <div className="space-y-4 mt-6">
+ <div className="flex items-center justify-between p-4 md:p-6 bg-[var(--admin-bg)] rounded-app border border-[var(--admin-border)]">
+  <div>
+  <h4 className="text-xs font-black uppercase tracking-[0.2em] text-[var(--admin-text-main)] mb-1">Custom Testimonials</h4>
+  <p className="text-[10px] text-[var(--admin-text-muted)] font-bold uppercase tracking-widest">If empty, dynamic reviews from DB are shown</p>
+  </div>
+  <Button 
+  onClick={() => {
+   const current = [...(formData.testimonials || [])];
+   current.push({ id: Date.now().toString(), name: '', role: '', content: '', rating: 5, profileImage: '' });
+   handleFieldChange('testimonials', current);
+  }}
+  className="h-9 px-4 rounded-app bg-primary text-[10px] font-bold tracking-widest uppercase text-white shrink-0"
+  >
+  + Add Testimonial
+  </Button>
+ </div>
+ 
+ {(formData.testimonials || []).map((testim: any, idx: number) => (
+  <div key={testim.id || idx} className="bg-[var(--admin-card-bg)] p-4 rounded-app border border-[var(--admin-border)] relative group">
+   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+    <div>
+     <label className="text-[8px] font-bold text-[var(--admin-text-muted)] uppercase tracking-widest mb-1 block">Client Name</label>
+     <Input 
+      value={testim.name || ""}
+      onChange={(e) => {
+       const current = [...(formData.testimonials || [])];
+       current[idx].name = e.target.value;
+       handleFieldChange('testimonials', current);
+      }}
+      className="h-9 bg-[var(--admin-bg)] border-none font-bold text-xs rounded-app px-3"
+     />
+    </div>
+    <div>
+     <label className="text-[8px] font-bold text-[var(--admin-text-muted)] uppercase tracking-widest mb-1 block">Role / Company</label>
+     <Input 
+      value={testim.role || ""}
+      onChange={(e) => {
+       const current = [...(formData.testimonials || [])];
+       current[idx].role = e.target.value;
+       handleFieldChange('testimonials', current);
+      }}
+      className="h-9 bg-[var(--admin-bg)] border-none font-bold text-xs rounded-app px-3"
+     />
+    </div>
+   </div>
+   <div className="mb-4">
+    <label className="text-[8px] font-bold text-[var(--admin-text-muted)] uppercase tracking-widest mb-1 block">Testimonial Content</label>
+    <Textarea 
+     value={testim.content || ""}
+     onChange={(e) => {
+      const current = [...(formData.testimonials || [])];
+      current[idx].content = e.target.value;
+      handleFieldChange('testimonials', current);
+     }}
+     className="min-h-[80px] bg-[var(--admin-bg)] border-none font-bold text-xs rounded-app px-3 py-2 resize-none"
+    />
+   </div>
+   <div className="flex gap-4 items-center">
+    <div>
+     <label className="text-[8px] font-bold text-[var(--admin-text-muted)] uppercase tracking-widest mb-1 block">Rating (1-5)</label>
+     <Input 
+      type="number"
+      min={1} max={5}
+      value={testim.rating || 5}
+      onChange={(e) => {
+       const current = [...(formData.testimonials || [])];
+       current[idx].rating = Number(e.target.value);
+       handleFieldChange('testimonials', current);
+      }}
+      className="h-9 w-20 bg-[var(--admin-bg)] border-none font-bold text-xs rounded-app px-3"
+     />
+    </div>
+    <div className="flex-1">
+     <label className="text-[8px] font-bold text-[var(--admin-text-muted)] uppercase tracking-widest mb-1 block">Profile Image URL (Optional)</label>
+     <Input 
+      value={testim.profileImage || ""}
+      onChange={(e) => {
+       const current = [...(formData.testimonials || [])];
+       current[idx].profileImage = e.target.value;
+       handleFieldChange('testimonials', current);
+      }}
+      placeholder="https://..."
+      className="h-9 bg-[var(--admin-bg)] border-none font-bold text-xs rounded-app px-3"
+     />
+    </div>
+   </div>
+   <button 
+    onClick={() => {
+     const current = [...(formData.testimonials || [])];
+     current.splice(idx, 1);
+     handleFieldChange('testimonials', current);
+    }}
+    className="absolute top-4 right-4 w-8 h-8 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+   >
+    <X size={14} />
+   </button>
+  </div>
+ ))}
+ </div>
  </motion.div>
  )}
 
@@ -3667,6 +3812,67 @@ export default function AdminSettingsView() {
  </div>
  </div>
  </div>
+
+ <div className="space-y-4 mt-6">
+  <div className="flex items-center justify-between p-4 md:p-6 bg-[var(--admin-bg)] rounded-app border border-[var(--admin-border)]">
+   <div>
+    <h4 className="text-xs font-black uppercase tracking-[0.2em] text-[var(--admin-text-main)] mb-1">Custom Accessories</h4>
+    <p className="text-[10px] text-[var(--admin-text-muted)] font-bold uppercase tracking-widest">Manage available accessories and services</p>
+   </div>
+   <Button 
+    onClick={() => {
+     const current = [...(formData.accessories || [])];
+     current.push({ id: Date.now().toString(), title: '', price: '' });
+     handleFieldChange('accessories', current);
+    }}
+    className="h-9 px-4 rounded-app bg-primary text-[10px] font-bold tracking-widest uppercase text-white shrink-0"
+   >
+    + Add Accessory
+   </Button>
+  </div>
+
+  {(formData.accessories || []).map((acc: any, idx: number) => (
+   <div key={acc.id || idx} className="bg-[var(--admin-card-bg)] p-4 rounded-app border border-[var(--admin-border)] relative group flex flex-col md:flex-row gap-4">
+    <div className="flex-1">
+     <label className="text-[8px] font-bold text-[var(--admin-text-muted)] uppercase tracking-widest mb-1 block">Accessory Title</label>
+     <Input 
+      value={acc.title || ""}
+      onChange={(e) => {
+       const current = [...(formData.accessories || [])];
+       current[idx].title = e.target.value;
+       handleFieldChange('accessories', current);
+      }}
+      placeholder="e.g., Roof Box Rental"
+      className="h-9 bg-[var(--admin-bg)] border-none font-bold text-xs rounded-app px-3"
+     />
+    </div>
+    <div className="flex-1">
+     <label className="text-[8px] font-bold text-[var(--admin-text-muted)] uppercase tracking-widest mb-1 block">Price</label>
+     <Input 
+      value={acc.price || ""}
+      onChange={(e) => {
+       const current = [...(formData.accessories || [])];
+       current[idx].price = e.target.value;
+       handleFieldChange('accessories', current);
+      }}
+      placeholder="e.g., $20/day"
+      className="h-9 bg-[var(--admin-bg)] border-none font-bold text-xs rounded-app px-3"
+     />
+    </div>
+    <button 
+     onClick={() => {
+      const current = [...(formData.accessories || [])];
+      current.splice(idx, 1);
+      handleFieldChange('accessories', current);
+     }}
+     className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+    >
+     <X size={12} />
+    </button>
+   </div>
+  ))}
+ </div>
+
  </motion.div>
  )}
 

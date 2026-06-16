@@ -234,6 +234,7 @@
       "core_matrix": "核心身份矩阵",
       "first_name": "名字",
       "last_name": "姓氏",
+      "display_name": "显示名称",
       "phone": "联系电话",
       "email": "固定电子邮件地址",
       "address": "居住地（详细地址）",
